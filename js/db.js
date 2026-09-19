@@ -135,12 +135,15 @@ class LigaDatabase {
         await this.add('checklists', { siteId: site1, ...item });
       }
 
-      // Базовые материалы для объекта 1
+      // Базовые материалы для объекта 1 (элитная сантехника)
       const defaultMaterials = [
-        { siteId: site1, category: 'Трубы и фитинги', name: 'Rehau Rautitan Pink/His 20-25', qty: '180 м', price: 4500000, isPurchased: true },
-        { siteId: site1, category: 'Коллекторы', name: 'FAR хромированные с вентелями 1"', qty: '2 компл', price: 3200000, isPurchased: true },
-        { siteId: site1, category: 'Инсталляции', name: 'Geberit Duofix Sigma 111.300', qty: '3 шт', price: 6800000, isPurchased: true },
-        { siteId: site1, category: 'Защита от протечек', name: 'Система Нептун Smart+', qty: '1 компл', price: 3900000, isPurchased: false }
+        { siteId: site1, category: 'Трубы и фитинги', name: 'Труба Rehau Rautitan Pink 20x2.8 (бухта 100м)', qty: '1 бухта', price: 2800000, isPurchased: true, receiptPhoto: null },
+        { siteId: site1, category: 'Трубы и фитинги', name: 'Надвижные гильзы Rehau 20 и угольники', qty: '24 шт', price: 1650000, isPurchased: true, receiptPhoto: null },
+        { siteId: site1, category: 'Коллекторы', name: 'Коллекторы FAR хромированные 1" на 5 выходов (ГВС/ХВС)', qty: '2 компл', price: 3400000, isPurchased: true, receiptPhoto: null },
+        { siteId: site1, category: 'Инсталляции', name: 'Инсталляция Geberit Duofix Sigma 111.300.00.5', qty: '2 шт', price: 5600000, isPurchased: true, receiptPhoto: null },
+        { siteId: site1, category: 'Защита от протечек', name: 'Система Нептун Smart+ (2 крана 3/4" + 4 радиодатчика)', qty: '1 компл', price: 4200000, isPurchased: false, receiptPhoto: null },
+        { siteId: site1, category: 'Трапы', name: 'Душевой трап TECEdrainpoint S с сухим затвором', qty: '2 шт', price: 2100000, isPurchased: false, receiptPhoto: null },
+        { siteId: site1, category: 'Расходники', name: 'Шумоизоляция стояка Comfort Mat Blockshot', qty: '3 листа', price: 850000, isPurchased: false, receiptPhoto: null }
       ];
 
       for (let mat of defaultMaterials) {

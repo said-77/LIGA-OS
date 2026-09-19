@@ -186,23 +186,24 @@
     </main>
 
     <!-- ====================================================================
-         ЭКРАН 2: ФИНАНСЫ И КАССА
+         ЭКРАН 2: ФИНАНСЫ И ПЛАТЕЖИ ОБЪЕКТА + СВОДНЫЙ РАДАР
          ==================================================================== -->
     <section id="screen-finances" class="app-screen">
+      <!-- 1. Финансы текущего объекта -->
       <div class="glass-card">
         <div class="card-header-flex">
-          <div class="card-label">💼 Финансовый отчет объекта</div>
+          <div class="card-label">💼 Финансы текущего объекта</div>
           <button onclick="window.app.openModal('modal-payment')" class="btn-contact" style="height:32px; padding:2px 10px; font-size:12px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
-            + Добавить операцию
+            + Внести платеж
           </button>
         </div>
         
         <div class="item-row">
           <div class="item-left">
             <div class="item-name">Общая стоимость работ</div>
-            <div class="item-desc">По утвержденному договору</div>
+            <div class="item-desc">По договору с заказчиком</div>
           </div>
-          <div id="page-fin-contract" class="item-right">18 500 000 сум</div>
+          <div id="page-fin-contract" class="item-right">0 сум</div>
         </div>
 
         <div class="item-row">
@@ -210,7 +211,7 @@
             <div class="item-name" style="color:var(--neon-emerald);">Внесено авансов</div>
             <div class="item-desc">Наличные / Перевод на карту</div>
           </div>
-          <div id="page-fin-advance" class="item-right" style="color:var(--neon-emerald);">12 000 000 сум</div>
+          <div id="page-fin-advance" class="item-right" style="color:var(--neon-emerald);">0 сум</div>
         </div>
 
         <div class="item-row" style="border-color: rgba(220, 38, 38, 0.4);">
@@ -218,34 +219,129 @@
             <div class="item-name" style="color:var(--neon-ruby);">Остаток долга заказчика</div>
             <div class="item-desc">К окончательному расчету при сдаче</div>
           </div>
-          <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">6 500 000 сум</div>
+          <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">0 сум</div>
         </div>
 
         <div class="item-row">
           <div class="item-left">
-            <div class="item-name">Остаток помощникам (Алишер, Сардор)</div>
-            <div class="item-desc">Выплата по завершении опрессовки</div>
+            <div class="item-name">Начислено помощникам бригады</div>
+            <div class="item-desc">Алишер, Сардор (по опрессовке)</div>
           </div>
-          <div id="page-fin-brigade" class="item-right">800 000 сум</div>
+          <div id="page-fin-brigade" class="item-right">0 сум</div>
+        </div>
+      </div>
+
+      <!-- 2. Сводный радар портфеля (Все объекты мастера) -->
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-label">📊 Сводный радар портфеля</div>
+          <span id="portfolio-sites-badge" class="badge badge-gold">0 объектов</span>
+        </div>
+        <p style="font-size:11px; color:var(--text-muted); margin-bottom:12px; font-weight:600;">
+          Агрегированные финансовые показатели по всем объектам «Лиги Опытных Мастеров» в Ташкенте:
+        </p>
+
+        <div class="finance-grid" style="margin-bottom:10px;">
+          <div class="finance-box">
+            <div class="finance-box-label">Суммарный портфель (Оборот):</div>
+            <div id="portfolio-total-contract" class="finance-box-val" style="color:var(--text-main); font-size:14px;">0 сум</div>
+          </div>
+          <div class="finance-box">
+            <div class="finance-box-label">Всего получено авансов:</div>
+            <div id="portfolio-total-advance" class="finance-box-val" style="color:var(--neon-emerald); font-size:14px;">0 сум</div>
+          </div>
+        </div>
+
+        <div class="finance-grid">
+          <div class="finance-box">
+            <div class="finance-box-label">Остаток к получению от клиентов:</div>
+            <div id="portfolio-total-debt" class="finance-box-val" style="color:var(--gold-primary); font-size:14px;">0 сум</div>
+          </div>
+          <div class="finance-box">
+            <div class="finance-box-label">Задолженность бригаде:</div>
+            <div id="portfolio-total-brigade" class="finance-box-val" style="color:var(--neon-ruby); font-size:14px;">0 сум</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Экосистема Лиги Опытных Мастеров -->
+      <div class="glass-card">
+        <div class="card-label">🌐 Экосистема «Лига Мастеров»</div>
+        <p style="font-size:11px; color:var(--text-muted); margin-bottom:12px; font-weight:600;">
+          Официальные цифровые витрины и инструменты инженера:
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <a href="https://liga-masterov.vercel.app" target="_blank" rel="noopener" class="item-row" style="text-decoration:none; cursor:pointer;">
+            <div class="item-left">
+              <div class="item-name" style="display:flex; align-items:center; gap:6px;">
+                <span>🏛️</span> Основной сайт LIGA MASTEROV
+              </div>
+              <div class="item-desc">Официальное портфолио, стандарты и гарантии в Ташкенте</div>
+            </div>
+            <div class="item-right" style="font-size:12px;">Открыть ↗</div>
+          </a>
+
+          <a href="https://vizitka-liga-masterov.vercel.app" target="_blank" rel="noopener" class="item-row" style="text-decoration:none; cursor:pointer;">
+            <div class="item-left">
+              <div class="item-name" style="display:flex; align-items:center; gap:6px;">
+                <span>✨</span> 3D-визитка мастера Улугбека
+              </div>
+              <div class="item-desc">Интерактивная премиум-визитка для VIP-клиентов и дизайнеров</div>
+            </div>
+            <div class="item-right" style="font-size:12px;">Открыть ↗</div>
+          </a>
+
+          <button id="btn-backup-finances" onclick="window.ligaDB.exportFullBackup()" class="item-row" style="width:100%; border:none; background:var(--box-bg); cursor:pointer; text-align:left;">
+            <div class="item-left">
+              <div class="item-name" style="display:flex; align-items:center; gap:6px; color:var(--neon-emerald);">
+                <span>💾</span> Резервная копия базы в JSON
+              </div>
+              <div class="item-desc">Скачать полный бэкап всех объектов, чеков и фото на устройство</div>
+            </div>
+            <div class="item-right" style="font-size:12px; color:var(--neon-emerald);">Скачать ↓</div>
+          </button>
         </div>
       </div>
     </section>
 
     <!-- ====================================================================
-         ЭКРАН 3: СНАБЖЕНИЕ И МАТЕРИАЛЫ
+         ЭКРАН 3: СНАБЖЕНИЕ, СКЛАД И ЧЕКИ С БАЗАРОВ
          ==================================================================== -->
     <section id="screen-materials" class="app-screen">
       <div class="glass-card">
         <div class="card-header-flex">
-          <div class="card-label">📦 Снабжение и чеки</div>
-          <button onclick="window.app.openModal('modal-receipt')" class="btn-contact" style="height:34px; padding:4px 12px; font-size:12px; color:var(--gold-primary); border-color:var(--gold-secondary);">
-            + Добавить чек
+          <div class="card-label">📦 Снабжение и материалы</div>
+          <button onclick="window.app.openModal('modal-receipt')" class="btn-contact" style="height:32px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary);">
+            + Сфоткать чек
           </button>
         </div>
-        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; font-weight:600;">
-          Оригинальные европейские материалы (Rehau, FAR, Geberit) с заводской гарантией 10–50 лет.
-        </p>
+        
+        <!-- Сводка расходов на материалы -->
+        <div class="finance-grid" style="margin-bottom:12px;">
+          <div class="finance-box">
+            <div class="finance-box-label">Закуплено материалов:</div>
+            <div id="mat-purchased-sum" class="finance-box-val" style="color:var(--neon-emerald); font-size:15px;">0 сум</div>
+          </div>
+          <div class="finance-box">
+            <div class="finance-box-label">Требуется докупить:</div>
+            <div id="mat-needed-sum" class="finance-box-val" style="color:var(--gold-primary); font-size:15px;">0 сум</div>
+          </div>
+        </div>
 
+        <!-- Фильтры категорий и статуса -->
+        <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
+          <button class="btn-contact mat-filter active" data-filter="all" style="height:32px; padding:2px 12px; font-size:11px; flex-shrink:0;">Все</button>
+          <button class="btn-contact mat-filter" data-filter="needed" style="height:32px; padding:2px 12px; font-size:11px; flex-shrink:0; color:var(--neon-ruby); border-color:rgba(220,38,38,0.3);">Нужно купить</button>
+          <button class="btn-contact mat-filter" data-filter="purchased" style="height:32px; padding:2px 12px; font-size:11px; flex-shrink:0; color:var(--neon-emerald); border-color:rgba(5,150,105,0.3);">Куплено</button>
+        </div>
+
+        <!-- Кнопка выгрузки списка в Telegram для базара -->
+        <button id="btn-export-bazaar" class="btn-contact" style="width:100%; height:40px; margin-bottom:14px; font-size:12px; color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
+          <span>🛒</span> Отправить список покупок для базара в Telegram
+        </button>
+
+        <!-- Список материалов объекта -->
         <div id="materials-list-container">
           <!-- Заполняется динамически -->
         </div>
@@ -253,11 +349,26 @@
     </section>
 
     <!-- ====================================================================
-         ЭКРАН 4: ЧЕК-ЛИСТ КАЧЕСТВА ТЕХНАДЗОРА
+         ЭКРАН 4: ЧЕК-ЛИСТ КАЧЕСТВА ТЕХНАДЗОРА И АКТ СТЯЖКИ
          ==================================================================== -->
     <section id="screen-checklist" class="app-screen">
       <div class="glass-card">
-        <div class="card-label">🛡️ Железный технадзор перед стяжкой</div>
+        <div class="card-header-flex">
+          <div class="card-label">🛡️ Технадзор перед стяжкой</div>
+          <span id="checklist-counter-badge" class="badge badge-gold">0 / 10 выполнено</span>
+        </div>
+
+        <!-- Индикатор прогресса готовности -->
+        <div style="margin: 10px 0 14px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; margin-bottom:6px;">
+            <span id="screed-status-label" style="color:var(--neon-ruby);">⚠️ Заливать запрещено (есть замечания)</span>
+            <span id="screed-percent-label" style="color:var(--text-main);">0%</span>
+          </div>
+          <div class="progress-bar-track" style="height:8px; background:var(--box-bg); border-radius:999px; overflow:hidden; border:1px solid var(--glass-border-subtle);">
+            <div id="checklist-progress-bar" style="height:100%; width:0%; background:var(--gold-gradient); border-radius:999px; transition:width 0.3s ease;"></div>
+          </div>
+        </div>
+
         <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0; font-weight:600;">
           10 критических пунктов проверки перед заливкой чистового пола. Нажмите на пункт, чтобы отметить выполнение:
         </p>
@@ -265,6 +376,11 @@
         <div id="checklist-container">
           <!-- Заполняется динамически -->
         </div>
+
+        <!-- Кнопка выгрузки официального Акта технадзора в Telegram -->
+        <button id="btn-act-screed" class="btn-flagship-gold" style="height:52px; font-size:13px; margin-top:16px; margin-bottom:0;">
+          <span>🛡️</span> Отправить Акт готовности к стяжке в Telegram
+        </button>
       </div>
     </section>
 
@@ -488,7 +604,7 @@
     </div>
 
     <!-- ====================================================================
-         МОДАЛЬНОЕ ОКНО 4: ДОБАВЛЕНИЕ ЧЕКА
+         МОДАЛЬНОЕ ОКНО 4: ДОБАВЛЕНИЕ ЧЕКА С ФОТО
          ==================================================================== -->
     <div id="modal-receipt" class="modal-overlay">
       <div class="modal-sheet">
@@ -499,11 +615,15 @@
         <form id="form-add-receipt">
           <div class="form-group">
             <label class="form-label">Наименование материала / товара:</label>
-            <input id="receipt-title" type="text" class="form-input" placeholder="Например: Коллектор FAR 1&quot; или трубы Rehau" required>
+            <input id="receipt-title" type="text" class="form-input" placeholder="Напр: Коллектор FAR 1&quot; или фитинги Rehau" required>
           </div>
           <div class="form-group">
             <label class="form-label">Сумма по чеку (сум):</label>
-            <input id="receipt-amount" type="number" class="form-input" placeholder="Например: 1450000" required>
+            <input id="receipt-amount" type="number" class="form-input" placeholder="Напр: 1450000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Количество / объем:</label>
+            <input id="receipt-qty" type="text" class="form-input" placeholder="Напр: 2 шт, 50 м или 1 комплект" value="1 компл">
           </div>
           <div class="form-group">
             <label class="form-label">Категория:</label>
@@ -512,11 +632,36 @@
               <option value="Коллекторы">Коллекторы и узлы (FAR / Oventrop)</option>
               <option value="Инсталляции">Инсталляции и трапы (Geberit / TECE)</option>
               <option value="Защита от протечек">Защита от протечек (Нептун)</option>
-              <option value="Расходники">Расходники, хомуты, герметик</option>
+              <option value="Расходники">Расходники, изоляция, герметик</option>
             </select>
           </div>
-          <button type="submit" class="btn-submit-modal">Сохранить в расходы объекта</button>
+          <div class="form-group">
+            <label class="form-label">Фото чека с базара (камера смартфона):</label>
+            <label class="btn-contact" style="width:100%; height:44px; cursor:pointer; color:var(--gold-primary); border-color:var(--gold-secondary);">
+              <span>📸 Сфотографировать чек</span>
+              <input type="file" id="receipt-photo-file" accept="image/*" capture="environment" style="display:none;">
+            </label>
+            <div id="receipt-photo-status" style="font-size:11px; color:var(--text-dim); margin-top:4px; text-align:center;">Фото не прикреплено (необязательно)</div>
+          </div>
+          <button type="submit" class="btn-submit-modal">Сохранить в снабжение объекта</button>
         </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 5: ПРОСМОТР ЧЕКА
+         ==================================================================== -->
+    <div id="modal-view-receipt" class="modal-overlay">
+      <div class="modal-sheet" style="text-align:center;">
+        <div class="modal-title">
+          <span id="view-receipt-title">Чек с базара</span>
+          <button onclick="window.app.closeModal('modal-view-receipt')" class="btn-close-modal">&times;</button>
+        </div>
+        <div id="view-receipt-container" style="max-height:60vh; overflow-y:auto; border-radius:var(--radius-sm); margin-bottom:12px; background:#000;">
+          <img id="view-receipt-img" src="" alt="Фото чека" style="width:100%; height:auto; display:block;">
+        </div>
+        <div id="view-receipt-meta" style="font-size:13px; font-weight:700; color:var(--gold-primary); margin-bottom:12px;"></div>
+        <button onclick="window.app.closeModal('modal-view-receipt')" class="btn-submit-modal" style="height:44px;">Закрыть</button>
       </div>
     </div>
 

@@ -17,5 +17,8 @@ $RECYCLE.BIN/
 *.sublime-project
 *.sublime-workspace
 
-# Local test scratch
+# Local test scratch and screenshots
 scratch/
+screenshot_*.png
+test_*.py
+verify_*.py

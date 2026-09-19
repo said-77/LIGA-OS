@@ -19,6 +19,10 @@ class LigaApp {
       floor: null
     };
 
+    // Состояние снабжения и чеков
+    this.currentMatFilter = 'all';
+    this.pendingReceiptPhoto = null;
+
     // Переменные экспресс-сметы
     this.estimate = {
       bathrooms: 2,
@@ -235,7 +239,7 @@ class LigaApp {
       btnCopyEstimate.addEventListener('click', () => this.copyEstimateToTelegram());
     }
 
-    // 12. Форма добавления чека
+    // 12. Форма добавления чека и обработка фото чека
     const formReceipt = document.getElementById('form-add-receipt');
     if (formReceipt) {
       formReceipt.addEventListener('submit', async (e) => {
@@ -244,7 +248,43 @@ class LigaApp {
       });
     }
 
-    // 13. Чек-листы
+    const inputReceiptPhoto = document.getElementById('receipt-photo-file');
+    if (inputReceiptPhoto) {
+      inputReceiptPhoto.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.showToast('Сжатие чека с камеры...');
+          try {
+            this.pendingReceiptPhoto = await window.ligaImageProcessor.compressImage(file, 1400, 0.82);
+            const statusEl = document.getElementById('receipt-photo-status');
+            if (statusEl) {
+              statusEl.innerHTML = '<span style="color:var(--neon-emerald); font-weight:800;">✓ Фото чека прикреплено и сжато!</span>';
+            }
+            this.showToast('✓ Фото чека готово!');
+          } catch (err) {
+            console.error('Ошибка сжатия фото чека:', err);
+            alert('Не удалось обработать фото чека: ' + err.message);
+          }
+        }
+      });
+    }
+
+    // 13. Фильтры снабжения и выгрузка базара
+    document.querySelectorAll('.mat-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.currentMatFilter = btn.getAttribute('data-filter') || 'all';
+        document.querySelectorAll('.mat-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.renderMaterials();
+      });
+    });
+
+    const btnExportBazaar = document.getElementById('btn-export-bazaar');
+    if (btnExportBazaar) {
+      btnExportBazaar.addEventListener('click', () => this.exportBazaarList());
+    }
+
+    // 14. Чек-листы технадзора и официальный Акт стяжки
     const checklistContainer = document.getElementById('checklist-container');
     if (checklistContainer) {
       checklistContainer.addEventListener('click', async (e) => {
@@ -254,6 +294,11 @@ class LigaApp {
           await this.toggleChecklistItem(id);
         }
       });
+    }
+
+    const btnActScreed = document.getElementById('btn-act-screed');
+    if (btnActScreed) {
+      btnActScreed.addEventListener('click', () => this.exportScreedAct());
     }
   }
 
@@ -507,11 +552,42 @@ class LigaApp {
     this.render();
   }
 
-  // Рендеринг чек-листа технадзора
+  // Рендеринг чек-листа технадзора и индикаторов готовности к стяжке
   async renderChecklist() {
     const list = await window.ligaDB.getBySiteId('checklists', this.currentSiteId);
     const container = document.getElementById('checklist-container');
     if (!container) return;
+
+    const totalCount = list.length || 10;
+    const doneCount = list.filter(item => item.done).length;
+    const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+    // Обновляем бейдж и прогресс-бар
+    const badgeEl = document.getElementById('checklist-counter-badge');
+    if (badgeEl) {
+      badgeEl.innerText = `${doneCount} / ${totalCount} выполнено`;
+    }
+
+    const progressBar = document.getElementById('checklist-progress-bar');
+    if (progressBar) {
+      progressBar.style.width = `${percent}%`;
+    }
+
+    const percentLabel = document.getElementById('screed-percent-label');
+    if (percentLabel) {
+      percentLabel.innerText = `${percent}%`;
+    }
+
+    const statusLabel = document.getElementById('screed-status-label');
+    if (statusLabel) {
+      if (doneCount === totalCount && this.currentSite && this.currentSite.pressTestPassed) {
+        statusLabel.innerHTML = '<span style="color:var(--neon-emerald);">✓ Заливка стяжки РАЗРЕШЕНА (100% + Опрессовка 16 бар)</span>';
+      } else if (doneCount === totalCount) {
+        statusLabel.innerHTML = '<span style="color:var(--gold-primary);">⚠️ Все 10 пунктов готовы, требуется опрессовка 16 бар!</span>';
+      } else {
+        statusLabel.innerHTML = `<span style="color:var(--neon-ruby);">⚠️ Заливать запрещено (замечаний: ${totalCount - doneCount})</span>`;
+      }
+    }
 
     if (list.length === 0) {
       container.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">Чек-лист чист</div>';
@@ -536,36 +612,206 @@ class LigaApp {
     }
   }
 
+  // Экспорт официального Акта готовности к стяжке в Telegram
+  async exportScreedAct() {
+    if (!this.currentSite) return;
+    const s = this.currentSite;
+    const list = await window.ligaDB.getBySiteId('checklists', this.currentSiteId);
+    const totalCount = list.length || 10;
+    const doneCount = list.filter(item => item.done).length;
+    const isAllPassed = doneCount === totalCount && s.pressTestPassed;
+    const dateStr = new Date().toLocaleDateString('ru-RU');
+
+    const itemsText = list.map((item, idx) => {
+      const mark = item.done ? '✓ Выполнено' : '❌ Замечание';
+      return `${idx + 1}. [${mark}] ${item.title}`;
+    }).join('\n');
+
+    const pressStatus = s.pressTestPassed ? '✓ 16 БАР ВЫДЕРЖАНО 24 ЧАСА (УСПЕШНО)' : '❌ ОПРЕССОВКА НЕ ПРОВЕДЕНА';
+
+    const message = `🏛️ ОФИЦИАЛЬНЫЙ АКТ ГОТОВНОСТИ САНТЕХНИКИ К ЗАЛИВКЕ СТЯЖКИ
+«Лига Опытных Мастеров» • Ведущий инженер Улугбек Хакимов
+Объект: ${s.name} (${s.unit || 'Элитный жилой фонд'})
+Заказчик: ${s.client} • Дата проверки: ${dateStr}
+
+ПРОТОКОЛ ПРОВЕРКИ ТЕХНАДЗОРА (${doneCount}/${totalCount}):
+${itemsText}
+
+ГИДРАВЛИЧЕСКИЕ ИСПЫТАНИЯ:
+${pressStatus}
+
+ИТОГОВОЕ ЗАКЛЮЧЕНИЕ:
+${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инженерные коммуникации соответствуют высшему стандарту надежности.' : '🔴 ЗАЛИВКУ СТЯЖКИ ПРИОСТАНОВИТЬ до устранения всех замечаний и повторной опрессовки!'}
+
+Инженер технадзора: Улугбек Хакимов
+Телефон: ${s.phone || '+998 90 900-00-00'}
+Сайт: https://liga-masterov.vercel.app`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      this.showToast('✓ Акт стяжки скопирован! Переход в Telegram...');
+    } catch (e) {
+      console.warn('Clipboard write failed:', e);
+    }
+    const tgUrl = `https://t.me/share/url?text=${encodeURIComponent(message)}`;
+    window.open(tgUrl, '_blank');
+  }
+
   // Рендеринг материалов и снабжения
   async renderMaterials() {
     const list = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
     const container = document.getElementById('materials-list-container');
     if (!container) return;
 
-    container.innerHTML = list.map(m => `
-      <div class="item-row">
-        <div class="item-left">
-          <div class="item-name">${m.name}</div>
-          <div class="item-desc">${m.category} • ${m.qty}</div>
+    // Подсчет сумм
+    const purchasedSum = list.filter(m => m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
+    const neededSum = list.filter(m => !m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
+
+    const purchasedEl = document.getElementById('mat-purchased-sum');
+    if (purchasedEl) purchasedEl.innerText = this.formatSum(purchasedSum);
+
+    const neededEl = document.getElementById('mat-needed-sum');
+    if (neededEl) neededEl.innerText = this.formatSum(neededSum);
+
+    // Фильтрация
+    let filtered = list;
+    if (this.currentMatFilter === 'needed') {
+      filtered = list.filter(m => !m.isPurchased);
+    } else if (this.currentMatFilter === 'purchased') {
+      filtered = list.filter(m => m.isPurchased);
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="color:var(--text-dim); padding:24px; text-align:center; font-size:13px; font-weight:700;">
+          ${this.currentMatFilter === 'needed' ? '✓ Все необходимые материалы закуплены!' : 'Нет позиций в этом списке'}
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(m => `
+      <div class="mat-item-card ${m.isPurchased ? 'purchased' : 'needed'}" data-id="${m.id}">
+        <div class="mat-item-left">
+          <div class="mat-checkbox ${m.isPurchased ? 'checked' : ''}" onclick="window.app.toggleMaterialStatus(${m.id})" title="${m.isPurchased ? 'Отмечено: Куплено' : 'Нажмите, чтобы отметить купленным'}">
+            ${m.isPurchased ? '✓' : ''}
+          </div>
+          <div class="mat-info">
+            <div class="mat-name">${m.name}</div>
+            <div class="mat-meta">
+              <span>🏷️ ${m.category}</span>
+              <span>📦 ${m.qty}</span>
+              <span style="color:${m.isPurchased ? 'var(--neon-emerald)' : 'var(--neon-ruby)'}; font-weight:800;">
+                ${m.isPurchased ? '• Куплено' : '• Требуется закупка'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="item-right">${this.formatSum(m.price)}</div>
+        <div class="mat-item-right">
+          <div class="mat-price">${this.formatSum(m.price)}</div>
+          ${m.receiptPhoto ? `
+            <button class="btn-receipt-view" onclick="window.app.viewReceiptById(${m.id})">
+              <span>🧾 Чек (фото)</span>
+            </button>
+          ` : ''}
+        </div>
       </div>
     `).join('');
   }
 
-  // Рендеринг финансового экрана
+  async toggleMaterialStatus(id) {
+    const item = await window.ligaDB.get('materials', id);
+    if (item) {
+      item.isPurchased = !item.isPurchased;
+      await window.ligaDB.put('materials', item);
+      await this.renderMaterials();
+      this.showToast(item.isPurchased ? '✓ Отмечено как куплено!' : 'Статус: Требуется докупить');
+    }
+  }
+
+  async viewReceiptById(id) {
+    const item = await window.ligaDB.get('materials', id);
+    if (item && item.receiptPhoto) {
+      const imgEl = document.getElementById('view-receipt-img');
+      const titleEl = document.getElementById('view-receipt-title');
+      const metaEl = document.getElementById('view-receipt-meta');
+
+      if (imgEl) imgEl.src = item.receiptPhoto;
+      if (titleEl) titleEl.innerText = item.name;
+      if (metaEl) metaEl.innerText = `Сумма по чеку: ${this.formatSum(item.price)} (${item.category})`;
+
+      this.openModal('modal-view-receipt');
+    } else {
+      this.showToast('Фото чека отсутствует');
+    }
+  }
+
+  async exportBazaarList() {
+    const list = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+    const needed = list.filter(m => !m.isPurchased);
+    const targetList = needed.length > 0 ? needed : list;
+    const s = this.currentSite;
+
+    const sum = targetList.reduce((acc, m) => acc + (m.price || 0), 0);
+    const itemsText = targetList.map((m, idx) => 
+      `${idx + 1}. [ ] ${m.name} — ${m.qty} (~${this.formatSum(m.price)})`
+    ).join('\n');
+
+    const message = `🛒 СПИСОК МАТЕРИАЛОВ ДЛЯ ЗАКУПКИ (Базар Джами / Урикзор)
+Объект: ${s ? s.name : 'Элитный объект'}
+Инженер: Улугбек Хакимов («Лига Опытных Мастеров»)
+
+Позиции к закупке:
+${itemsText}
+
+Ориентировочная сумма закупки: 💰 ${this.formatSum(sum)}
+
+Сформировано в LIGA OS: https://liga-masterov.vercel.app`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      this.showToast('✓ Список для базара скопирован в буфер!');
+    } catch (e) {
+      console.warn('Clipboard write failed:', e);
+    }
+    const tgUrl = `https://t.me/share/url?text=${encodeURIComponent(message)}`;
+    window.open(tgUrl, '_blank');
+  }
+
+  // Рендеринг финансового экрана и сводного радара портфеля
   async renderFinances() {
     const s = this.currentSite;
-    if (!s) return;
+    if (s) {
+      const contract = s.contractSum || 0;
+      const advance = s.advanceSum || 0;
+      const debt = Math.max(0, contract - advance);
 
-    const contract = s.contractSum || 0;
-    const advance = s.advanceSum || 0;
-    const debt = Math.max(0, contract - advance);
+      document.getElementById('page-fin-contract').innerText = this.formatSum(contract);
+      document.getElementById('page-fin-advance').innerText = this.formatSum(advance);
+      document.getElementById('page-fin-debt').innerText = this.formatSum(debt);
+      document.getElementById('page-fin-brigade').innerText = this.formatSum(s.brigadeOwed || 0);
+    }
 
-    document.getElementById('page-fin-contract').innerText = this.formatSum(contract);
-    document.getElementById('page-fin-advance').innerText = this.formatSum(advance);
-    document.getElementById('page-fin-debt').innerText = this.formatSum(debt);
-    document.getElementById('page-fin-brigade').innerText = this.formatSum(s.brigadeOwed || 0);
+    // Сводные агрегированные показатели по всему портфелю
+    const allSites = this.sites || [];
+    const totalContract = allSites.reduce((acc, item) => acc + (item.contractSum || 0), 0);
+    const totalAdvance = allSites.reduce((acc, item) => acc + (item.advanceSum || 0), 0);
+    const totalDebt = Math.max(0, totalContract - totalAdvance);
+    const totalBrigade = allSites.reduce((acc, item) => acc + (item.brigadeOwed || 0), 0);
+
+    const badgeSites = document.getElementById('portfolio-sites-badge');
+    if (badgeSites) badgeSites.innerText = `${allSites.length} объекта(ов) в работе`;
+
+    const elTotalContract = document.getElementById('portfolio-total-contract');
+    if (elTotalContract) elTotalContract.innerText = this.formatSum(totalContract);
+
+    const elTotalAdvance = document.getElementById('portfolio-total-advance');
+    if (elTotalAdvance) elTotalAdvance.innerText = this.formatSum(totalAdvance);
+
+    const elTotalDebt = document.getElementById('portfolio-total-debt');
+    if (elTotalDebt) elTotalDebt.innerText = this.formatSum(totalDebt);
+
+    const elTotalBrigade = document.getElementById('portfolio-total-brigade');
+    if (elTotalBrigade) elTotalBrigade.innerText = this.formatSum(totalBrigade);
   }
 
   // Экспресс-калькулятор сметы
@@ -644,8 +890,10 @@ class LigaApp {
 
   // Добавление чека
   async saveReceipt() {
-    const title = document.getElementById('receipt-title').value;
+    const title = document.getElementById('receipt-title').value.trim();
     const amount = parseInt(document.getElementById('receipt-amount').value) || 0;
+    const qtyInput = document.getElementById('receipt-qty');
+    const qty = qtyInput ? qtyInput.value.trim() : '1 компл';
     const category = document.getElementById('receipt-category').value;
 
     if (!title || !amount) {
@@ -657,10 +905,20 @@ class LigaApp {
       siteId: this.currentSiteId,
       category: category,
       name: title,
-      qty: '1 чек',
+      qty: qty || '1 шт',
       price: amount,
-      isPurchased: true
+      isPurchased: true,
+      receiptPhoto: this.pendingReceiptPhoto || null
     });
+
+    // Очистка формы и сброс состояния
+    const form = document.getElementById('form-add-receipt');
+    if (form) form.reset();
+    this.pendingReceiptPhoto = null;
+    const statusEl = document.getElementById('receipt-photo-status');
+    if (statusEl) {
+      statusEl.innerText = 'Фото не прикреплено (необязательно)';
+    }
 
     this.closeModal('modal-receipt');
     this.showToast(`✓ Чек на ${this.formatSum(amount)} добавлен к расходам!`);
