@@ -8,6 +8,7 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
+  './js/image_processor.js',
   './js/db.js',
   './js/app.js',
   './js/pdf_engine.js',

@@ -1,6 +1,6 @@
 /* ==========================================================================
    LIGA OS — Главный контроллер приложения (App Controller)
-   Принцип одного большого пальца • Мгновенный отклик • Поддержка тем Dark/Light
+   Принцип одного большого пальца • Полная интерактивность • Фотофиксация
    ========================================================================== */
 
 class LigaApp {
@@ -11,6 +11,14 @@ class LigaApp {
     this.currentTheme = 'dark';
     this.sites = [];
     
+    // Хранилище сжатых фотографий текущего объекта
+    this.currentPhotos = {
+      manifold: null,
+      pressure: null,
+      wall: null,
+      floor: null
+    };
+
     // Переменные экспресс-сметы
     this.estimate = {
       bathrooms: 2,
@@ -23,7 +31,7 @@ class LigaApp {
   }
 
   async init() {
-    console.log('Запуск LIGA OS...');
+    console.log('Запуск LIGA OS v1.2...');
     
     // 1. Инициализация светлой/тёмной темы
     this.initTheme();
@@ -50,7 +58,6 @@ class LigaApp {
     if (saved) {
       this.currentTheme = saved;
     } else {
-      // Проверяем системные предпочтения
       const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
       this.currentTheme = prefersLight ? 'light' : 'dark';
     }
@@ -67,14 +74,12 @@ class LigaApp {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('liga_theme', theme);
 
-    // Обновляем иконку кнопки в шапке
     const btnTheme = document.getElementById('btn-theme-toggle');
     if (btnTheme) {
       btnTheme.innerText = theme === 'dark' ? '☀️' : '🌙';
       btnTheme.title = theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему';
     }
 
-    // Обновляем метатег темы для статус-бара iOS/Android
     const metaColor = document.getElementById('meta-theme-color');
     if (metaColor) {
       metaColor.setAttribute('content', theme === 'dark' ? '#060911' : '#f2f5fa');
@@ -92,6 +97,8 @@ class LigaApp {
     if (this.sites.length > 0) {
       this.currentSite = this.sites.find(s => s.id === this.currentSiteId) || this.sites[0];
       this.currentSiteId = this.currentSite.id;
+      // Загружаем сохраненные фото объекта
+      this.currentPhotos = this.currentSite.photos || { manifold: null, pressure: null, wall: null, floor: null };
     }
   }
 
@@ -106,12 +113,10 @@ class LigaApp {
 
   // Привязка событий интерфейса
   initEvents() {
-    // 0. Кнопка переключения темы (Светлая / Тёмная)
+    // 0. Кнопка переключения темы
     const btnTheme = document.getElementById('btn-theme-toggle');
     if (btnTheme) {
-      btnTheme.addEventListener('click', () => {
-        this.toggleTheme();
-      });
+      btnTheme.addEventListener('click', () => this.toggleTheme());
     }
 
     // 1. Нижняя панель навигации (Bottom Bar)
@@ -125,9 +130,7 @@ class LigaApp {
     // 2. Кнопка создания PDF-паспорта (Главный флагман)
     const btnPdf = document.getElementById('btn-generate-pdf');
     if (btnPdf) {
-      btnPdf.addEventListener('click', () => {
-        this.generatePassport();
-      });
+      btnPdf.addEventListener('click', () => this.generatePassport());
     }
 
     // 3. Кнопка быстрого бэкапа базы в шапке
@@ -135,28 +138,30 @@ class LigaApp {
     if (btnBackup) {
       btnBackup.addEventListener('click', async () => {
         await window.ligaDB.exportFullBackup();
-        this.showToast('✓ Резервная копия сохранена (отправьте файл в Telegram)!');
+        this.showToast('✓ Резервная копия базы сохранена!');
       });
     }
 
-    // 4. Экспресс-калькулятор (кнопки + / -)
-    document.querySelectorAll('.btn-counter').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const field = btn.getAttribute('data-field');
-        const delta = parseInt(btn.getAttribute('data-delta'));
-        this.updateEstimate(field, delta);
-      });
-    });
+    // 4. Кнопки открытия модальных окон
+    const btnOpenAddSite = document.getElementById('btn-open-add-site');
+    if (btnOpenAddSite) {
+      btnOpenAddSite.addEventListener('click', () => this.openModal('modal-add-site'));
+    }
 
-    // 5. Кнопка копирования сметы в Telegram
-    const btnCopyEstimate = document.getElementById('btn-copy-estimate');
-    if (btnCopyEstimate) {
-      btnCopyEstimate.addEventListener('click', () => {
-        this.copyEstimateToTelegram();
+    const btnOpenPayment = document.getElementById('btn-open-payment');
+    if (btnOpenPayment) {
+      btnOpenPayment.addEventListener('click', () => this.openModal('modal-payment'));
+    }
+
+    const tileQuickPhotos = document.getElementById('tile-quick-photos');
+    if (tileQuickPhotos) {
+      tileQuickPhotos.addEventListener('click', () => {
+        this.updatePhotoBadges();
+        this.openModal('modal-passport-photos');
       });
     }
 
-    // 6. Быстрые плитки первого экрана
+    // 5. Быстрые плитки
     const tileReceipt = document.getElementById('tile-quick-receipt');
     if (tileReceipt) {
       tileReceipt.addEventListener('click', () => this.openModal('modal-receipt'));
@@ -177,15 +182,28 @@ class LigaApp {
       tileChecklist.addEventListener('click', () => this.switchScreen('checklist'));
     }
 
-    // 7. Переключатель этапов объекта
-    document.querySelectorAll('.phase-step').forEach(step => {
-      step.addEventListener('click', async () => {
-        const newStatus = parseInt(step.getAttribute('data-phase'));
-        await this.updateSiteStatus(newStatus);
+    // 6. Форма создания нового объекта
+    const formAddSite = document.getElementById('form-add-site');
+    if (formAddSite) {
+      formAddSite.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleCreateSite();
       });
-    });
+    }
 
-    // 8. Селектор смены объекта
+    // 7. Форма фиксации платежа / аванса
+    const formPayment = document.getElementById('form-payment');
+    if (formPayment) {
+      formPayment.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handlePayment();
+      });
+    }
+
+    // 8. Обработчики загрузки/съемки фото с камеры
+    this.initPhotoInputs();
+
+    // 9. Селектор смены объекта
     const siteSelect = document.getElementById('site-selector');
     if (siteSelect) {
       siteSelect.addEventListener('change', async (e) => {
@@ -195,7 +213,29 @@ class LigaApp {
       });
     }
 
-    // 9. Форма добавления чека
+    // 10. Степпер этапов объекта
+    document.querySelectorAll('.phase-step').forEach(step => {
+      step.addEventListener('click', async () => {
+        const newStatus = parseInt(step.getAttribute('data-phase'));
+        await this.updateSiteStatus(newStatus);
+      });
+    });
+
+    // 11. Экспресс-калькулятор
+    document.querySelectorAll('.btn-counter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.getAttribute('data-field');
+        const delta = parseInt(btn.getAttribute('data-delta'));
+        this.updateEstimate(field, delta);
+      });
+    });
+
+    const btnCopyEstimate = document.getElementById('btn-copy-estimate');
+    if (btnCopyEstimate) {
+      btnCopyEstimate.addEventListener('click', () => this.copyEstimateToTelegram());
+    }
+
+    // 12. Форма добавления чека
     const formReceipt = document.getElementById('form-add-receipt');
     if (formReceipt) {
       formReceipt.addEventListener('submit', async (e) => {
@@ -204,7 +244,7 @@ class LigaApp {
       });
     }
 
-    // 10. Чек-листы (клик по пункту)
+    // 13. Чек-листы
     const checklistContainer = document.getElementById('checklist-container');
     if (checklistContainer) {
       checklistContainer.addEventListener('click', async (e) => {
@@ -217,11 +257,150 @@ class LigaApp {
     }
   }
 
+  // Привязка инпутов камеры для фотофиксации
+  initPhotoInputs() {
+    const slots = ['manifold', 'pressure', 'wall', 'floor'];
+    slots.forEach(slot => {
+      const input = document.getElementById(`input-photo-${slot}`);
+      if (input) {
+        input.addEventListener('change', async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) {
+            this.showToast(`Сжатие и привязка фото (${file.name})...`);
+            try {
+              const compressedBase64 = await window.ligaImageProcessor.compressImage(file, 1600, 0.82);
+              this.currentPhotos[slot] = compressedBase64;
+              
+              // Сохраняем в объект в IndexedDB
+              if (this.currentSite) {
+                this.currentSite.photos = this.currentPhotos;
+                await window.ligaDB.put('sites', this.currentSite);
+              }
+
+              this.updatePhotoBadges();
+              this.showToast('✓ Фото узла сохранено в паспорт!');
+            } catch (err) {
+              console.error('Ошибка сжатия фото:', err);
+              alert('Не удалось обработать фото: ' + err.message);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // Обновление бейджей фото в модалке
+  updatePhotoBadges() {
+    const slots = ['manifold', 'pressure', 'wall', 'floor'];
+    slots.forEach(slot => {
+      const statusEl = document.getElementById(`status-photo-${slot}`);
+      if (statusEl) {
+        if (this.currentPhotos && this.currentPhotos[slot]) {
+          statusEl.innerHTML = '<span style="color:var(--neon-emerald); font-weight:800;">✓ Загружено (готово к печати)</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--text-dim);">Не загружено</span>';
+        }
+      }
+    });
+  }
+
+  // Создание нового объекта
+  async handleCreateSite() {
+    const name = document.getElementById('new-site-name').value.trim();
+    const unit = document.getElementById('new-site-unit').value.trim();
+    const client = document.getElementById('new-site-client').value.trim();
+    const phone = document.getElementById('new-site-phone').value.trim();
+    const designer = document.getElementById('new-site-designer').value.trim();
+    const contractSum = parseInt(document.getElementById('new-site-contract').value) || 0;
+    const advanceSum = parseInt(document.getElementById('new-site-advance').value) || 0;
+
+    const newSite = {
+      name,
+      unit,
+      client,
+      phone,
+      designer,
+      contractSum,
+      advanceSum,
+      brigadeOwed: Math.round(contractSum * 0.15),
+      designerBonus: Math.round(contractSum * 0.10),
+      status: 1, // Начальный этап - 1. Аудит
+      dateCreated: new Date().toISOString().slice(0, 10),
+      pressTestPassed: false,
+      photos: { manifold: null, pressure: null, wall: null, floor: null }
+    };
+
+    const newId = await window.ligaDB.add('sites', newSite);
+
+    // Добавляем стандартный чек-лист технадзора для нового объекта
+    const defaultChecklist = [
+      { title: 'Уклоны канализации выверены по лазеру (2 см на метр)', done: false },
+      { title: 'Выводы заглушены металлическими опрессовочными пробками', done: false },
+      { title: 'Шумоизоляция стояка выполнена (Comfort Mat / K-Fonik)', done: false },
+      { title: 'Опрессовка 16 бар выдержана 24 часа без падения давления', done: false },
+      { title: 'Скрытые смесители (iBox) выставлены по уровню и глубине плитки', done: false },
+      { title: 'Трап с сухим затвором зафиксирован по проектной отметке пола', done: false },
+      { title: 'Защита от протечек (Gidrolock/Нептун) подключена и протестирована', done: false },
+      { title: 'Трубы отопления и ГВС/ХВС одеты в защитную теплоизоляцию', done: false },
+      { title: 'Фотофиксация скрытых трасс с лазерной рулеткой завершена', done: false },
+      { title: 'Мусор убран строительным пылесосом перед заливкой стяжки', done: false }
+    ];
+
+    for (let item of defaultChecklist) {
+      await window.ligaDB.add('checklists', { siteId: newId, ...item });
+    }
+
+    this.currentSiteId = newId;
+    await this.loadSites();
+    this.closeModal('modal-add-site');
+    this.showToast(`✓ Объект «${name}» успешно создан!`);
+    this.render();
+  }
+
+  // Фиксация платежа
+  async handlePayment() {
+    if (!this.currentSite) return;
+
+    const type = document.getElementById('pay-type').value;
+    const amount = parseInt(document.getElementById('pay-amount').value) || 0;
+    const method = document.getElementById('pay-method').value;
+
+    if (!amount || amount <= 0) {
+      alert('Укажите корректную сумму платежа');
+      return;
+    }
+
+    if (type === 'client_advance') {
+      this.currentSite.advanceSum = (this.currentSite.advanceSum || 0) + amount;
+      this.showToast(`✓ Аванс ${this.formatSum(amount)} зачислен! Долг уменьшен.`);
+    } else if (type === 'brigade_pay') {
+      this.currentSite.brigadeOwed = Math.max(0, (this.currentSite.brigadeOwed || 0) - amount);
+      this.showToast(`✓ Выплата бригаде ${this.formatSum(amount)} зафиксирована!`);
+    } else if (type === 'designer_bonus') {
+      this.currentSite.designerBonus = Math.max(0, (this.currentSite.designerBonus || 0) - amount);
+      this.showToast(`✓ Бонус дизайнеру ${this.formatSum(amount)} выплачен!`);
+    }
+
+    // Сохраняем обновленный объект в IndexedDB
+    await window.ligaDB.put('sites', this.currentSite);
+
+    // Записываем проводку в finances
+    await window.ligaDB.add('finances', {
+      siteId: this.currentSiteId,
+      type,
+      amount,
+      method,
+      date: new Date().toISOString().slice(0, 10)
+    });
+
+    this.closeModal('modal-payment');
+    this.render();
+  }
+
   // Переключение экранов приложения
   switchScreen(screenName) {
     this.currentScreen = screenName;
 
-    // Обновляем видимость экранов
     document.querySelectorAll('.app-screen').forEach(el => {
       el.classList.remove('active');
     });
@@ -230,7 +409,6 @@ class LigaApp {
       target.classList.add('active');
     }
 
-    // Обновляем активность в Bottom Bar
     document.querySelectorAll('.nav-item').forEach(btn => {
       if (btn.getAttribute('data-screen') === screenName) {
         btn.classList.add('active');
@@ -243,7 +421,6 @@ class LigaApp {
     this.renderScreenContent(screenName);
   }
 
-  // Рендеринг контента при смене экранов
   async renderScreenContent(screenName) {
     if (screenName === 'checklist') {
       await this.renderChecklist();
@@ -258,7 +435,6 @@ class LigaApp {
   render() {
     if (!this.currentSite) return;
 
-    // Заполнение селектора объектов
     const select = document.getElementById('site-selector');
     if (select) {
       select.innerHTML = this.sites.map(s => 
@@ -266,21 +442,18 @@ class LigaApp {
       ).join('');
     }
 
-    // Данные активного объекта
     const s = this.currentSite;
     document.getElementById('site-name-display').innerText = s.name;
-    document.getElementById('site-unit-display').innerText = s.unit || 'Премиальный жилой комплекс';
+    document.getElementById('site-unit-display').innerText = s.unit || 'Премиальный жилой фонд';
     document.getElementById('site-client-display').innerText = `Клиент: ${s.client}`;
     document.getElementById('site-designer-display').innerText = `Дизайнер: ${s.designer || 'Прямой заказ'}`;
 
-    // Кнопки связи
     const btnCall = document.getElementById('btn-call-client');
     if (btnCall) btnCall.href = `tel:${s.phone}`;
 
     const btnTg = document.getElementById('btn-tg-client');
     if (btnTg) btnTg.href = `https://t.me/${s.phone.replace(/[^0-9]/g, '')}`;
 
-    // Статус бейдж
     const statusNames = [
       '1. Аудит проекта',
       '2. Черновой монтаж',
@@ -290,7 +463,6 @@ class LigaApp {
     ];
     document.getElementById('site-status-badge').innerText = statusNames[s.status - 1] || 'Монтаж';
 
-    // Индикатор шагов (степпер 1..5)
     document.querySelectorAll('.phase-step').forEach(step => {
       const p = parseInt(step.getAttribute('data-phase'));
       step.classList.remove('active', 'completed');
@@ -301,7 +473,6 @@ class LigaApp {
       }
     });
 
-    // Финансы активного объекта
     const contract = s.contractSum || 0;
     const advance = s.advanceSum || 0;
     const debt = Math.max(0, contract - advance);
@@ -312,7 +483,6 @@ class LigaApp {
     document.getElementById('fin-brigade-val').innerText = this.formatSum(s.brigadeOwed || 0);
     document.getElementById('fin-designer-val').innerText = this.formatSum(s.designerBonus || 0);
 
-    // Экспресс смета
     this.calculateEstimate();
   }
 
@@ -356,7 +526,6 @@ class LigaApp {
     `).join('');
   }
 
-  // Переключение чекбокса технадзора
   async toggleChecklistItem(id) {
     const item = await window.ligaDB.get('checklists', id);
     if (item) {
@@ -410,12 +579,12 @@ class LigaApp {
 
   calculateEstimate() {
     const e = this.estimate;
-    const costPerPoint = 450000;      // точка ХВС/ГВС/Канализация
-    const costPerGeberit = 650000;    // инсталляция Geberit/TECE
-    const costPerIbox = 550000;       // скрытый смеситель iBox
-    const costPerDrain = 400000;      // трап в пол
-    const costPerSqMFloor = 90000;    // теплый пол за кв.м
-    const baseAuditWork = 2500000;    // коллекторный узел ввода
+    const costPerPoint = 450000;
+    const costPerGeberit = 650000;
+    const costPerIbox = 550000;
+    const costPerDrain = 400000;
+    const costPerSqMFloor = 90000;
+    const baseAuditWork = 2500000;
 
     const totalMin = (e.waterPoints * costPerPoint) +
                      (e.geberit * costPerGeberit) +
@@ -434,7 +603,6 @@ class LigaApp {
     document.getElementById('est-range-usd').innerText = `$${totalMinUsd} – $${totalMaxUsd}`;
   }
 
-  // Копирование расчета сметы для Telegram
   copyEstimateToTelegram() {
     const e = this.estimate;
     const textSum = document.getElementById('est-range-sum').innerText;
@@ -468,10 +636,10 @@ class LigaApp {
     });
   }
 
-  // Вызов флагманского генератора PDF
+  // Генерация PDF с живыми фото
   generatePassport() {
     if (!this.currentSite) return;
-    window.ligaPdfEngine.generatePassport(this.currentSite);
+    window.ligaPdfEngine.generatePassport(this.currentSite, this.currentPhotos);
   }
 
   // Добавление чека
@@ -495,11 +663,10 @@ class LigaApp {
     });
 
     this.closeModal('modal-receipt');
-    this.showToast(`✓ Чек на ${this.formatSum(amount)} добавлен к объекту!`);
+    this.showToast(`✓ Чек на ${this.formatSum(amount)} добавлен к расходам!`);
     await this.renderMaterials();
   }
 
-  // Утилиты модалок
   openModal(modalId) {
     const m = document.getElementById(modalId);
     if (m) m.classList.add('open');
@@ -510,7 +677,6 @@ class LigaApp {
     if (m) m.classList.remove('open');
   }
 
-  // Всплывающее уведомление (Toast под шапкой)
   showToast(msg) {
     let toast = document.getElementById('app-toast');
     if (!toast) {
@@ -552,7 +718,6 @@ class LigaApp {
   }
 }
 
-// Запуск при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
   window.app = new LigaApp();
   window.app.init();

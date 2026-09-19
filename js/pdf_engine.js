@@ -1,6 +1,6 @@
 /* ==========================================================================
    LIGA OS — Генератор Исполнительного Инженерного Паспорта
-   Формат А4 • Опрессовка 16 бар • Фотопривязки трасс • Без серверов
+   Формат А4 • Опрессовка 16 бар • Живые фотопривязки трасс • Без серверов
    ========================================================================== */
 
 class LigaPdfEngine {
@@ -8,16 +8,15 @@ class LigaPdfEngine {
     this.templateContainer = null;
   }
 
-  // Форматирование сумм
   formatMoney(num) {
     return new Intl.NumberFormat('ru-RU').format(num || 0) + ' сум';
   }
 
-  // Генерация и открытие официального паспорта объекта
-  generatePassport(site, photos = []) {
+  // Генерация и открытие официального паспорта объекта с реальными фото
+  generatePassport(site, photos = {}) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра PDF-паспорта.');
+      alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра и печати PDF-паспорта.');
       return;
     }
 
@@ -26,6 +25,29 @@ class LigaPdfEngine {
       month: 'long',
       day: 'numeric'
     });
+
+    // Хелпер рендеринга блока фото
+    const renderPhotoBox = (photoData, defaultTitle, defaultSubtitle) => {
+      if (photoData) {
+        return `
+          <div class="photo-card">
+            <div class="photo-img-wrap">
+              <img src="${photoData}" alt="${defaultTitle}" class="passport-real-photo">
+            </div>
+            <div class="photo-caption">${defaultSubtitle}</div>
+          </div>
+        `;
+      }
+      return `
+        <div class="photo-card">
+          <div class="photo-placeholder">
+            <svg width="36" height="36" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span style="margin-top:5px;">${defaultTitle}</span>
+          </div>
+          <div class="photo-caption">${defaultSubtitle}</div>
+        </div>
+      `;
+    };
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -36,7 +58,7 @@ class LigaPdfEngine {
   <style>
     @page {
       size: A4 portrait;
-      margin: 12mm 15mm;
+      margin: 12mm 14mm;
     }
     * {
       box-sizing: border-box;
@@ -44,7 +66,7 @@ class LigaPdfEngine {
       padding: 0;
     }
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
       color: #0f172a;
       background: #ffffff;
       line-height: 1.4;
@@ -61,29 +83,29 @@ class LigaPdfEngine {
       justify-content: space-between;
       align-items: center;
       border-bottom: 3px solid #b8832a;
-      padding-bottom: 14px;
-      margin-bottom: 18px;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
     }
     .header-brand {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
     .header-logo {
-      width: 68px;
-      height: 68px;
+      width: 64px;
+      height: 64px;
     }
     .brand-text h1 {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 900;
       color: #080e1a;
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
     .brand-text p {
-      font-size: 12px;
+      font-size: 11px;
       color: #8c6322;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -96,37 +118,39 @@ class LigaPdfEngine {
       color: #00a86b;
       font-weight: 900;
       font-size: 12px;
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      background: #f0fdf4;
     }
     .passport-num {
       font-size: 11px;
       color: #64748b;
-      margin-top: 5px;
+      margin-top: 4px;
+      font-weight: 600;
     }
 
     /* Блоки сведений */
     .section-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       color: #b8832a;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin: 14px 0 8px 0;
+      margin: 12px 0 6px 0;
       border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 4px;
+      padding-bottom: 3px;
     }
     .meta-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
     }
     .meta-row {
       display: flex;
@@ -148,18 +172,18 @@ class LigaPdfEngine {
     .protocol-box {
       border: 2px solid #b8832a;
       border-radius: 6px;
-      padding: 14px;
+      padding: 12px;
       background: #fffdfa;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .protocol-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .protocol-table th, .protocol-table td {
       border: 1px solid #cbd5e1;
-      padding: 8px 10px;
+      padding: 7px 10px;
       font-size: 12px;
       text-align: left;
     }
@@ -178,11 +202,11 @@ class LigaPdfEngine {
       border-left: 4px solid #dc2626;
       background: #fef2f2;
       padding: 10px 14px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       border-radius: 0 6px 6px 0;
     }
     .warning-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       color: #dc2626;
       text-transform: uppercase;
@@ -198,8 +222,8 @@ class LigaPdfEngine {
     .photo-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
     .photo-card {
       border: 1px solid #cbd5e1;
@@ -208,9 +232,24 @@ class LigaPdfEngine {
       background: #f8fafc;
       text-align: center;
     }
+    .photo-img-wrap {
+      width: 100%;
+      height: 135px;
+      overflow: hidden;
+      border-radius: 4px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .passport-real-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .photo-placeholder {
       width: 100%;
-      height: 140px;
+      height: 135px;
       background: #e2e8f0;
       border-radius: 4px;
       display: flex;
@@ -219,21 +258,21 @@ class LigaPdfEngine {
       justify-content: center;
       color: #64748b;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
     }
     .photo-caption {
       font-size: 11px;
       font-weight: 700;
       color: #334155;
-      margin-top: 6px;
+      margin-top: 5px;
     }
 
     /* Подписи и печати */
     .signatures-block {
       display: flex;
       justify-content: space-between;
-      margin-top: 24px;
-      padding-top: 14px;
+      margin-top: 18px;
+      padding-top: 12px;
       border-top: 2px solid #e2e8f0;
     }
     .sign-col {
@@ -244,18 +283,40 @@ class LigaPdfEngine {
       font-weight: 800;
       color: #64748b;
       text-transform: uppercase;
-      margin-bottom: 30px;
+      margin-bottom: 26px;
     }
     .sign-line {
       border-bottom: 1px solid #0f172a;
       display: flex;
       justify-content: space-between;
+      align-items: flex-end;
       font-size: 11px;
       color: #475569;
-      padding-bottom: 4px;
+      padding-bottom: 3px;
+      position: relative;
+    }
+    .facsimile-stamp {
+      position: absolute;
+      right: 20px;
+      bottom: -15px;
+      color: #b8832a;
+      border: 2px dashed #b8832a;
+      border-radius: 50%;
+      width: 65px;
+      height: 65px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      transform: rotate(-12deg);
+      opacity: 0.85;
+      pointer-events: none;
     }
 
-    /* Кнопка печати */
+    /* Панель печати */
     .print-bar {
       position: fixed;
       bottom: 20px;
@@ -265,7 +326,7 @@ class LigaPdfEngine {
       gap: 10px;
     }
     .btn-print {
-      background: #b8832a;
+      background: linear-gradient(135deg, #b8832a 0%, #8c5d13 100%);
       color: #fff;
       border: none;
       padding: 12px 24px;
@@ -273,7 +334,7 @@ class LigaPdfEngine {
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     }
     @media print {
       .print-bar { display: none !important; }
@@ -377,34 +438,10 @@ class LigaPdfEngine {
     <!-- Фотогалерея узлов и привязок -->
     <div class="section-title">3. Фотофиксация скрытых трасс и узлов распределения</div>
     <div class="photo-grid">
-      <div class="photo-card">
-        <div class="photo-placeholder">
-          <svg width="40" height="40" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span style="margin-top:6px;">Фото узла ввода и коллекторов FAR</span>
-        </div>
-        <div class="photo-caption">Распределительный узел ГВС/ХВС с манометрами</div>
-      </div>
-      <div class="photo-card">
-        <div class="photo-placeholder">
-          <svg width="40" height="40" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span style="margin-top:6px;">Фото манометра: 16 BAR зафиксировано</span>
-        </div>
-        <div class="photo-caption">Показания гидравлического пресса (24 ч)</div>
-      </div>
-      <div class="photo-card">
-        <div class="photo-placeholder">
-          <svg width="40" height="40" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16m-7 6h7"/></svg>
-          <span style="margin-top:6px;">Скрытые трассы с лазерной рулеткой (Стена)</span>
-        </div>
-        <div class="photo-caption">Привязка выводов смесителя к углу помещения</div>
-      </div>
-      <div class="photo-card">
-        <div class="photo-placeholder">
-          <svg width="40" height="40" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16m-7 6h7"/></svg>
-          <span style="margin-top:6px;">Трассы в полу перед заливкой стяжки</span>
-        </div>
-        <div class="photo-caption">Шаг укладки труб и защитная изоляция</div>
-      </div>
+      ${renderPhotoBox(photos.manifold, 'Фото узла ввода FAR', 'Распределительный узел ГВС/ХВС с манометрами')}
+      ${renderPhotoBox(photos.pressure, 'Фото манометра 16 BAR', 'Показания гидропресса (16 бар • 24 часа)')}
+      ${renderPhotoBox(photos.wall, 'Трассы в стенах с рулеткой', 'Привязка выводов к углам помещения')}
+      ${renderPhotoBox(photos.floor, 'Трассы в полу перед стяжкой', 'Шаг укладки труб и теплоизоляция')}
     </div>
 
     <!-- Блок гарантии и подписей -->
@@ -420,6 +457,7 @@ class LigaPdfEngine {
         <div class="sign-line">
           <span>Хакимов Улугбек</span>
           <span>(подпись) _________________</span>
+          <div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>
         </div>
       </div>
       <div class="sign-col">
