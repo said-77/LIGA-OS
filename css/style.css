@@ -1,0 +1,852 @@
+/* ==========================================================================
+   LIGA OS — Операционная Система Инженерного Мастера
+   Дизайн-код: Dark Titanium & Gold Glassmorphism (Уровень софта за $50 000)
+   ========================================================================== */
+
+:root {
+  /* Палитра темного титана */
+  --bg-titanium: #060911;
+  --bg-surface: #0a1120;
+  --bg-surface-elevated: #10192e;
+  
+  /* Стекло Glassmorphism */
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-bg-card: rgba(18, 28, 50, 0.65);
+  --glass-border: rgba(255, 209, 117, 0.2);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(24px);
+
+  /* Золотой статус (Gold Prestige) */
+  --gold-primary: #ffd175;
+  --gold-secondary: #d4a359;
+  --gold-light: #fff0c7;
+  --gold-dark: #8c6322;
+  --gold-gradient: linear-gradient(135deg, #fff2cc 0%, #ffd175 45%, #c5943f 100%);
+  --gold-glow: 0 0 20px rgba(255, 209, 117, 0.35);
+
+  /* Неоновые индикаторы */
+  --neon-cyan: #00f2fe;
+  --neon-cyan-glow: 0 0 15px rgba(0, 242, 254, 0.4);
+  --neon-emerald: #00f5a0;
+  --neon-emerald-glow: 0 0 15px rgba(0, 245, 160, 0.4);
+  --neon-ruby: #ff2a5f;
+  --neon-ruby-glow: 0 0 15px rgba(255, 42, 95, 0.4);
+
+  /* Типографика */
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Радиусы и тени */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.6);
+  --shadow-btn: 0 6px 20px rgba(0, 0, 0, 0.4);
+
+  /* Анимации */
+  --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Сброс и базовые настройки */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-titanium);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(30, 58, 102, 0.35) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(212, 163, 89, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 0% 50%, rgba(0, 242, 254, 0.08) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+  padding-bottom: 90px; /* Отступ под Bottom Navigation Bar */
+}
+
+/* Оболочка мобильного устройства */
+.app-container {
+  width: 100%;
+  max-width: 500px;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+}
+
+/* ==========================================================================
+   1. ВЕРХНИЙ СТАТУС-БАР (Dark Titanium Status Bar)
+   ========================================================================== */
+.top-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(6, 9, 17, 0.85);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border-subtle);
+  padding: 12px 16px;
+  margin: 0 -16px 16px -16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 117, 0.4));
+}
+
+.brand-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+}
+
+.brand-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.offline-pulse {
+  width: 7px;
+  height: 7px;
+  background-color: var(--neon-emerald);
+  border-radius: 50%;
+  box-shadow: var(--neon-emerald-glow);
+  display: inline-block;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 0.5; transform: scale(0.9); }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon-top {
+  width: 38px;
+  height: 38px;
+  background: var(--glass-bg-card);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-icon-top:active {
+  transform: scale(0.92);
+  border-color: var(--gold-primary);
+}
+
+/* ==========================================================================
+   2. СТЕКЛЯННЫЕ КАРТОЧКИ (Glassmorphism Cards)
+   ========================================================================== */
+.glass-card {
+  background: var(--glass-bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+  opacity: 0.6;
+}
+
+/* Заголовки блоков */
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.site-badge-status {
+  padding: 4px 10px;
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  border-radius: var(--radius-full);
+  color: var(--neon-cyan);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* Активный объект */
+.site-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+
+.site-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.site-contacts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+
+.btn-contact:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--gold-secondary);
+}
+
+/* Индикатор этапов монтажа (5 фаз) */
+.phase-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border-subtle);
+  position: relative;
+}
+
+.phase-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+.phase-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated);
+  border: 2px solid var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-dim);
+  transition: var(--transition-smooth);
+}
+
+.phase-step.active .phase-dot {
+  background: var(--gold-gradient);
+  border-color: #fff;
+  color: #080c16;
+  box-shadow: var(--gold-glow);
+  transform: scale(1.15);
+}
+
+.phase-step.completed .phase-dot {
+  background: var(--neon-emerald);
+  border-color: var(--neon-emerald);
+  color: #080c16;
+}
+
+.phase-name {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.1;
+}
+
+.phase-step.active .phase-name {
+  color: var(--gold-primary);
+}
+
+/* ==========================================================================
+   3. ФИНАНСОВЫЙ ПУЛЬС (CASHFLOW RADAR)
+   ========================================================================== */
+.finance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.finance-box {
+  background: rgba(10, 16, 29, 0.85);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.finance-box-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.finance-box-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* ЗОЛОТОЙ ОСТАТОК ДОЛГА (Главная цифра) */
+.debt-banner {
+  background: linear-gradient(135deg, rgba(255, 42, 95, 0.15) 0%, rgba(20, 28, 48, 0.9) 100%);
+  border: 1px solid rgba(255, 42, 95, 0.4);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.debt-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: var(--gold-gradient);
+}
+
+.debt-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.debt-amount {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 25px rgba(255, 209, 117, 0.4);
+}
+
+.sub-finances-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sub-fin-item span {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   4. БЫСТРЫЕ ДЕЙСТВИЯ (Quick Actions 60px)
+   ========================================================================== */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-action-tile {
+  background: var(--glass-bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  height: 68px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: left;
+}
+
+.btn-action-tile:active {
+  transform: scale(0.96);
+  border-color: var(--gold-primary);
+  background: rgba(255, 209, 117, 0.06);
+}
+
+.tile-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tile-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.tile-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   5. ГЛАВНАЯ ЗОЛОТАЯ КНОПКА ФЛАГМАНА (PDF Passport)
+   ========================================================================== */
+.btn-flagship-gold {
+  width: 100%;
+  height: 62px;
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #060911;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(212, 163, 89, 0.35);
+  margin-bottom: 24px;
+  transition: var(--transition-fast);
+}
+
+.btn-flagship-gold:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 12px rgba(212, 163, 89, 0.2);
+}
+
+/* ==========================================================================
+   6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar)
+   ========================================================================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 76px;
+  background: rgba(6, 9, 17, 0.92);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px;
+  z-index: 200;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+  background: none;
+  border: none;
+}
+
+.nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  transition: var(--transition-fast);
+}
+
+.nav-item.active {
+  color: var(--gold-primary);
+}
+
+.nav-item.active .nav-icon {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 8px rgba(255, 209, 117, 0.6));
+}
+
+.nav-item:active {
+  transform: scale(0.92);
+}
+
+/* ==========================================================================
+   7. СЕКЦИИ И ЭКРАНЫ ПРИЛОЖЕНИЯ
+   ========================================================================== */
+.app-screen {
+  display: none;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.app-screen.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Списки и элементы */
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(10, 16, 28, 0.6);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.item-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.item-right {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gold-primary);
+}
+
+/* Чекбоксы и переключатели */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(12, 18, 32, 0.7);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.check-item.done {
+  border-color: rgba(0, 245, 160, 0.4);
+  background: rgba(0, 245, 160, 0.05);
+}
+
+.check-box-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: transparent;
+  flex-shrink: 0;
+  transition: var(--transition-fast);
+}
+
+.check-item.done .check-box-icon {
+  background: var(--neon-emerald);
+  border-color: var(--neon-emerald);
+  color: #060911;
+}
+
+.check-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.check-item.done .check-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* Экспресс калькулятор (Счетчики точек) */
+.counter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.counter-card {
+  background: rgba(10, 16, 29, 0.85);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.counter-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.counter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-counter {
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--gold-primary);
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-counter:active {
+  transform: scale(0.9);
+  background: rgba(255, 209, 117, 0.2);
+}
+
+.counter-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Модальные окна (Bottom Sheet / Popup) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 300;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 500px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px 34px 20px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.25s ease-out;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--gold-primary);
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  height: 48px;
+  background: rgba(6, 9, 17, 0.9);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0 14px;
+  color: #fff;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 10px rgba(255, 209, 117, 0.25);
+}
+
+.btn-submit-modal {
+  width: 100%;
+  height: 52px;
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #060911;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.btn-submit-modal:active {
+  transform: scale(0.98);
+}

@@ -1,0 +1,19 @@
+{
+  "name": "LIGA OS — Операционная Система Инженерного Мастера",
+  "short_name": "LIGA OS",
+  "description": "Персональный цифровой верстак и операционная система для элитной сантехники в Ташкенте",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#060911",
+  "theme_color": "#060911",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icons/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"]
+}

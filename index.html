@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>LIGA OS — Операционная Система Инженерного Мастера</title>
+  
+  <!-- PWA & Mobile Web App Settings -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#060911">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LIGA OS">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <link rel="apple-touch-icon" href="./icons/logo.svg">
+
+  <!-- Стили Dark Titanium Glassmorphism -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- 1. ВЕРХНИЙ СТАТУС-БАР -->
+    <header class="top-header">
+      <div class="brand-badge">
+        <img src="./icons/logo.svg" alt="LIGA Logo" class="brand-logo">
+        <div>
+          <div class="brand-title">LIGA OS</div>
+          <div class="brand-subtitle">
+            <span class="offline-pulse"></span> ТАШКЕНТ • ОФФЛАЙН АКТИВЕН
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-backup-top" class="btn-icon-top" title="Сохранить резервную копию базы">💾</button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         ЭКРАН 1: ГЛАВНЫЙ ДАШБОРД И АКТИВНЫЙ ОБЪЕКТ
+         ==================================================================== -->
+    <main id="screen-dashboard" class="app-screen active">
+      
+      <!-- Селектор переключения объектов -->
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label class="form-label" style="display:flex; justify-content:space-between;">
+          <span>Активный инженерный объект:</span>
+          <span style="color:var(--gold-primary);">Элитный фонд</span>
+        </label>
+        <select id="site-selector" class="form-input" style="font-weight:700; color:var(--gold-primary); cursor:pointer;">
+          <!-- Заполняется динамически из IndexedDB -->
+        </select>
+      </div>
+
+      <!-- КАРТОЧКА АКТИВНОГО ОБЪЕКТА -->
+      <section class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-label">🏢 Текущий объект</div>
+          <div id="site-status-badge" class="site-badge-status">3. Опрессовка 16 бар</div>
+        </div>
+
+        <h1 id="site-name-display" class="site-title">ЖК Mirabad Avenue, Блок B</h1>
+        <div class="site-meta">
+          <div id="site-unit-display">кв. 142 (4-комнатная)</div>
+          <div id="site-client-display">Клиент: Бахром-ака</div>
+          <div id="site-designer-display">Дизайнер: Камила (Studio 7)</div>
+        </div>
+
+        <!-- Кнопки быстрой связи с заказчиком в 1 клик -->
+        <div class="site-contacts-row">
+          <a id="btn-call-client" href="tel:+998901234567" class="btn-contact">
+            <span>📞</span> Позвонить
+          </a>
+          <a id="btn-tg-client" href="https://t.me/" target="_blank" class="btn-contact" style="color:var(--neon-cyan); border-color:rgba(0,242,254,0.3);">
+            <span>💬</span> Telegram
+          </a>
+        </div>
+
+        <!-- СТЕППЕР 5 ЭТАПОВ МОНТАЖА -->
+        <div class="phase-stepper">
+          <div class="phase-step" data-phase="1">
+            <div class="phase-dot">1</div>
+            <div class="phase-name">Аудит</div>
+          </div>
+          <div class="phase-step" data-phase="2">
+            <div class="phase-dot">2</div>
+            <div class="phase-name">Черновой</div>
+          </div>
+          <div class="phase-step active" data-phase="3">
+            <div class="phase-dot">3</div>
+            <div class="phase-name">16 бар</div>
+          </div>
+          <div class="phase-step" data-phase="4">
+            <div class="phase-dot">4</div>
+            <div class="phase-name">Чистовая</div>
+          </div>
+          <div class="phase-step" data-phase="5">
+            <div class="phase-dot">5</div>
+            <div class="phase-name">Сдан</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ФИНАНСОВЫЙ ПУЛЬС ОБЪЕКТА (CASHFLOW) -->
+      <section class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-label">💰 Финансовый пульс объекта</div>
+          <div style="font-size:11px; color:var(--text-muted);">Договор под ключ</div>
+        </div>
+
+        <div class="finance-grid">
+          <div class="finance-box">
+            <div class="finance-box-label">Сумма договора:</div>
+            <div id="fin-contract-val" class="finance-box-val">18 500 000 сум</div>
+          </div>
+          <div class="finance-box" style="border-color: rgba(0, 245, 160, 0.3);">
+            <div class="finance-box-label" style="color:var(--neon-emerald);">Аванс получен:</div>
+            <div id="fin-advance-val" class="finance-box-val" style="color:var(--neon-emerald);">12 000 000 сум</div>
+          </div>
+        </div>
+
+        <!-- ЗОЛОТАЯ ЦИФРА: ОСТАТОК ДОЛГА КЛИЕНТА -->
+        <div class="debt-banner">
+          <div class="debt-label">Остаток к получению от клиента:</div>
+          <div id="fin-debt-val" class="debt-amount">6 500 000 сум</div>
+        </div>
+
+        <div class="sub-finances-row">
+          <div class="sub-fin-item">Бригаде к выдаче: <span id="fin-brigade-val">800 000 сум</span></div>
+          <div class="sub-fin-item">Дизайнеру (10%): <span id="fin-designer-val">1 850 000 сум</span></div>
+        </div>
+      </section>
+
+      <!-- БЫСТРЫЕ ДЕЙСТВИЯ В 1 ТАП (60px) -->
+      <div class="quick-actions-grid">
+        <div id="tile-quick-receipt" class="btn-action-tile">
+          <div class="tile-icon-box" style="color:var(--gold-primary);">📸</div>
+          <div class="tile-content">
+            <div class="tile-title">Чек с базара</div>
+            <div class="tile-subtitle">Записать расход</div>
+          </div>
+        </div>
+        <div id="tile-quick-press" class="btn-action-tile">
+          <div class="tile-icon-box" style="color:var(--neon-cyan);">🛡️</div>
+          <div class="tile-content">
+            <div class="tile-title">Акт 16 бар</div>
+            <div class="tile-subtitle">Опрессовка узла</div>
+          </div>
+        </div>
+        <div id="tile-quick-estimate" class="btn-action-tile">
+          <div class="tile-icon-box" style="color:var(--neon-emerald);">⚡</div>
+          <div class="tile-content">
+            <div class="tile-title">Смета 60 сек</div>
+            <div class="tile-subtitle">Экспресс-расчет</div>
+          </div>
+        </div>
+        <div id="tile-quick-checklist" class="btn-action-tile">
+          <div class="tile-icon-box" style="color:#ffb703;">📋</div>
+          <div class="tile-content">
+            <div class="tile-title">Перед стяжкой</div>
+            <div class="tile-subtitle">Чек-лист 10 п.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ГЛАВНАЯ ЗОЛОТАЯ КНОПКА ФЛАГМАНА -->
+      <button id="btn-generate-pdf" class="btn-flagship-gold">
+        <span>📄</span> Сформировать Исполнительный Паспорт (PDF)
+      </button>
+
+    </main>
+
+    <!-- ====================================================================
+         ЭКРАН 2: ФИНАНСЫ И КАССА
+         ==================================================================== -->
+    <section id="screen-finances" class="app-screen">
+      <div class="glass-card">
+        <div class="card-label">💼 Финансовый отчет объекта</div>
+        <h2 style="font-size:18px; margin: 8px 0 16px 0;">Касса и взаиморасчеты</h2>
+        
+        <div class="item-row">
+          <div class="item-left">
+            <div class="item-name">Общая стоимость работ</div>
+            <div class="item-desc">По утвержденному договору</div>
+          </div>
+          <div id="page-fin-contract" class="item-right">18 500 000 сум</div>
+        </div>
+
+        <div class="item-row">
+          <div class="item-left">
+            <div class="item-name" style="color:var(--neon-emerald);">Внесено авансов</div>
+            <div class="item-desc">Наличные / Перевод на карту</div>
+          </div>
+          <div id="page-fin-advance" class="item-right" style="color:var(--neon-emerald);">12 000 000 сум</div>
+        </div>
+
+        <div class="item-row" style="border-color: rgba(255, 42, 95, 0.4);">
+          <div class="item-left">
+            <div class="item-name" style="color:var(--neon-ruby);">Остаток долга заказчика</div>
+            <div class="item-desc">К окончательному расчету при сдаче</div>
+          </div>
+          <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">6 500 000 сум</div>
+        </div>
+
+        <div class="item-row">
+          <div class="item-left">
+            <div class="item-name">Остаток помощникам (Алишер, Сардор)</div>
+            <div class="item-desc">Выплата по завершении опрессовки</div>
+          </div>
+          <div id="page-fin-brigade" class="item-right">800 000 сум</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         ЭКРАН 3: СНАБЖЕНИЕ И МАТЕРИАЛЫ
+         ==================================================================== -->
+    <section id="screen-materials" class="app-screen">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-label">📦 Снабжение и чеки</div>
+          <button onclick="window.app.openModal('modal-receipt')" class="btn-contact" style="height:34px; padding:4px 12px; font-size:12px; color:var(--gold-primary); border-color:var(--gold-secondary);">
+            + Добавить чек
+          </button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">
+          Оригинальные европейские материалы (Rehau, FAR, Geberit) с заводской гарантией 10–50 лет.
+        </p>
+
+        <div id="materials-list-container">
+          <!-- Заполняется динамически -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         ЭКРАН 4: ЧЕК-ЛИСТ КАЧЕСТВА ТЕХНАДЗОРА
+         ==================================================================== -->
+    <section id="screen-checklist" class="app-screen">
+      <div class="glass-card">
+        <div class="card-label">🛡️ Железный технадзор перед стяжкой</div>
+        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0;">
+          10 критических пунктов проверки перед заливкой чистового пола. Нажмите на пункт, чтобы отметить выполнение:
+        </p>
+
+        <div id="checklist-container">
+          <!-- Заполняется динамически -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         ЭКРАН 5: ЭКСПРЕСС-КАЛЬКУЛЯТОР СМЕТЫ
+         ==================================================================== -->
+    <section id="screen-estimate" class="app-screen">
+      <div class="glass-card">
+        <div class="card-label">⚡ Экспресс-смета за 60 секунд</div>
+        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0;">
+          Нажимайте крупные кнопки для мгновенного расчета стоимости работ прямо на первой встрече с заказчиком:
+        </p>
+
+        <div class="counter-grid">
+          <div class="counter-card">
+            <div class="counter-header">Санузлов</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="bathrooms" data-delta="-1">-</button>
+              <div id="val-bathrooms" class="counter-val">2</div>
+              <button class="btn-counter" data-field="bathrooms" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="counter-card">
+            <div class="counter-header">Водорозетки (точки)</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="waterPoints" data-delta="-1">-</button>
+              <div id="val-waterPoints" class="counter-val">12</div>
+              <button class="btn-counter" data-field="waterPoints" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="counter-card">
+            <div class="counter-header">Инсталляции Geberit</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="geberit" data-delta="-1">-</button>
+              <div id="val-geberit" class="counter-val">2</div>
+              <button class="btn-counter" data-field="geberit" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="counter-card">
+            <div class="counter-header">Встраиваемые iBox</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="ibox" data-delta="-1">-</button>
+              <div id="val-ibox" class="counter-val">2</div>
+              <button class="btn-counter" data-field="ibox" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="counter-card">
+            <div class="counter-header">Трапы в пол</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="drains" data-delta="-1">-</button>
+              <div id="val-drains" class="counter-val">2</div>
+              <button class="btn-counter" data-field="drains" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="counter-card">
+            <div class="counter-header">Теплый пол (кв.м)</div>
+            <div class="counter-controls">
+              <button class="btn-counter" data-field="floorHeatingSqM" data-delta="-5">-</button>
+              <div id="val-floorHeatingSqM" class="counter-val">40</div>
+              <button class="btn-counter" data-field="floorHeatingSqM" data-delta="5">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ИТОГОВАЯ ВИЛКА -->
+        <div class="debt-banner" style="border-color: rgba(255, 209, 117, 0.4); background: rgba(18, 28, 50, 0.9);">
+          <div class="debt-label" style="color:var(--gold-primary);">Ориентировочная стоимость работ:</div>
+          <div id="est-range-sum" class="debt-amount" style="font-size:22px;">16 500 000 – 20 600 000 сум</div>
+          <div id="est-range-usd" style="font-size:14px; color:var(--neon-cyan); margin-top:4px; font-weight:800;">$1 280 – $1 600</div>
+        </div>
+
+        <!-- Кнопка копирования в Telegram -->
+        <button id="btn-copy-estimate" class="btn-flagship-gold" style="margin-top:14px; height:52px; font-size:13px;">
+          <span>💬</span> Скопировать расчет для Telegram
+        </button>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ ЧЕКА
+         ==================================================================== -->
+    <div id="modal-receipt" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>📸 Запись чека с базара</span>
+          <button onclick="window.app.closeModal('modal-receipt')" class="btn-close-modal">&times;</button>
+        </div>
+        <form id="form-add-receipt">
+          <div class="form-group">
+            <label class="form-label">Наименование материала / товара:</label>
+            <input id="receipt-title" type="text" class="form-input" placeholder="Например: Коллектор FAR 1&quot; или трубы Rehau" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Сумма по чеку (сум):</label>
+            <input id="receipt-amount" type="number" class="form-input" placeholder="Например: 1450000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Категория:</label>
+            <select id="receipt-category" class="form-input">
+              <option value="Трубы и фитинги">Трубы и фитинги (Rehau / Stout)</option>
+              <option value="Коллекторы">Коллекторы и узлы (FAR / Oventrop)</option>
+              <option value="Инсталляции">Инсталляции и трапы (Geberit / TECE)</option>
+              <option value="Защита от протечек">Защита от протечек (Нептун)</option>
+              <option value="Расходники">Расходники, хомуты, герметик</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-submit-modal">Сохранить в расходы объекта</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar)
+         ==================================================================== -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-screen="dashboard">
+        <div class="nav-icon">🏢</div>
+        <span>Объекты</span>
+      </button>
+      <button class="nav-item" data-screen="finances">
+        <div class="nav-icon">💰</div>
+        <span>Финансы</span>
+      </button>
+      <button class="nav-item" data-screen="materials">
+        <div class="nav-icon">📦</div>
+        <span>Склад</span>
+      </button>
+      <button class="nav-item" data-screen="checklist">
+        <div class="nav-icon">🛡️</div>
+        <span>Контроль</span>
+      </button>
+      <button class="nav-item" data-screen="estimate">
+        <div class="nav-icon">⚡</div>
+        <span>Смета</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Скрипты LIGA OS -->
+  <script src="./js/db.js"></script>
+  <script src="./js/pdf_engine.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
