@@ -1,22 +1,22 @@
 /* ==========================================================================
    LIGA OS — Операционная Система Инженерного Мастера
-   Дизайн-код: Dark Titanium & Gold Glassmorphism (Уровень софта за $50 000)
+   Дизайн-код: Dark Titanium & Light Ceramic Glassmorphism (Роскошный дуэт тем)
    ========================================================================== */
 
-:root {
-  /* Палитра темного титана */
+/* --------------------------------------------------------------------------
+   ТЁМНАЯ ТЕМА ПО УМОЛЧАНИЮ (Dark Titanium & Gold Glassmorphism)
+   -------------------------------------------------------------------------- */
+:root, [data-theme="dark"] {
   --bg-titanium: #060911;
   --bg-surface: #0a1120;
   --bg-surface-elevated: #10192e;
   
-  /* Стекло Glassmorphism */
   --glass-bg: rgba(15, 23, 42, 0.75);
   --glass-bg-card: rgba(18, 28, 50, 0.65);
   --glass-border: rgba(255, 209, 117, 0.2);
   --glass-border-subtle: rgba(255, 255, 255, 0.08);
   --glass-blur: blur(24px);
 
-  /* Золотой статус (Gold Prestige) */
   --gold-primary: #ffd175;
   --gold-secondary: #d4a359;
   --gold-light: #fff0c7;
@@ -24,33 +24,98 @@
   --gold-gradient: linear-gradient(135deg, #fff2cc 0%, #ffd175 45%, #c5943f 100%);
   --gold-glow: 0 0 20px rgba(255, 209, 117, 0.35);
 
-  /* Неоновые индикаторы */
   --neon-cyan: #00f2fe;
   --neon-cyan-glow: 0 0 15px rgba(0, 242, 254, 0.4);
+  --neon-cyan-bg: rgba(0, 242, 254, 0.12);
+  --neon-cyan-border: rgba(0, 242, 254, 0.35);
+
   --neon-emerald: #00f5a0;
   --neon-emerald-glow: 0 0 15px rgba(0, 245, 160, 0.4);
+  --neon-emerald-bg: rgba(0, 245, 160, 0.12);
+
   --neon-ruby: #ff2a5f;
   --neon-ruby-glow: 0 0 15px rgba(255, 42, 95, 0.4);
 
-  /* Типографика */
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
-  /* Радиусы и тени */
+  --header-bg: rgba(6, 9, 17, 0.88);
+  --bottom-nav-bg: rgba(6, 9, 17, 0.92);
+  --box-bg: rgba(10, 16, 29, 0.85);
+  --debt-bg: linear-gradient(135deg, rgba(255, 42, 95, 0.15) 0%, rgba(20, 28, 48, 0.9) 100%);
+  --debt-border: rgba(255, 42, 95, 0.4);
+  --btn-gold-text: #060911;
+  --input-bg: rgba(6, 9, 17, 0.9);
+
+  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.6);
+  --shadow-btn: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-bottom-nav: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   СВЕТЛАЯ ТЕМА (White Gold & Light Ceramic Glassmorphism)
+   Безупречный контраст на солнце • Королевское золото • Никакой серости
+   -------------------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg-titanium: #f2f5fa;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-bg-card: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(184, 131, 42, 0.28);
+  --glass-border-subtle: rgba(15, 23, 42, 0.09);
+  --glass-blur: blur(28px);
+
+  --gold-primary: #946316;
+  --gold-secondary: #784d0b;
+  --gold-light: #523405;
+  --gold-dark: #382103;
+  --gold-gradient: linear-gradient(135deg, #c5943f 0%, #9a6a1a 45%, #754c0b 100%);
+  --gold-glow: 0 4px 16px rgba(148, 99, 22, 0.25);
+
+  --neon-cyan: #0284c7;
+  --neon-cyan-glow: 0 2px 10px rgba(2, 132, 199, 0.25);
+  --neon-cyan-bg: rgba(2, 132, 199, 0.1);
+  --neon-cyan-border: rgba(2, 132, 199, 0.35);
+
+  --neon-emerald: #059669;
+  --neon-emerald-glow: 0 2px 10px rgba(5, 150, 105, 0.25);
+  --neon-emerald-bg: rgba(5, 150, 105, 0.1);
+
+  --neon-ruby: #dc2626;
+  --neon-ruby-glow: 0 2px 10px rgba(220, 38, 38, 0.25);
+
+  --text-main: #090e17;
+  --text-muted: #334155;
+  --text-dim: #64748b;
+
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --bottom-nav-bg: rgba(255, 255, 255, 0.96);
+  --box-bg: rgba(248, 250, 252, 0.95);
+  --debt-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  --debt-border: rgba(184, 131, 42, 0.45);
+  --btn-gold-text: #ffffff;
+  --input-bg: #ffffff;
+
+  --shadow-card: 0 10px 32px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-btn: 0 6px 18px rgba(148, 99, 22, 0.28);
+  --shadow-bottom-nav: 0 -8px 25px rgba(15, 23, 42, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   ОБЩИЕ СВОЙСТВА
+   -------------------------------------------------------------------------- */
+:root {
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 22px;
   --radius-full: 9999px;
-  --shadow-card: 0 12px 36px rgba(0, 0, 0, 0.6);
-  --shadow-btn: 0 6px 20px rgba(0, 0, 0, 0.4);
-
-  /* Анимации */
   --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Сброс и базовые настройки */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -73,10 +138,18 @@ body {
   justify-content: center;
   align-items: flex-start;
   overflow-x: hidden;
-  padding-bottom: 90px; /* Отступ под Bottom Navigation Bar */
+  padding-bottom: 110px; /* Увеличенный отступ, чтобы контент не перекрывался баром */
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Оболочка мобильного устройства */
+[data-theme="light"] body {
+  background-color: #f0f3f8;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(184, 131, 42, 0.14) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(2, 132, 199, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 0% 50%, rgba(255, 255, 255, 0.95) 0%, transparent 40%);
+}
+
 .app-container {
   width: 100%;
   max-width: 500px;
@@ -88,13 +161,13 @@ body {
 }
 
 /* ==========================================================================
-   1. ВЕРХНИЙ СТАТУС-БАР (Dark Titanium Status Bar)
+   1. ВЕРХНИЙ СТАТУС-БАР
    ========================================================================== */
 .top-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(6, 9, 17, 0.85);
+  background: var(--header-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--glass-border-subtle);
@@ -103,6 +176,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .brand-badge {
@@ -115,6 +189,10 @@ body {
   width: 36px;
   height: 36px;
   filter: drop-shadow(0 0 6px rgba(255, 209, 117, 0.4));
+}
+
+[data-theme="light"] .brand-logo {
+  filter: drop-shadow(0 2px 6px rgba(148, 99, 22, 0.3));
 }
 
 .brand-title {
@@ -135,6 +213,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
+  font-weight: 700;
 }
 
 .offline-pulse {
@@ -193,6 +272,7 @@ body {
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .glass-card::before {
@@ -203,10 +283,9 @@ body {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
-/* Заголовки блоков */
 .card-header-flex {
   display: flex;
   justify-content: space-between;
@@ -216,7 +295,7 @@ body {
 
 .card-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
   color: var(--gold-primary);
   text-transform: uppercase;
@@ -227,20 +306,19 @@ body {
 
 .site-badge-status {
   padding: 4px 10px;
-  background: rgba(0, 242, 254, 0.12);
-  border: 1px solid rgba(0, 242, 254, 0.35);
+  background: var(--neon-cyan-bg);
+  border: 1px solid var(--neon-cyan-border);
   border-radius: var(--radius-full);
   color: var(--neon-cyan);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.4px;
 }
 
-/* Активный объект */
 .site-title {
   font-size: 20px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-main);
   margin-bottom: 6px;
   line-height: 1.25;
 }
@@ -252,6 +330,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  font-weight: 600;
 }
 
 .site-contacts-row {
@@ -268,23 +347,23 @@ body {
   gap: 6px;
   padding: 10px;
   height: 44px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--box-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-main);
   text-decoration: none;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   transition: var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .btn-contact:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.09);
   border-color: var(--gold-secondary);
 }
 
-/* Индикатор этапов монтажа (5 фаз) */
+/* Степпер фаз */
 .phase-stepper {
   display: flex;
   align-items: center;
@@ -301,7 +380,6 @@ body {
   align-items: center;
   gap: 6px;
   flex: 1;
-  position: relative;
   cursor: pointer;
 }
 
@@ -309,7 +387,7 @@ body {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--bg-surface-elevated);
+  background: var(--box-bg);
   border: 2px solid var(--text-dim);
   display: flex;
   align-items: center;
@@ -323,20 +401,28 @@ body {
 .phase-step.active .phase-dot {
   background: var(--gold-gradient);
   border-color: #fff;
-  color: #080c16;
+  color: #ffffff;
   box-shadow: var(--gold-glow);
   transform: scale(1.15);
+}
+
+[data-theme="dark"] .phase-step.active .phase-dot {
+  color: #060911;
 }
 
 .phase-step.completed .phase-dot {
   background: var(--neon-emerald);
   border-color: var(--neon-emerald);
-  color: #080c16;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .phase-step.completed .phase-dot {
+  color: #060911;
 }
 
 .phase-name {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   color: var(--text-dim);
   text-align: center;
@@ -358,10 +444,11 @@ body {
 }
 
 .finance-box {
-  background: rgba(10, 16, 29, 0.85);
+  background: var(--box-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
   padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .finance-box-label {
@@ -370,24 +457,26 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+  font-weight: 700;
 }
 
 .finance-box-val {
   font-size: 16px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
-/* ЗОЛОТОЙ ОСТАТОК ДОЛГА (Главная цифра) */
+/* ЗОЛОТОЙ ОСТАТОК ДОЛГА */
 .debt-banner {
-  background: linear-gradient(135deg, rgba(255, 42, 95, 0.15) 0%, rgba(20, 28, 48, 0.9) 100%);
-  border: 1px solid rgba(255, 42, 95, 0.4);
+  background: var(--debt-bg);
+  border: 1px solid var(--debt-border);
   border-radius: var(--radius-md);
   padding: 16px;
   text-align: center;
   margin-top: 8px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 }
 
 .debt-banner::after {
@@ -396,13 +485,13 @@ body {
   bottom: 0;
   left: 15%;
   right: 15%;
-  height: 1px;
+  height: 2px;
   background: var(--gold-gradient);
 }
 
 .debt-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -416,7 +505,11 @@ body {
   background: var(--gold-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 25px rgba(255, 209, 117, 0.4);
+  text-shadow: 0 0 25px rgba(255, 209, 117, 0.3);
+}
+
+[data-theme="light"] .debt-amount {
+  text-shadow: 0 2px 8px rgba(148, 99, 22, 0.15);
 }
 
 .sub-finances-row {
@@ -424,14 +517,15 @@ body {
   justify-content: space-between;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--glass-border-subtle);
   font-size: 12px;
   color: var(--text-muted);
+  font-weight: 600;
 }
 
 .sub-fin-item span {
   color: var(--text-main);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* ==========================================================================
@@ -458,20 +552,21 @@ body {
   cursor: pointer;
   transition: var(--transition-fast);
   text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .btn-action-tile:active {
   transform: scale(0.96);
   border-color: var(--gold-primary);
-  background: rgba(255, 209, 117, 0.06);
+  background: rgba(184, 131, 42, 0.08);
 }
 
 .tile-icon-box {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,7 +581,7 @@ body {
 
 .tile-title {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-main);
   line-height: 1.2;
 }
@@ -495,6 +590,7 @@ body {
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
+  font-weight: 600;
 }
 
 /* ==========================================================================
@@ -506,7 +602,7 @@ body {
   background: var(--gold-gradient);
   border: none;
   border-radius: var(--radius-md);
-  color: #060911;
+  color: var(--btn-gold-text);
   font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.6px;
@@ -516,14 +612,13 @@ body {
   justify-content: center;
   gap: 10px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(212, 163, 89, 0.35);
+  box-shadow: var(--shadow-btn);
   margin-bottom: 24px;
   transition: var(--transition-fast);
 }
 
 .btn-flagship-gold:active {
   transform: scale(0.97);
-  box-shadow: 0 4px 12px rgba(212, 163, 89, 0.2);
 }
 
 /* ==========================================================================
@@ -535,7 +630,7 @@ body {
   left: 0;
   right: 0;
   height: 76px;
-  background: rgba(6, 9, 17, 0.92);
+  background: var(--bottom-nav-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border-subtle);
@@ -546,6 +641,7 @@ body {
   z-index: 200;
   max-width: 500px;
   margin: 0 auto;
+  box-shadow: var(--shadow-bottom-nav);
 }
 
 .nav-item {
@@ -556,7 +652,7 @@ body {
   color: var(--text-dim);
   text-decoration: none;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.3px;
   cursor: pointer;
   padding: 8px 12px;
@@ -581,12 +677,16 @@ body {
   filter: drop-shadow(0 0 8px rgba(255, 209, 117, 0.6));
 }
 
+[data-theme="light"] .nav-item.active .nav-icon {
+  filter: drop-shadow(0 2px 6px rgba(148, 99, 22, 0.35));
+}
+
 .nav-item:active {
   transform: scale(0.92);
 }
 
 /* ==========================================================================
-   7. СЕКЦИИ И ЭКРАНЫ ПРИЛОЖЕНИЯ
+   7. СЕКЦИИ И ЭКРАНЫ
    ========================================================================== */
 .app-screen {
   display: none;
@@ -602,16 +702,16 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Списки и элементы */
 .item-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  background: rgba(10, 16, 28, 0.6);
+  background: var(--box-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
   margin-bottom: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
 .item-left {
@@ -622,38 +722,40 @@ body {
 
 .item-name {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-main);
 }
 
 .item-desc {
   font-size: 11px;
   color: var(--text-muted);
+  font-weight: 600;
 }
 
 .item-right {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--gold-primary);
 }
 
-/* Чекбоксы и переключатели */
+/* Чекбоксы технадзора */
 .check-item {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px;
-  background: rgba(12, 18, 32, 0.7);
+  background: var(--box-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
   margin-bottom: 10px;
   cursor: pointer;
   transition: var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
 .check-item.done {
-  border-color: rgba(0, 245, 160, 0.4);
-  background: rgba(0, 245, 160, 0.05);
+  border-color: rgba(5, 150, 105, 0.4);
+  background: var(--neon-emerald-bg);
 }
 
 .check-box-icon {
@@ -673,22 +775,22 @@ body {
 .check-item.done .check-box-icon {
   background: var(--neon-emerald);
   border-color: var(--neon-emerald);
-  color: #060911;
+  color: #ffffff;
 }
 
 .check-text {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-main);
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .check-item.done .check-text {
-  color: var(--text-muted);
+  color: var(--text-dim);
   text-decoration: line-through;
 }
 
-/* Экспресс калькулятор (Счетчики точек) */
+/* Экспресс калькулятор */
 .counter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -697,18 +799,19 @@ body {
 }
 
 .counter-card {
-  background: rgba(10, 16, 29, 0.85);
+  background: var(--box-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
   padding: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
 .counter-header {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -723,12 +826,12 @@ body {
 .btn-counter {
   width: 38px;
   height: 38px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-bg-card);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
   color: var(--gold-primary);
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -737,23 +840,23 @@ body {
 
 .btn-counter:active {
   transform: scale(0.9);
-  background: rgba(255, 209, 117, 0.2);
+  background: rgba(184, 131, 42, 0.15);
 }
 
 .counter-val {
   font-size: 18px;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
-/* Модальные окна (Bottom Sheet / Popup) */
+/* Модальные окна */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   z-index: 300;
   display: none;
@@ -772,7 +875,7 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: 24px 24px 0 0;
   padding: 24px 20px 34px 20px;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.25s ease-out;
   max-height: 85vh;
   overflow-y: auto;
@@ -808,7 +911,7 @@ body {
 .form-label {
   display: block;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -817,11 +920,11 @@ body {
 .form-input {
   width: 100%;
   height: 48px;
-  background: rgba(6, 9, 17, 0.9);
+  background: var(--input-bg);
   border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
   padding: 0 14px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 15px;
   font-family: inherit;
   outline: none;
@@ -829,7 +932,7 @@ body {
 
 .form-input:focus {
   border-color: var(--gold-primary);
-  box-shadow: 0 0 10px rgba(255, 209, 117, 0.25);
+  box-shadow: 0 0 10px rgba(184, 131, 42, 0.25);
 }
 
 .btn-submit-modal {
@@ -838,7 +941,7 @@ body {
   background: var(--gold-gradient);
   border: none;
   border-radius: var(--radius-sm);
-  color: #060911;
+  color: var(--btn-gold-text);
   font-size: 14px;
   font-weight: 800;
   text-transform: uppercase;

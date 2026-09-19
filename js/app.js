@@ -1,6 +1,6 @@
 /* ==========================================================================
    LIGA OS — Главный контроллер приложения (App Controller)
-   Принцип одного большого пальца • Мгновенный отклик • Без задержек
+   Принцип одного большого пальца • Мгновенный отклик • Поддержка тем Dark/Light
    ========================================================================== */
 
 class LigaApp {
@@ -8,6 +8,7 @@ class LigaApp {
     this.currentSiteId = 1;
     this.currentSite = null;
     this.currentScreen = 'dashboard';
+    this.currentTheme = 'dark';
     this.sites = [];
     
     // Переменные экспресс-сметы
@@ -23,20 +24,66 @@ class LigaApp {
 
   async init() {
     console.log('Запуск LIGA OS...');
-    // Инициализация базы данных
+    
+    // 1. Инициализация светлой/тёмной темы
+    this.initTheme();
+
+    // 2. Инициализация локальной базы данных IndexedDB
     await window.ligaDB.init();
     
-    // Загрузка объектов
+    // 3. Загрузка объектов
     await this.loadSites();
 
-    // Навешиваем слушатели событий
+    // 4. Навешиваем слушатели событий
     this.initEvents();
 
-    // Регистрация Service Worker для оффлайн-работы
+    // 5. Регистрация Service Worker для оффлайн-работы
     this.registerServiceWorker();
 
-    // Первичный рендеринг
+    // 6. Первичный рендеринг
     this.render();
+  }
+
+  // Управление темой интерфейса (Dark Titanium / Light Ceramic)
+  initTheme() {
+    const saved = localStorage.getItem('liga_theme');
+    if (saved) {
+      this.currentTheme = saved;
+    } else {
+      // Проверяем системные предпочтения
+      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      this.currentTheme = prefersLight ? 'light' : 'dark';
+    }
+    this.applyTheme(this.currentTheme, false);
+  }
+
+  toggleTheme() {
+    const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+    this.applyTheme(newTheme, true);
+  }
+
+  applyTheme(theme, showToastNotification = false) {
+    this.currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('liga_theme', theme);
+
+    // Обновляем иконку кнопки в шапке
+    const btnTheme = document.getElementById('btn-theme-toggle');
+    if (btnTheme) {
+      btnTheme.innerText = theme === 'dark' ? '☀️' : '🌙';
+      btnTheme.title = theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему';
+    }
+
+    // Обновляем метатег темы для статус-бара iOS/Android
+    const metaColor = document.getElementById('meta-theme-color');
+    if (metaColor) {
+      metaColor.setAttribute('content', theme === 'dark' ? '#060911' : '#f2f5fa');
+    }
+
+    if (showToastNotification) {
+      const label = theme === 'dark' ? '🌙 Тёмный титан активен' : '☀️ Светлая керамика активна';
+      this.showToast(label);
+    }
   }
 
   // Загрузка объектов из IndexedDB
@@ -59,9 +106,17 @@ class LigaApp {
 
   // Привязка событий интерфейса
   initEvents() {
+    // 0. Кнопка переключения темы (Светлая / Тёмная)
+    const btnTheme = document.getElementById('btn-theme-toggle');
+    if (btnTheme) {
+      btnTheme.addEventListener('click', () => {
+        this.toggleTheme();
+      });
+    }
+
     // 1. Нижняя панель навигации (Bottom Bar)
     document.querySelectorAll('.nav-item').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         const targetScreen = btn.getAttribute('data-screen');
         this.switchScreen(targetScreen);
       });
@@ -289,7 +344,7 @@ class LigaApp {
     if (!container) return;
 
     if (list.length === 0) {
-      container.innerHTML = '<div style="color:#94a3b8; padding:20px; text-align:center;">Чек-лист чист</div>';
+      container.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">Чек-лист чист</div>';
       return;
     }
 
@@ -355,7 +410,6 @@ class LigaApp {
 
   calculateEstimate() {
     const e = this.estimate;
-    // Базовые тарифы элитного монтажа в Ташкенте (2026 год)
     const costPerPoint = 450000;      // точка ХВС/ГВС/Канализация
     const costPerGeberit = 650000;    // инсталляция Geberit/TECE
     const costPerIbox = 550000;       // скрытый смеситель iBox
@@ -380,7 +434,7 @@ class LigaApp {
     document.getElementById('est-range-usd').innerText = `$${totalMinUsd} – $${totalMaxUsd}`;
   }
 
-  // Копирование красивого расчета сметы для Telegram
+  // Копирование расчета сметы для Telegram
   copyEstimateToTelegram() {
     const e = this.estimate;
     const textSum = document.getElementById('est-range-sum').innerText;
@@ -456,7 +510,7 @@ class LigaApp {
     if (m) m.classList.remove('open');
   }
 
-  // Всплывающее уведомление (Toast)
+  // Всплывающее уведомление (Toast под шапкой)
   showToast(msg) {
     let toast = document.getElementById('app-toast');
     if (!toast) {
@@ -464,28 +518,33 @@ class LigaApp {
       toast.id = 'app-toast';
       toast.style.cssText = `
         position: fixed;
-        bottom: 86px;
+        top: 66px;
         left: 50%;
-        transform: translateX(-50%);
-        background: #ffd175;
-        color: #060911;
+        transform: translateX(-50%) translateY(-10px);
+        background: var(--gold-gradient);
+        color: var(--btn-gold-text);
         font-weight: 800;
         font-size: 13px;
-        padding: 10px 18px;
+        padding: 9px 18px;
         border-radius: 9999px;
         z-index: 999;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.5);
-        transition: opacity 0.3s ease;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
         text-align: center;
         max-width: 90%;
+        white-space: nowrap;
       `;
       document.body.appendChild(toast);
     }
     toast.innerText = msg;
     toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
     setTimeout(() => {
       toast.style.opacity = '0';
-    }, 2800);
+      toast.style.transform = 'translateX(-50%) translateY(-10px)';
+    }, 2200);
   }
 
   formatSum(num) {

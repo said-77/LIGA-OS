@@ -1,20 +1,28 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>LIGA OS — Операционная Система Инженерного Мастера</title>
   
+  <!-- Скрипт мгновенного восстановления сохраненной темы без мерцания -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('liga_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+
   <!-- PWA & Mobile Web App Settings -->
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#060911">
+  <meta id="meta-theme-color" name="theme-color" content="#060911">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LIGA OS">
   <link rel="icon" type="image/x-icon" href="./favicon.ico">
   <link rel="apple-touch-icon" href="./icons/logo.svg">
 
-  <!-- Стили Dark Titanium Glassmorphism -->
+  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism -->
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -32,6 +40,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Кнопка переключения Светлой и Тёмной темы -->
+        <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
+        <!-- Кнопка резервной копии базы данных -->
         <button id="btn-backup-top" class="btn-icon-top" title="Сохранить резервную копию базы">💾</button>
       </div>
     </header>
@@ -71,7 +82,7 @@
           <a id="btn-call-client" href="tel:+998901234567" class="btn-contact">
             <span>📞</span> Позвонить
           </a>
-          <a id="btn-tg-client" href="https://t.me/" target="_blank" class="btn-contact" style="color:var(--neon-cyan); border-color:rgba(0,242,254,0.3);">
+          <a id="btn-tg-client" href="https://t.me/" target="_blank" class="btn-contact" style="color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
             <span>💬</span> Telegram
           </a>
         </div>
@@ -105,7 +116,7 @@
       <section class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">💰 Финансовый пульс объекта</div>
-          <div style="font-size:11px; color:var(--text-muted);">Договор под ключ</div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700;">Договор под ключ</div>
         </div>
 
         <div class="finance-grid">
@@ -113,7 +124,7 @@
             <div class="finance-box-label">Сумма договора:</div>
             <div id="fin-contract-val" class="finance-box-val">18 500 000 сум</div>
           </div>
-          <div class="finance-box" style="border-color: rgba(0, 245, 160, 0.3);">
+          <div class="finance-box" style="border-color: var(--neon-emerald-glow);">
             <div class="finance-box-label" style="color:var(--neon-emerald);">Аванс получен:</div>
             <div id="fin-advance-val" class="finance-box-val" style="color:var(--neon-emerald);">12 000 000 сум</div>
           </div>
@@ -155,7 +166,7 @@
           </div>
         </div>
         <div id="tile-quick-checklist" class="btn-action-tile">
-          <div class="tile-icon-box" style="color:#ffb703;">📋</div>
+          <div class="tile-icon-box" style="color:#d97706;">📋</div>
           <div class="tile-content">
             <div class="tile-title">Перед стяжкой</div>
             <div class="tile-subtitle">Чек-лист 10 п.</div>
@@ -176,7 +187,7 @@
     <section id="screen-finances" class="app-screen">
       <div class="glass-card">
         <div class="card-label">💼 Финансовый отчет объекта</div>
-        <h2 style="font-size:18px; margin: 8px 0 16px 0;">Касса и взаиморасчеты</h2>
+        <h2 style="font-size:18px; margin: 8px 0 16px 0; color:var(--text-main);">Касса и взаиморасчеты</h2>
         
         <div class="item-row">
           <div class="item-left">
@@ -194,7 +205,7 @@
           <div id="page-fin-advance" class="item-right" style="color:var(--neon-emerald);">12 000 000 сум</div>
         </div>
 
-        <div class="item-row" style="border-color: rgba(255, 42, 95, 0.4);">
+        <div class="item-row" style="border-color: rgba(220, 38, 38, 0.4);">
           <div class="item-left">
             <div class="item-name" style="color:var(--neon-ruby);">Остаток долга заказчика</div>
             <div class="item-desc">К окончательному расчету при сдаче</div>
@@ -223,7 +234,7 @@
             + Добавить чек
           </button>
         </div>
-        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; font-weight:600;">
           Оригинальные европейские материалы (Rehau, FAR, Geberit) с заводской гарантией 10–50 лет.
         </p>
 
@@ -239,7 +250,7 @@
     <section id="screen-checklist" class="app-screen">
       <div class="glass-card">
         <div class="card-label">🛡️ Железный технадзор перед стяжкой</div>
-        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0;">
+        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0; font-weight:600;">
           10 критических пунктов проверки перед заливкой чистового пола. Нажмите на пункт, чтобы отметить выполнение:
         </p>
 
@@ -255,7 +266,7 @@
     <section id="screen-estimate" class="app-screen">
       <div class="glass-card">
         <div class="card-label">⚡ Экспресс-смета за 60 секунд</div>
-        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0;">
+        <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0; font-weight:600;">
           Нажимайте крупные кнопки для мгновенного расчета стоимости работ прямо на первой встрече с заказчиком:
         </p>
 
@@ -311,7 +322,7 @@
         </div>
 
         <!-- ИТОГОВАЯ ВИЛКА -->
-        <div class="debt-banner" style="border-color: rgba(255, 209, 117, 0.4); background: rgba(18, 28, 50, 0.9);">
+        <div class="debt-banner" style="border-color: var(--gold-secondary);">
           <div class="debt-label" style="color:var(--gold-primary);">Ориентировочная стоимость работ:</div>
           <div id="est-range-sum" class="debt-amount" style="font-size:22px;">16 500 000 – 20 600 000 сум</div>
           <div id="est-range-usd" style="font-size:14px; color:var(--neon-cyan); margin-top:4px; font-weight:800;">$1 280 – $1 600</div>
