@@ -629,15 +629,15 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 76px;
+  height: 72px;
   background: var(--bottom-nav-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border-subtle);
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  justify-content: space-around;
-  padding: 0 10px;
+  padding: 0 4px;
   z-index: 200;
   max-width: 500px;
   margin: 0 auto;
@@ -648,18 +648,24 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   color: var(--text-dim);
   text-decoration: none;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.2px;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 6px 2px;
   border-radius: var(--radius-sm);
   transition: var(--transition-fast);
   background: none;
   border: none;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-icon {
@@ -1074,3 +1080,82 @@ body {
 .btn-submit-modal:active {
   transform: scale(0.98);
 }
+
+/* Пульсация при записи голоса */
+@keyframes micPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 16px rgba(220, 38, 38, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.voice-recording-active {
+  background: var(--neon-ruby) !important;
+  color: #fff !important;
+  animation: micPulse 1.4s infinite !important;
+}
+
+/* Вкладки памятки мастера */
+.guide-tab-btn {
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: var(--box-bg);
+}
+
+.guide-tab-btn.active {
+  background: var(--gold-gradient) !important;
+  color: var(--btn-gold-text) !important;
+  border-color: var(--gold-primary) !important;
+  font-weight: 800;
+}
+
+.guide-card {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.guide-card-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold-primary);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.guide-script-text {
+  font-size: 12px;
+  color: var(--text-main);
+  line-height: 1.45;
+  background: var(--bg-surface-elevated);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--gold-primary);
+  font-style: italic;
+}
+
+.btn-copy-script {
+  height: 36px;
+  width: 100%;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan-border);
+  background: rgba(6, 182, 212, 0.08);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+}
+
+.btn-copy-script:active {
+  transform: scale(0.97);
+}
+

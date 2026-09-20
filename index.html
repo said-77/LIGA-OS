@@ -40,6 +40,12 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Кнопка голосовой диктовки («Свободные руки») -->
+        <button id="btn-voice-input" class="btn-icon-top" title="Голосовая диктовка (Свободные руки)">🎙️</button>
+        <!-- Кнопка Шпаргалки мастера (Скрипты диалогов) -->
+        <button id="btn-guide-top" class="btn-icon-top" title="Памятка мастера: диалоги с дизайнерами и клиентами">📖</button>
+        <!-- Кнопка ИИ-Аналитика объекта -->
+        <button id="btn-ai-audit-top" class="btn-icon-top" title="ИИ-Аналитик объекта и рисков">🧠</button>
         <!-- Кнопка переключения Светлой и Тёмной темы -->
         <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
         <!-- Кнопка резервной копии базы данных -->
@@ -662,6 +668,170 @@
         </div>
         <div id="view-receipt-meta" style="font-size:13px; font-weight:700; color:var(--gold-primary); margin-bottom:12px;"></div>
         <button onclick="window.app.closeModal('modal-view-receipt')" class="btn-submit-modal" style="height:44px;">Закрыть</button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 6: ГОЛОСОВОЙ ВВОД И СОГЛАСОВАНИЕ С МАСТЕРОМ («СВОБОДНЫЕ РУКИ»)
+         ==================================================================== -->
+    <div id="modal-voice" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>🎙️ Голосовая диктовка</span>
+          <button onclick="window.app.closeModal('modal-voice')" class="btn-close-modal">&times;</button>
+        </div>
+
+        <div style="text-align:center; padding:10px 0 16px 0;">
+          <div id="voice-pulse-circle" style="width:68px; height:68px; margin:0 auto 12px auto; border-radius:50%; background:var(--gold-gradient); display:flex; align-items:center; justify-content:center; font-size:32px; box-shadow:0 0 20px rgba(255,209,117,0.4); cursor:pointer;" onclick="window.app.toggleVoiceRecording()">
+            <span id="voice-modal-mic-icon">🎙️</span>
+          </div>
+          <div id="voice-status-text" style="font-size:13px; font-weight:800; color:var(--gold-primary);">Нажмите на микрофон и говорите...</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Пример: «Купил на Джами коллектор FAR за 1 800 000» или «Выдал аванс Алишеру 400 тысяч»</div>
+        </div>
+
+        <!-- Текстовое поле ввода на случай, если диктовать вслух неудобно -->
+        <div class="form-group">
+          <label class="form-label">Распознанный или введенный текст:</label>
+          <input type="text" id="voice-recognized-input" class="form-input" placeholder="Скажите фразу или введите сюда вручную...">
+        </div>
+
+        <!-- Результат автоматического анализа (куда система разложит) -->
+        <div id="voice-parse-preview" style="display:none; background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px;">🤖 Система предлагает записать:</div>
+          <div id="voice-parse-type" style="font-size:13px; font-weight:800; color:var(--text-main); margin-bottom:4px;">Тип: Расход на материалы</div>
+          <div id="voice-parse-details" style="font-size:12px; color:var(--text-muted);">Коллектор FAR • 1 800 000 сум</div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button id="btn-voice-confirm" onclick="window.app.confirmVoiceAction()" class="btn-submit-modal" style="margin-top:0; flex:1; display:none;">
+            ✓ Подтверждаю (Внести)
+          </button>
+          <button onclick="window.app.closeModal('modal-voice')" class="btn-contact" style="height:52px; flex:1; border-color:var(--glass-border);">
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 7: ПРЕДУПРЕЖДЕНИЕ О ДУБЛИКАТЕ ЧЕКА
+         ==================================================================== -->
+    <div id="modal-duplicate-warning" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title" style="color:var(--neon-ruby);">
+          <span>⚠️ Возможный повторный чек!</span>
+          <button onclick="window.app.closeModal('modal-duplicate-warning')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.3); border-radius:var(--radius-sm); padding:14px; margin-bottom:16px;">
+          <div style="font-size:13px; font-weight:700; color:var(--text-main); line-height:1.4;" id="duplicate-warning-text">
+            В базе этого объекта уже найден чек с аналогичной суммой или названием.
+          </div>
+          <div id="duplicate-existing-item" style="margin-top:8px; font-size:12px; color:var(--gold-primary); font-weight:800;"></div>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+          Это действительно отдельная новая покупка, или чек был отсканирован случайно повторно?
+        </p>
+        <div style="display:flex; gap:10px;">
+          <button onclick="window.app.forceSaveDuplicate()" class="btn-submit-modal" style="margin-top:0; flex:1; background:var(--box-bg); color:var(--text-main); border:1px solid var(--glass-border-subtle);">
+            Это новая покупка
+          </button>
+          <button onclick="window.app.closeModal('modal-duplicate-warning')" class="btn-submit-modal" style="margin-top:0; flex:1; background:var(--neon-ruby); color:#fff;">
+            Отмена (Это дубль)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8: ЦИФРОВАЯ РАСПИСКА И ПОДТВЕРЖДЕНИЕ ПОЛУЧЕНИЯ
+         ==================================================================== -->
+    <div id="modal-verify-receipt" class="modal-overlay">
+      <div class="modal-sheet" style="text-align:center;">
+        <div class="modal-title">
+          <span>🏛️ Цифровая расписка Лиги</span>
+          <button onclick="window.app.closeModal('modal-verify-receipt')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="padding:16px; background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); margin-bottom:16px; text-align:left;">
+          <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:800;">Акт передачи денежных средств:</div>
+          <div id="verify-receipt-recipient" style="font-size:16px; font-weight:900; color:var(--text-main); margin:6px 0 2px 0;">Получатель: Сотрудник</div>
+          <div id="verify-receipt-amount" style="font-size:20px; font-weight:900; color:var(--neon-emerald); margin-bottom:6px;">0 сум</div>
+          <div id="verify-receipt-site" style="font-size:12px; color:var(--text-muted);">Объект: ЖК Mirabad Avenue</div>
+          <div id="verify-receipt-date" style="font-size:11px; color:var(--text-dim); margin-top:4px;">Дата: 20.09.2026</div>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+          Нажатием кнопки ниже получатель юридически подтверждает факт получения указанной суммы от инженера Улугбека Хакимова.
+        </p>
+        <button id="btn-confirm-receipt-action" onclick="window.app.signReceiptConfirmation()" class="btn-submit-modal" style="background:var(--neon-emerald); color:#fff; height:52px; font-size:14px;">
+          ✓ Подтверждаю получение средств
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
+         ==================================================================== -->
+    <div id="modal-master-guide" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>📖 Памятка и скрипты мастера</span>
+          <button onclick="window.app.closeModal('modal-master-guide')" class="btn-close-modal">&times;</button>
+        </div>
+
+        <!-- Вкладки категорий памятки -->
+        <div style="display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:4px;">
+          <button class="btn-contact guide-tab-btn active" data-tab="designer" style="height:32px; padding:2px 10px; font-size:11px; flex-shrink:0;">Дизайнерам</button>
+          <button class="btn-contact guide-tab-btn" data-tab="client" style="height:32px; padding:2px 10px; font-size:11px; flex-shrink:0;">Клиентам</button>
+          <button class="btn-contact guide-tab-btn" data-tab="objections" style="height:32px; padding:2px 10px; font-size:11px; flex-shrink:0;">Возражения</button>
+          <button class="btn-contact guide-tab-btn" data-tab="ethics" style="height:32px; padding:2px 10px; font-size:11px; flex-shrink:0;">Кодекс этики</button>
+        </div>
+
+        <div id="guide-tab-content">
+          <!-- Заполняется динамически -->
+        </div>
+
+        <button onclick="window.app.closeModal('modal-master-guide')" class="btn-submit-modal" style="height:44px; margin-top:14px;">Закрыть</button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 10: ИИ-АНАЛИТИК ОБЪЕКТА И РИСКОВ
+         ==================================================================== -->
+    <div id="modal-ai-audit" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>🧠 ИИ-Аналитик объекта</span>
+          <button onclick="window.app.closeModal('modal-ai-audit')" class="btn-close-modal">&times;</button>
+        </div>
+
+        <div id="ai-audit-loading" style="display:none; text-align:center; padding:24px 0;">
+          <div class="offline-pulse" style="width:24px; height:24px; margin:0 auto 12px auto;"></div>
+          <div style="font-size:13px; font-weight:800; color:var(--gold-primary);">ИИ анализирует финансовый баланс и риски объекта...</div>
+        </div>
+
+        <div id="ai-audit-body">
+          <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px;">
+            <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">1. Финансовая маржинальность:</div>
+            <div id="ai-margin-val" style="font-size:14px; font-weight:900; color:var(--neon-emerald); margin:4px 0;">Рентабельность: 64% (Отлично)</div>
+            <div id="ai-margin-desc" style="font-size:11px; color:var(--text-dim);">Чистая прибыль мастера защищена, превышения затрат на материалы нет.</div>
+          </div>
+
+          <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px;">
+            <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">2. Инженерные риски в Ташкенте:</div>
+            <div id="ai-risks-val" style="font-size:13px; font-weight:700; color:var(--text-main); margin:4px 0;">✓ Опрессовка 16 бар пройдена, гидроудар исключен.</div>
+            <div id="ai-risks-desc" style="font-size:11px; color:var(--gold-primary); font-weight:600;">Рекомендация: проверить сухой затвор в душевом трапе перед заливкой стяжки.</div>
+          </div>
+
+          <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
+            <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">3. Действие для мастера:</div>
+            <div id="ai-action-text" style="font-size:12px; color:var(--text-main); font-weight:700; margin-top:4px;">
+              Запросить у заказчика второй транш аванса (30%) перед чистовым этапом и установкой санфаянса.
+            </div>
+          </div>
+
+          <button onclick="window.app.saveAiAuditNotes()" class="btn-submit-modal" style="height:48px;">
+            ✓ Зафиксировать рекомендации в журнал
+          </button>
+        </div>
       </div>
     </div>
 

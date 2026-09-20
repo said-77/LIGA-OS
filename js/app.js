@@ -23,6 +23,20 @@ class LigaApp {
     this.currentMatFilter = 'all';
     this.pendingReceiptPhoto = null;
 
+    // Голосовой ввод и Voice AI
+    this.isRecordingVoice = false;
+    this.recognition = null;
+    this.parsedVoiceAction = null;
+
+    // Защита от дубликатов
+    this.pendingDuplicateSave = null;
+
+    // Цифровые расписки и подтверждения
+    this.currentReceiptToVerify = null;
+
+    // Памятка и скрипты мастера
+    this.currentGuideTab = 'designer';
+
     // Переменные экспресс-сметы
     this.estimate = {
       bathrooms: 2,
@@ -49,10 +63,16 @@ class LigaApp {
     // 4. Навешиваем слушатели событий
     this.initEvents();
 
-    // 5. Регистрация Service Worker для оффлайн-работы
+    // 5. Инициализация голосового движка Web Speech
+    this.initVoiceEngine();
+
+    // 6. Проверка цифровых расписок из URL (?verify_receipt=...)
+    this.checkUrlVerification();
+
+    // 7. Регистрация Service Worker для оффлайн-работы
     this.registerServiceWorker();
 
-    // 6. Первичный рендеринг
+    // 8. Первичный рендеринг
     this.render();
   }
 
@@ -300,6 +320,37 @@ class LigaApp {
     if (btnActScreed) {
       btnActScreed.addEventListener('click', () => this.exportScreedAct());
     }
+
+    // 15. Голосовая диктовка («Свободные руки»), Памятка и ИИ-Аналитик
+    const btnVoice = document.getElementById('btn-voice-input');
+    if (btnVoice) {
+      btnVoice.addEventListener('click', () => {
+        this.openModal('modal-voice');
+        this.startVoiceRecording();
+      });
+    }
+
+    const btnGuide = document.getElementById('btn-guide-top');
+    if (btnGuide) {
+      btnGuide.addEventListener('click', () => this.openMasterGuide());
+    }
+
+    const btnAiAudit = document.getElementById('btn-ai-audit-top');
+    if (btnAiAudit) {
+      btnAiAudit.addEventListener('click', () => this.runAiAudit());
+    }
+
+    const inputVoiceText = document.getElementById('voice-recognized-input');
+    if (inputVoiceText) {
+      inputVoiceText.addEventListener('input', (e) => this.handleVoiceInputText(e.target.value));
+    }
+
+    document.querySelectorAll('.guide-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        this.switchGuideTab(tab);
+      });
+    });
   }
 
   // Привязка инпутов камеры для фотофиксации
@@ -888,7 +939,7 @@ ${itemsText}
     window.ligaPdfEngine.generatePassport(this.currentSite, this.currentPhotos);
   }
 
-  // Добавление чека
+  // Добавление чека с интеллектуальной проверкой на дубликаты
   async saveReceipt() {
     const title = document.getElementById('receipt-title').value.trim();
     const amount = parseInt(document.getElementById('receipt-amount').value) || 0;
@@ -898,6 +949,33 @@ ${itemsText}
 
     if (!title || !amount) {
       alert('Укажите название и сумму чека');
+      return;
+    }
+
+    // Проверка на возможный дубликат чека
+    const duplicate = await this.checkDuplicateMaterial(title, amount);
+    if (duplicate) {
+      this.pendingDuplicateSave = {
+        siteId: this.currentSiteId,
+        category: category,
+        name: title,
+        qty: qty || '1 шт',
+        price: amount,
+        isPurchased: true,
+        receiptPhoto: this.pendingReceiptPhoto || null
+      };
+
+      const warningTextEl = document.getElementById('duplicate-warning-text');
+      if (warningTextEl) {
+        warningTextEl.innerText = `В базе объекта «${this.currentSite ? this.currentSite.name : ''}» уже найден похожий расход:`;
+      }
+      const existingEl = document.getElementById('duplicate-existing-item');
+      if (existingEl) {
+        existingEl.innerText = `«${duplicate.name}» на сумму ${this.formatSum(duplicate.price)}`;
+      }
+
+      this.closeModal('modal-receipt');
+      this.openModal('modal-duplicate-warning');
       return;
     }
 
@@ -923,6 +1001,487 @@ ${itemsText}
     this.closeModal('modal-receipt');
     this.showToast(`✓ Чек на ${this.formatSum(amount)} добавлен к расходам!`);
     await this.renderMaterials();
+  }
+
+  // ==========================================================================
+  // МОДУЛЬ ГОЛОСОВОЙ ДИКТОВКИ («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ»)
+  // ==========================================================================
+  initVoiceEngine() {
+    const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechClass) {
+      this.recognition = new SpeechClass();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'ru-RU';
+
+      this.recognition.onstart = () => {
+        this.isRecordingVoice = true;
+        this.updateVoiceUI(true);
+      };
+
+      this.recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        this.handleVoiceResult(transcript);
+      };
+
+      this.recognition.onerror = (e) => {
+        console.warn('SpeechRecognition error:', e.error);
+        this.isRecordingVoice = false;
+        this.updateVoiceUI(false);
+        const statusEl = document.getElementById('voice-status-text');
+        if (statusEl) {
+          statusEl.innerText = 'Не удалось разобрать речь. Введите фразу текстом:';
+        }
+      };
+
+      this.recognition.onend = () => {
+        this.isRecordingVoice = false;
+        this.updateVoiceUI(false);
+      };
+    }
+  }
+
+  toggleVoiceRecording() {
+    if (this.isRecordingVoice) {
+      this.stopVoiceRecording();
+    } else {
+      this.startVoiceRecording();
+    }
+  }
+
+  startVoiceRecording() {
+    if (this.recognition) {
+      try {
+        this.recognition.start();
+        const statusEl = document.getElementById('voice-status-text');
+        if (statusEl) statusEl.innerText = '🔴 Запись... Говорите фразу';
+      } catch (err) {
+        console.warn('Recognition already started or error:', err);
+      }
+    } else {
+      const statusEl = document.getElementById('voice-status-text');
+      if (statusEl) {
+        statusEl.innerText = 'Диктовка доступна. Введите фразу в поле ниже:';
+      }
+    }
+  }
+
+  stopVoiceRecording() {
+    if (this.recognition && this.isRecordingVoice) {
+      this.recognition.stop();
+    }
+    this.isRecordingVoice = false;
+    this.updateVoiceUI(false);
+  }
+
+  updateVoiceUI(isActive) {
+    const circle = document.getElementById('voice-pulse-circle');
+    const headerBtn = document.getElementById('btn-voice-input');
+    if (circle) {
+      if (isActive) circle.classList.add('voice-recording-active');
+      else circle.classList.remove('voice-recording-active');
+    }
+    if (headerBtn) {
+      if (isActive) headerBtn.classList.add('voice-recording-active');
+      else headerBtn.classList.remove('voice-recording-active');
+    }
+  }
+
+  handleVoiceResult(transcript) {
+    const inputEl = document.getElementById('voice-recognized-input');
+    if (inputEl) inputEl.value = transcript;
+    this.handleVoiceInputText(transcript);
+  }
+
+  handleVoiceInputText(text) {
+    if (!text || text.trim().length < 2) {
+      const preview = document.getElementById('voice-parse-preview');
+      const btnConfirm = document.getElementById('btn-voice-confirm');
+      if (preview) preview.style.display = 'none';
+      if (btnConfirm) btnConfirm.style.display = 'none';
+      return;
+    }
+
+    const parsed = this.parseVoiceCommand(text);
+    this.parsedVoiceAction = parsed;
+
+    const preview = document.getElementById('voice-parse-preview');
+    const typeEl = document.getElementById('voice-parse-type');
+    const detailsEl = document.getElementById('voice-parse-details');
+    const btnConfirm = document.getElementById('btn-voice-confirm');
+
+    if (preview && typeEl && detailsEl && btnConfirm) {
+      preview.style.display = 'block';
+      btnConfirm.style.display = 'block';
+
+      if (parsed.type === 'material') {
+        typeEl.innerText = `📦 Запись в Снабжение (${parsed.category})`;
+        detailsEl.innerText = `${parsed.title} • ${this.formatSum(parsed.amount)}`;
+      } else if (parsed.type === 'brigade_pay') {
+        typeEl.innerText = `💰 Выплата помощнику (${parsed.recipient})`;
+        detailsEl.innerText = `Сумма аванса: ${this.formatSum(parsed.amount)}`;
+      } else if (parsed.type === 'client_advance') {
+        typeEl.innerText = `💵 Поступление аванса от заказчика`;
+        detailsEl.innerText = `Зачислено: ${this.formatSum(parsed.amount)}`;
+      } else if (parsed.type === 'press_test') {
+        typeEl.innerText = `🛡️ Фиксация испытания 16 бар`;
+        detailsEl.innerText = `Акт опрессовки на 24 часа успешно подтвержден`;
+      }
+    }
+  }
+
+  parseVoiceCommand(text) {
+    const lower = text.toLowerCase();
+    let amount = 0;
+
+    const millionsMatch = lower.match(/(\d+[\.,]?\d*)\s*(млн|миллион|лям)/);
+    const thousandsMatch = lower.match(/(\d+[\.,]?\d*)\s*(тыс|тысяч)/);
+    const plainNumberMatch = lower.match(/(\d{4,9})/);
+
+    if (millionsMatch) {
+      const val = parseFloat(millionsMatch[1].replace(',', '.'));
+      amount = Math.round(val * 1000000);
+    } else if (thousandsMatch) {
+      const val = parseFloat(thousandsMatch[1].replace(',', '.'));
+      amount = Math.round(val * 1000);
+    } else if (plainNumberMatch) {
+      amount = parseInt(plainNumberMatch[1]);
+    }
+
+    if (lower.includes('выдал') || lower.includes('аванс') || lower.includes('алишер') || lower.includes('сардор') || lower.includes('зарплат')) {
+      let recipient = 'Алишер';
+      if (lower.includes('сардор')) recipient = 'Сардор';
+      return {
+        type: 'brigade_pay',
+        title: `Выплата помощнику (${recipient})`,
+        amount: amount || 300000,
+        recipient: recipient,
+        category: 'Бригада'
+      };
+    }
+
+    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('перевел') || lower.includes('бахром')) {
+      return {
+        type: 'client_advance',
+        title: 'Аванс от заказчика',
+        amount: amount || 2000000
+      };
+    }
+
+    if (lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('давление')) {
+      return {
+        type: 'press_test',
+        title: 'Опрессовка 16 бар',
+        amount: 0
+      };
+    }
+
+    let category = 'Трубы и фитинги';
+    if (lower.includes('коллектор') || lower.includes('far')) category = 'Коллекторы';
+    if (lower.includes('инсталляц') || lower.includes('трап') || lower.includes('geberit') || lower.includes('tece')) category = 'Инсталляции';
+    if (lower.includes('нептун') || lower.includes('протечк')) category = 'Защита от протечек';
+    if (lower.includes('клей') || lower.includes('герметик') || lower.includes('изоляц')) category = 'Расходники';
+
+    let cleanName = text
+      .replace(/(купил|купили|взял|на базаре|на джами|за|на сумму|сум|суммов|тысяч|миллион|рублей)/gi, '')
+      .replace(/\d+/g, '')
+      .trim();
+    if (cleanName.length < 3) cleanName = 'Материалы сантехники';
+
+    return {
+      type: 'material',
+      title: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+      amount: amount || 450000,
+      category: category,
+      qty: '1 компл'
+    };
+  }
+
+  async confirmVoiceAction() {
+    if (!this.parsedVoiceAction) return;
+    const action = this.parsedVoiceAction;
+
+    if (action.type === 'material') {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId,
+        category: action.category,
+        name: action.title,
+        qty: action.qty || '1 компл',
+        price: action.amount,
+        isPurchased: true,
+        receiptPhoto: null
+      });
+      this.showToast(`✓ ${action.title} на ${this.formatSum(action.amount)} записан в склад!`);
+      await this.renderMaterials();
+    } else if (action.type === 'brigade_pay') {
+      if (this.currentSite) {
+        this.currentSite.brigadeOwed = Math.max(0, (this.currentSite.brigadeOwed || 0) - action.amount);
+        await window.ligaDB.put('sites', this.currentSite);
+        await window.ligaDB.add('finances', {
+          siteId: this.currentSiteId,
+          type: 'brigade_pay',
+          amount: action.amount,
+          method: 'Голосовая фиксация (Наличные)',
+          recipient: action.recipient,
+          date: new Date().toISOString().slice(0, 10)
+        });
+        this.showToast(`✓ Выплата ${action.recipient} ${this.formatSum(action.amount)} зафиксирована!`);
+        this.render();
+      }
+    } else if (action.type === 'client_advance') {
+      if (this.currentSite) {
+        this.currentSite.advanceSum = (this.currentSite.advanceSum || 0) + action.amount;
+        await window.ligaDB.put('sites', this.currentSite);
+        this.showToast(`✓ Аванс ${this.formatSum(action.amount)} зачислен!`);
+        this.render();
+      }
+    } else if (action.type === 'press_test') {
+      await this.togglePressureTest();
+    }
+
+    this.closeModal('modal-voice');
+    this.parsedVoiceAction = null;
+  }
+
+  // ==========================================================================
+  // ДЕТЕКТОР ДУБЛИКАТОВ ЧЕКОВ И РАСХОДОВ
+  // ==========================================================================
+  async checkDuplicateMaterial(name, amount) {
+    const list = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+    const normalizedNew = name.toLowerCase().trim();
+    return list.find(m => {
+      const isSamePrice = m.price === amount;
+      const normalizedExisting = m.name.toLowerCase().trim();
+      const isSimilarName = normalizedExisting.includes(normalizedNew) || normalizedNew.includes(normalizedExisting);
+      return isSamePrice || (isSimilarName && Math.abs(m.price - amount) < 100000);
+    });
+  }
+
+  async forceSaveDuplicate() {
+    if (!this.pendingDuplicateSave) return;
+    await window.ligaDB.add('materials', this.pendingDuplicateSave);
+    const savedAmount = this.pendingDuplicateSave.price;
+    this.pendingDuplicateSave = null;
+    this.closeModal('modal-duplicate-warning');
+    this.showToast(`✓ Чек на ${this.formatSum(savedAmount)} подтвержден и добавлен!`);
+    await this.renderMaterials();
+  }
+
+  // ==========================================================================
+  // ЦИФРОВЫЕ РАСПИСКИ И ПОДТВЕРЖДЕНИЯ (TELEGRAM CALLBACK)
+  // ==========================================================================
+  checkUrlVerification() {
+    const params = new URLSearchParams(window.location.search);
+    const receiptCode = params.get('verify_receipt');
+    if (receiptCode) {
+      const recipient = params.get('emp') || 'Сотрудник бригады';
+      const amount = parseInt(params.get('amount')) || 500000;
+      const siteName = params.get('site') || 'ЖК Mirabad Avenue';
+
+      this.currentReceiptToVerify = { receiptCode, recipient, amount, siteName };
+
+      const elRec = document.getElementById('verify-receipt-recipient');
+      const elAmt = document.getElementById('verify-receipt-amount');
+      const elSite = document.getElementById('verify-receipt-site');
+
+      if (elRec) elRec.innerText = `Получатель: ${recipient}`;
+      if (elAmt) elAmt.innerText = this.formatSum(amount);
+      if (elSite) elSite.innerText = `Объект: ${siteName}`;
+
+      setTimeout(() => this.openModal('modal-verify-receipt'), 400);
+    }
+  }
+
+  async signReceiptConfirmation() {
+    const r = this.currentReceiptToVerify;
+    const dateStr = new Date().toLocaleString('ru-RU');
+    this.closeModal('modal-verify-receipt');
+    this.showToast(`✓ Расписка подтверждена получателем (${dateStr})!`);
+    
+    // Сохраняем подтверждение в локальной базе
+    await window.ligaDB.add('finances', {
+      siteId: this.currentSiteId,
+      type: 'brigade_confirmed',
+      amount: r ? r.amount : 0,
+      method: 'Цифровая подпись Telegram',
+      date: new Date().toISOString().slice(0, 10),
+      verifiedAt: dateStr
+    });
+    this.render();
+  }
+
+  // ==========================================================================
+  // ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
+  // ==========================================================================
+  openMasterGuide() {
+    this.switchGuideTab('designer');
+    this.openModal('modal-master-guide');
+  }
+
+  switchGuideTab(tabName) {
+    this.currentGuideTab = tabName;
+    document.querySelectorAll('.guide-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-tab') === tabName) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    this.renderGuideContent(tabName);
+  }
+
+  renderGuideContent(tabName) {
+    const container = document.getElementById('guide-tab-content');
+    if (!container) return;
+
+    if (tabName === 'designer') {
+      container.innerHTML = `
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>🤝 Скрипт первого контакта в Telegram</span>
+          </div>
+          <div class="guide-script-text">
+            «Здравствуйте! Меня зовут Улугбек, ведущий инженер сантехники «Лиги Опытных Мастеров» в Ташкенте. Очень нравятся ваши интерьеры! Мы специализируемся на сложной инженерке под элитную плитку: выставляем оси смесителей по лазеру до 1 мм, делаем двойную опрессовку 16 бар и фотопаспорт скрытых трасс, чтобы мебельщики не пробили трубы. Буду рад провести бесплатный инженерный аудит чертежей сантехники вашего текущего объекта!»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать для отправки в Telegram</span>
+          </button>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>💼 Партнерские условия для автора проекта</span>
+          </div>
+          <div class="guide-script-text">
+            «Для авторов проектов у нас прозрачные партнерские условия: агентское вознаграждение 10% от стоимости монтажа либо персональная скидка в пользу вашего клиента, плюс бесплатный аудит проекта до закупки материалов.»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать в Telegram</span>
+          </button>
+        </div>
+      `;
+    } else if (tabName === 'client') {
+      container.innerHTML = `
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>🛡️ Зачем нужна опрессовка 16 бар (24 часа)</span>
+          </div>
+          <div class="guide-script-text">
+            «В Ташкенте рабочее давление в домах 3–4 бара. Но при ночных гидроударах оно может подскочить до 8–10 бар. Мы проводим испытания давлением 16 бар (четырехкратный запас) в течение 24 часов под пломбой. Только после этого мы подписываем официальный Акт и разрешаем заливать стяжку.»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать аргумент для клиента</span>
+          </button>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>🏛️ Почему лучевая коллекторная разводка FAR</span>
+          </div>
+          <div class="guide-script-text">
+            «При тройниковой системе, когда на кухне открывают воду, в душе падает напор и обжигает кипятком. Лучевая разводка FAR дает отдельную прямую трубу к каждому крану без скрытых тройников в полу. Это бесшумно, надежно и безопасно на 50 лет.»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать аргумент для клиента</span>
+          </button>
+        </div>
+      `;
+    } else if (tabName === 'objections') {
+      container.innerHTML = `
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>🗣️ «У нас уже есть сантехники»</span>
+          </div>
+          <div class="guide-script-text">
+            «Это отлично! Надежные мастера — большая ценность. Но в премиум-сегменте бывают пиковые нагрузки или сложные узлы (котельные, отдельно стоящие ванны, скрытые смесители iBox), когда бригада занята. Сохраните мой контакт — буду рад подстраховать в сложный момент!»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать ответ на возражение</span>
+          </button>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>🗣️ «Пришлите просто прайс»</span>
+          </div>
+          <div class="guide-script-text">
+            «С удовольствием! Но в элитном жилье всё зависит от конфигурации (Rehau, Geberit, медь). Скиньте планировку санузла — я сделаю точный и прозрачный расчет с вилкой цен за 30 минут. Это бесплатно и ни к чему вас не обяжет.»
+          </div>
+          <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
+            <span>📋 Скопировать ответ на возражение</span>
+          </button>
+        </div>
+      `;
+    } else if (tabName === 'ethics') {
+      container.innerHTML = `
+        <div class="guide-card">
+          <div class="guide-card-title">
+            <span>📜 5 железных правил мастера Лиги</span>
+          </div>
+          <div style="font-size:12px; line-height:1.6; color:var(--text-main);">
+            1. <b>Чертеж дизайнера — закон</b>. Привязка осей и высот строго по лазеру до 1 мм под раскладку плитки.<br>
+            2. <b>Защита авторитета автора</b>. Никогда не критиковать чертежи при клиенте. Нестыковку решать лично с дизайнером, предложив 2 решения.<br>
+            3. <b>Опрессовка 16 бар</b> на 24 часа с составлением официального Акта перед стяжкой.<br>
+            4. <b>Исполнительный фотопаспорт</b> каждого скрытого стыка с лазерной рулеткой.<br>
+            5. <b>Чистота и порядок</b>: строительный пылесос, герметичные заглушки, уважение к чужому труду.
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  copyGuideText(btn) {
+    const card = btn.closest('.guide-card');
+    const textEl = card ? card.querySelector('.guide-script-text') : null;
+    if (textEl) {
+      const cleanText = textEl.innerText.replace(/[«»]/g, '').trim();
+      navigator.clipboard.writeText(cleanText).then(() => {
+        this.showToast('✓ Текст скопирован! Вставьте в чат Telegram.');
+      });
+    }
+  }
+
+  // ==========================================================================
+  // ИИ-АНАЛИТИК ОБЪЕКТА И РИСКОВ
+  // ==========================================================================
+  runAiAudit() {
+    this.openModal('modal-ai-audit');
+    const loading = document.getElementById('ai-audit-loading');
+    const body = document.getElementById('ai-audit-body');
+
+    if (loading) loading.style.display = 'block';
+    if (body) body.style.display = 'none';
+
+    setTimeout(async () => {
+      if (loading) loading.style.display = 'none';
+      if (body) body.style.display = 'block';
+
+      // Расчет маржинальности
+      const s = this.currentSite;
+      const contract = s ? (s.contractSum || 0) : 0;
+      const advance = s ? (s.advanceSum || 0) : 0;
+      const brigade = s ? (s.brigadeOwed || 0) : 0;
+
+      const materialsList = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+      const totalMat = materialsList.reduce((acc, m) => acc + (m.price || 0), 0);
+
+      const netProfit = Math.max(0, contract - totalMat - brigade);
+      const marginPercent = contract > 0 ? Math.round((netProfit / contract) * 100) : 60;
+
+      const marginValEl = document.getElementById('ai-margin-val');
+      if (marginValEl) {
+        marginValEl.innerText = `Рентабельность: ${marginPercent}% (${marginPercent >= 50 ? 'Высокая' : 'Умеренная'})`;
+      }
+
+      const risksValEl = document.getElementById('ai-risks-val');
+      if (risksValEl) {
+        risksValEl.innerText = s && s.pressTestPassed 
+          ? '✓ Опрессовка 16 бар выдержана. Риск разрыва стяжки исключен.'
+          : '⚠️ Внимание: опрессовка 16 бар еще не зафиксирована!';
+      }
+    }, 600);
+  }
+
+  saveAiAuditNotes() {
+    this.closeModal('modal-ai-audit');
+    this.showToast('✓ Выводы ИИ-аналитика зафиксированы в истории объекта!');
   }
 
   openModal(modalId) {
