@@ -22,3 +22,4 @@ scratch/
 screenshot_*.png
 test_*.py
 verify_*.py
+.playwright-cli/
