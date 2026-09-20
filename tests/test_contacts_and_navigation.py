@@ -208,3 +208,56 @@ def test_sound_toggle_and_ai_traces_clean(http_server):
             assert marker not in body_text, f"Обнаружен запрещенный след ИИ в интерфейсе: {marker}"
 
         browser.close()
+
+def test_phase_stepper_milestones_and_timeline(http_server):
+    """Проверка степпера фаз объекта, смены статуса и авто-записи вех в Хронику объекта"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 393, "height": 852})
+        page = context.new_page()
+
+        # Автоматическое подтверждение confirm-диалогов
+        page.on("dialog", lambda dialog: dialog.accept())
+
+        page.goto(f"{http_server}/index.html")
+        page.wait_for_selector(".phase-stepper")
+
+        # 1. Проверяем наличие степпера и бейджа статуса
+        status_badge = page.locator("#site-status-badge")
+        assert status_badge.is_visible(), "Бейдж статуса объекта должен быть видим"
+
+        # 2. Кликаем на этап 2 («Черновой»)
+        step_2 = page.locator(".phase-step[data-phase='2']")
+        step_2.click()
+        page.wait_for_timeout(500)
+
+        # Проверяем обновление статуса
+        assert "Черновой" in status_badge.inner_text(), "Статус объекта должен обновиться на Черновой монтаж"
+        assert "active" in (step_2.get_attribute("class") or ""), "Шаг 2 должен получить класс active"
+
+        # 3. Кликаем на этап 3 («16 бар»)
+        step_3 = page.locator(".phase-step[data-phase='3']")
+        step_3.click()
+        page.wait_for_timeout(600)
+
+        assert "16 бар" in status_badge.inner_text(), "Статус объекта должен обновиться на Опрессовка 16 бар"
+        assert "active" in (step_3.get_attribute("class") or ""), "Шаг 3 должен получить класс active"
+
+        # Проверяем, что открылось модальное окно опрессовки после согласия на подсказку
+        modal_pt = page.locator("#modal-pressure-test")
+        assert modal_pt.is_visible(), "Модальное окно опрессовки 16 бар должно открыться по подсказке"
+
+        # Закрываем модальное окно опрессовки
+        page.click("#modal-pressure-test .btn-close-modal")
+        page.wait_for_timeout(400)
+
+        # 4. Переходим на экран Истории и проверяем авто-запись вехи
+        page.click("button[data-screen='history']")
+        page.wait_for_timeout(400)
+
+        timeline_text = page.locator("#timeline-events-container").inner_text()
+        assert "Веха проекта" in timeline_text or "16 бар" in timeline_text, \
+            "В хронике объекта должна автоматически появиться запись о смене инженерного этапа"
+
+        browser.close()
+

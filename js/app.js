@@ -1047,13 +1047,71 @@ class LigaApp {
     this.updateNavBadges();
   }
 
-  // Обновление статуса объекта
+  // Обновление статуса объекта (Инженерный пульт мастера — v2.0.5)
   async updateSiteStatus(status) {
     if (!this.currentSite) return;
+    const oldStatus = this.currentSite.status;
     this.currentSite.status = status;
     await window.ligaDB.put('sites', this.currentSite);
-    this.showToast(`Этап объекта переключен на: ${status}`);
+
+    const statusNames = {
+      1: '1. Аудит проекта',
+      2: '2. Черновой монтаж',
+      3: '3. Опрессовка 16 бар',
+      4: '4. Чистовая сантехника',
+      5: '5. Объект сдан'
+    };
+    const phaseName = statusNames[status] || `Этап ${status}`;
+
+    // 1. Акустический фидбек Swiss Audio
+    if (status === 3 || status === 5) {
+      this.playSwissChime();
+    } else {
+      this.playSubtleClick();
+    }
+
+    // 2. Уважительный статус
+    this.showToast(`✓ Объект переведен на этап: ${phaseName}`);
     this.render();
+
+    // 3. Автоматическая фиксация вехи в 10-летней Хронике объекта (Timeline)
+    if (oldStatus !== status && window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('site_timeline_events')) {
+      const typeMap = {
+        1: 'audit',
+        2: 'rough',
+        3: 'pressure',
+        4: 'trim',
+        5: 'service'
+      };
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        await window.ligaDB.add('site_timeline_events', {
+          siteId: this.currentSiteId,
+          date: today,
+          eventType: typeMap[status] || 'audit',
+          title: `Веха проекта: ${phaseName}`,
+          description: `Инженерный этап официально зафиксирован мастером в бортовом журнале LIGA OS.`,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn('Не удалось зафиксировать веху в хронике:', err);
+      }
+    }
+
+    // 4. Интеллектуальные подсказки мастера
+    if (status === 3 && (!this.currentSite.pressureTest || !this.currentSite.pressureTest.passed)) {
+      setTimeout(() => {
+        if (confirm('🛡️ Этап «16 бар» активирован!\n\nЖелаете прямо сейчас заполнить официальный Протокол гидроиспытаний 16 бар с фиксацией манометра?')) {
+          this.openPressureTestModal();
+        }
+      }, 350);
+    } else if (status === 5) {
+      setTimeout(() => {
+        if (confirm('🎉 Поздравляем! Объект официально переведен в статус «СДАН».\n\nОткрыть официальный Исполнительный Инженерный Паспорт для печати или отправки заказчику?')) {
+          this.printPassport();
+        }
+      }, 350);
+    }
   }
 
   // Открытие модального окна структурированного протокола опрессовки 16 бар (P0-2)
