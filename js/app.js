@@ -46,6 +46,21 @@ class LigaApp {
       drains: 2,
       floorHeatingSqM: 40
     };
+
+    // Тарифные коэффициенты экспресс-сметы (настраиваемые мастером Улугбеком)
+    this.defaultTariffSettings = {
+      costPerBathroom: 1500000,   // Обвязка стояков и распределительного узла на 1 санузел
+      costPerPoint: 450000,       // Водорозетка / точка слива
+      costPerGeberit: 650000,     // Монтаж инсталляции Geberit / TECE
+      costPerIbox: 550000,        // Встраиваемый смеситель iBox
+      costPerDrain: 400000,       // Душевой трап в пол
+      costPerSqMFloor: 90000,     // Водяной теплый пол (кв.м)
+      baseAuditWork: 2500000,     // Шеф-монтаж, проектирование и опрессовка
+      markupMax: 1.25,            // Верхняя планка ориентировочной вилки (1.25x)
+      usdRate: 12900,             // Расчетный курс USD
+      statusLabel: 'Базовый ориентир (требует утверждения Улугбеком)'
+    };
+    this.tariffSettings = this.loadTariffSettings();
   }
 
   async init() {
@@ -74,6 +89,7 @@ class LigaApp {
 
     // 8. Первичный рендеринг
     this.render();
+    this.calculateEstimate();
   }
 
   // Управление темой интерфейса (Dark Titanium / Light Ceramic)
@@ -257,6 +273,25 @@ class LigaApp {
     const btnCopyEstimate = document.getElementById('btn-copy-estimate');
     if (btnCopyEstimate) {
       btnCopyEstimate.addEventListener('click', () => this.copyEstimateToTelegram());
+    }
+
+    // 11.1 Настройка тарифов сметы (P0-1)
+    const btnOpenTariffs = document.getElementById('btn-open-tariffs');
+    if (btnOpenTariffs) {
+      btnOpenTariffs.addEventListener('click', () => this.openTariffSettingsModal());
+    }
+
+    const formTariffs = document.getElementById('form-tariffs');
+    if (formTariffs) {
+      formTariffs.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveTariffs();
+      });
+    }
+
+    const btnResetTariffs = document.getElementById('btn-reset-tariffs');
+    if (btnResetTariffs) {
+      btnResetTariffs.addEventListener('click', () => this.resetTariffSettings());
     }
 
     // 12. Форма добавления чека и обработка фото чека
@@ -524,6 +559,8 @@ class LigaApp {
       await this.renderMaterials();
     } else if (screenName === 'finances') {
       await this.renderFinances();
+    } else if (screenName === 'estimate') {
+      this.calculateEstimate();
     }
   }
 
@@ -865,51 +902,136 @@ ${itemsText}
     if (elTotalBrigade) elTotalBrigade.innerText = this.formatSum(totalBrigade);
   }
 
-  // Экспресс-калькулятор сметы
+  // ==========================================================================
+  // ТАРИФНЫЙ КОНФИГУРАТОР И ЭКСПРЕСС-СМЕТА (P0-1)
+  // ==========================================================================
+  loadTariffSettings() {
+    try {
+      const saved = localStorage.getItem('liga_tariff_settings_v1');
+      if (saved) {
+        return { ...this.defaultTariffSettings, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn('Не удалось загрузить сохраненные тарифы:', e);
+    }
+    return { ...this.defaultTariffSettings };
+  }
+
+  openTariffSettingsModal() {
+    const t = this.tariffSettings || this.defaultTariffSettings;
+    const fields = [
+      'costPerBathroom', 'costPerPoint', 'costPerGeberit',
+      'costPerIbox', 'costPerDrain', 'costPerSqMFloor',
+      'baseAuditWork', 'usdRate'
+    ];
+    fields.forEach(field => {
+      const input = document.getElementById(`tariff-${field}`);
+      if (input && t[field] !== undefined) {
+        input.value = t[field];
+      }
+    });
+    this.openModal('modal-tariffs');
+  }
+
+  handleSaveTariffs() {
+    const newTariffs = {
+      costPerBathroom: parseInt(document.getElementById('tariff-costPerBathroom').value) || 0,
+      costPerPoint: parseInt(document.getElementById('tariff-costPerPoint').value) || 0,
+      costPerGeberit: parseInt(document.getElementById('tariff-costPerGeberit').value) || 0,
+      costPerIbox: parseInt(document.getElementById('tariff-costPerIbox').value) || 0,
+      costPerDrain: parseInt(document.getElementById('tariff-costPerDrain').value) || 0,
+      costPerSqMFloor: parseInt(document.getElementById('tariff-costPerSqMFloor').value) || 0,
+      baseAuditWork: parseInt(document.getElementById('tariff-baseAuditWork').value) || 0,
+      usdRate: parseInt(document.getElementById('tariff-usdRate').value) || 12900,
+      statusLabel: 'Пользовательские тарифы мастера Улугбека'
+    };
+
+    this.tariffSettings = { ...this.tariffSettings, ...newTariffs };
+    try {
+      localStorage.setItem('liga_tariff_settings_v1', JSON.stringify(this.tariffSettings));
+    } catch (e) {
+      console.warn('Не удалось сохранить тарифы:', e);
+    }
+
+    const badge = document.getElementById('est-tariff-status');
+    if (badge) badge.innerText = this.tariffSettings.statusLabel;
+
+    this.closeModal('modal-tariffs');
+    this.calculateEstimate();
+    this.showToast('✓ Тарифы мастера сохранены и применены!');
+  }
+
+  resetTariffSettings() {
+    this.tariffSettings = { ...this.defaultTariffSettings };
+    try {
+      localStorage.removeItem('liga_tariff_settings_v1');
+    } catch (e) {
+      console.warn('Не удалось сбросить тарифы:', e);
+    }
+
+    const badge = document.getElementById('est-tariff-status');
+    if (badge) badge.innerText = this.tariffSettings.statusLabel;
+
+    this.closeModal('modal-tariffs');
+    this.calculateEstimate();
+    this.showToast('✓ Тарифы сброшены к базовым ориентирам');
+  }
+
   updateEstimate(field, delta) {
     if (this.estimate[field] !== undefined) {
       this.estimate[field] = Math.max(0, this.estimate[field] + delta);
-      document.getElementById(`val-${field}`).innerText = this.estimate[field];
+      const valEl = document.getElementById(`val-${field}`);
+      if (valEl) valEl.innerText = this.estimate[field];
       this.calculateEstimate();
     }
   }
 
   calculateEstimate() {
     const e = this.estimate;
-    const costPerPoint = 450000;
-    const costPerGeberit = 650000;
-    const costPerIbox = 550000;
-    const costPerDrain = 400000;
-    const costPerSqMFloor = 90000;
-    const baseAuditWork = 2500000;
+    const t = this.tariffSettings || this.defaultTariffSettings;
 
-    const totalMin = (e.waterPoints * costPerPoint) +
-                     (e.geberit * costPerGeberit) +
-                     (e.ibox * costPerIbox) +
-                     (e.drains * costPerDrain) +
-                     (e.floorHeatingSqM * costPerSqMFloor) +
-                     baseAuditWork;
+    // Включение параметра «Санузлы» в математический расчет стоимости
+    const costBathrooms = (e.bathrooms || 0) * (t.costPerBathroom || 0);
+    const costPoints = (e.waterPoints || 0) * (t.costPerPoint || 0);
+    const costGeberit = (e.geberit || 0) * (t.costPerGeberit || 0);
+    const costIbox = (e.ibox || 0) * (t.costPerIbox || 0);
+    const costDrains = (e.drains || 0) * (t.costPerDrain || 0);
+    const costFloor = (e.floorHeatingSqM || 0) * (t.costPerSqMFloor || 0);
+    const baseAudit = t.baseAuditWork || 0;
 
-    const totalMax = Math.round(totalMin * 1.25);
-    const usdRate = 12900;
+    const totalMin = costBathrooms + costPoints + costGeberit + costIbox + costDrains + costFloor + baseAudit;
+    const totalMax = Math.round(totalMin * (t.markupMax || 1.25));
+    const usdRate = t.usdRate || 12900;
 
     const totalMinUsd = Math.round(totalMin / usdRate);
     const totalMaxUsd = Math.round(totalMax / usdRate);
 
-    document.getElementById('est-range-sum').innerText = `${this.formatSum(totalMin)} – ${this.formatSum(totalMax)}`;
-    document.getElementById('est-range-usd').innerText = `$${totalMinUsd} – $${totalMaxUsd}`;
+    const elSum = document.getElementById('est-range-sum');
+    const elUsd = document.getElementById('est-range-usd');
+    const badge = document.getElementById('est-tariff-status');
+
+    if (elSum) {
+      elSum.innerText = `${this.formatNumber(totalMin)} – ${this.formatNumber(totalMax)} сум`;
+    }
+    if (elUsd) {
+      elUsd.innerText = `$${this.formatNumber(totalMinUsd)} – $${this.formatNumber(totalMaxUsd)}`;
+    }
+    if (badge && t.statusLabel) {
+      badge.innerText = t.statusLabel;
+    }
   }
 
   copyEstimateToTelegram() {
     const e = this.estimate;
-    const textSum = document.getElementById('est-range-sum').innerText;
-    const textUsd = document.getElementById('est-range-usd').innerText;
+    const t = this.tariffSettings || this.defaultTariffSettings;
+    const textSum = document.getElementById('est-range-sum') ? document.getElementById('est-range-sum').innerText : '';
+    const textUsd = document.getElementById('est-range-usd') ? document.getElementById('est-range-usd').innerText : '';
 
     const message = `🏛️ ПРЕДВАРИТЕЛЬНЫЙ РАСЧЕТ ИНЖЕНЕРНОГО МОНТАЖА
 «Лига Опытных Мастеров» • Инженер Улугбек Хакимов
 
 Параметры объекта:
-• Санузлов: ${e.bathrooms}
+• Санузлов: ${e.bathrooms} (обвязка стояков и распределительных узлов)
 • Водорозетки и точки слива: ${e.waterPoints} шт.
 • Инсталляции Geberit/TECE: ${e.geberit} шт.
 • Скрытые смесители iBox: ${e.ibox} шт.
@@ -919,17 +1041,23 @@ ${itemsText}
 Ориентировочная вилка стоимости работ:
 💰 ${textSum} (${textUsd})
 
+* Расчет предварительный по тарифной сетке мастера (${t.statusLabel}).
+Итоговая смета утверждается на объекте после лазерного замера и согласования проекта.
+
 В стоимость включено:
 ✓ Коллекторная лучевая разводка FAR
 ✓ Трубы Rehau Rautitan / Stout
-✓ Опрессовка 16 бар (тест х4, 24 часа) с официальным Актом
-✓ Исполнительный паспорт объекта с фотопривязками
+✓ Опрессовка 16 бар (двойной гидротест) с Актом испытаний
+✓ Исполнительный фотопаспорт скрытых трасс с лазерными привязками
 ✓ Официальный договор и гарантия
 
 Сайт-портфолио: https://liga-masterov.vercel.app/`;
 
     navigator.clipboard.writeText(message).then(() => {
       this.showToast('✓ Смета скопирована! Вставьте её в чат Telegram.');
+    }).catch(err => {
+      console.warn('Clipboard write failed:', err);
+      this.showToast('✓ Смета сформирована!');
     });
   }
 
@@ -1532,6 +1660,10 @@ ${itemsText}
 
   formatSum(num) {
     return new Intl.NumberFormat('ru-RU').format(num || 0) + ' сум';
+  }
+
+  formatNumber(num) {
+    return new Intl.NumberFormat('ru-RU').format(num || 0);
   }
 }
 

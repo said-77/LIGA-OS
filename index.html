@@ -451,11 +451,27 @@
           </div>
         </div>
 
-        <!-- ИТОГОВАЯ ВИЛКА -->
+        <!-- ИТОГОВАЯ ВИЛКА СМЕТЫ -->
         <div class="debt-banner" style="border-color: var(--gold-secondary);">
           <div class="debt-label" style="color:var(--gold-primary);">Ориентировочная стоимость работ:</div>
-          <div id="est-range-sum" class="debt-amount" style="font-size:22px;">16 500 000 – 20 600 000 сум</div>
-          <div id="est-range-usd" style="font-size:14px; color:var(--neon-cyan); margin-top:4px; font-weight:800;">$1 280 – $1 600</div>
+          <div id="est-range-sum" class="debt-amount" style="font-size:22px;">17 700 000 – 22 125 000 сум</div>
+          <div id="est-range-usd" style="font-size:14px; color:var(--neon-cyan); margin-top:4px; font-weight:800;">$1 372 – $1 715</div>
+        </div>
+
+        <!-- СТАТУС ТАРИФНОЙ СЕТКИ (ЧЕСТНОСТЬ ПО КАНОНУ И АУДИТУ GPT) -->
+        <div class="estimate-tariff-badge" style="margin-top:12px; padding:10px 14px; background:rgba(212,163,89,0.08); border:1px solid rgba(212,163,89,0.25); border-radius:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--gold-primary); font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <span>⚖️</span>
+            <span>Тарифная сетка: <span id="est-tariff-status">Базовый ориентир (требует утверждения Улугбеком)</span></span>
+          </div>
+          <div style="font-size:10px; color:var(--text-muted); margin-top:4px; line-height:1.4;">
+            Все расценки прозрачны и калибруются под стандарты мастера Улугбека
+          </div>
+          <div style="margin-top:8px;">
+            <button id="btn-open-tariffs" type="button" class="btn-subtle" style="font-size:11px; padding:6px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:var(--text-main); cursor:pointer;">
+              ⚙️ Настроить тарифные коэффициенты
+            </button>
+          </div>
         </div>
 
         <!-- Кнопка копирования в Telegram -->
@@ -464,6 +480,59 @@
         </button>
       </div>
     </section>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 0: НАСТРОЙКА ТАРИФОВ СМЕТЫ (P0-1)
+         ==================================================================== -->
+    <div id="modal-tariffs" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:85vh; overflow-y:auto;">
+        <div class="modal-title">
+          <span>⚙️ Тарифная сетка сметы</span>
+          <button onclick="window.app.closeModal('modal-tariffs')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
+          Базовые коэффициенты для предварительного расчета сметы на объекте. Вы можете изменить любую ставку под свои стандарты:
+        </div>
+        <form id="form-tariffs">
+          <div class="form-group">
+            <label class="form-label">Обвязка стояков/узла на 1 санузел (сум):</label>
+            <input id="tariff-costPerBathroom" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Водорозетка / точка слива (сум):</label>
+            <input id="tariff-costPerPoint" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Монтаж инсталляции Geberit/TECE (сум):</label>
+            <input id="tariff-costPerGeberit" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Скрытый смеситель iBox (сум):</label>
+            <input id="tariff-costPerIbox" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Душевой трап в пол (сум):</label>
+            <input id="tariff-costPerDrain" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Теплый пол за 1 кв.м (сум):</label>
+            <input id="tariff-costPerSqMFloor" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Шеф-монтаж, проект и опрессовка (сум):</label>
+            <input id="tariff-baseAuditWork" type="number" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Курс доллара USD (сум):</label>
+            <input id="tariff-usdRate" type="number" class="form-input" required>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="submit" class="btn-submit-modal" style="flex:1;">Сохранить тарифы</button>
+            <button type="button" id="btn-reset-tariffs" class="btn-subtle" style="padding:0 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:var(--text-muted); cursor:pointer;">Сброс</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 1: СОЗДАНИЕ НОВОГО ОБЪЕКТА
