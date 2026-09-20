@@ -202,6 +202,9 @@
       <button id="btn-generate-pdf" class="btn-flagship-gold">
         <span>🖨️</span> Печать / Экспорт в PDF (Паспорт объекта)
       </button>
+      <button id="btn-generate-act" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);">
+        <span>📜</span> Официальный Акт испытания 16 бар / 24ч
+      </button>
       <div id="passport-status-indicator" style="font-size:11px; text-align:center; margin-top:8px; margin-bottom:16px; font-weight:700;"></div>
 
     </main>
@@ -409,6 +412,9 @@
         <!-- Кнопка выгрузки официального Акта технадзора в Telegram -->
         <button id="btn-act-screed" class="btn-flagship-gold" style="height:52px; font-size:13px; margin-top:16px; margin-bottom:0;">
           <span>🛡️</span> Отправить Акт готовности к стяжке в Telegram
+        </button>
+        <button id="btn-act-screed-print" onclick="window.app.generatePressureAct()" class="btn-flagship-gold" style="height:52px; font-size:13px; margin-top:10px; margin-bottom:0; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);">
+          <span>📜</span> Официальный Акт опрессовки 16 бар (Печать / PDF)
         </button>
       </div>
     </section>
@@ -695,6 +701,9 @@
             <button type="submit" class="btn-submit-modal" style="flex:1;">✓ Зафиксировать опрессовку</button>
             <button type="button" id="btn-reset-pressure-test" class="btn-subtle" style="padding:0 14px; background:rgba(255,42,95,0.12); border:1px solid rgba(255,42,95,0.3); border-radius:12px; color:var(--neon-ruby); cursor:pointer;">Сбросить</button>
           </div>
+          <button type="button" id="btn-pt-generate-act" onclick="window.app.generatePressureAct()" class="btn-act-modal" style="width:100%; height:46px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer; margin-top:10px; background:linear-gradient(135deg, #b8832a 0%, #8c5d13 100%); color:#fff; border:none; box-shadow:0 4px 14px rgba(184,131,42,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span>📜</span> Сформировать Официальный Акт 16 бар (А4)
+          </button>
         </form>
       </div>
     </div>
@@ -762,6 +771,9 @@
 
         <button onclick="window.app.generatePassport()" class="btn-submit-modal" style="margin-top:16px;">
           📄 Сформировать готовый PDF-паспорт
+        </button>
+        <button onclick="window.app.generatePressureAct()" class="btn-act-modal" style="width:100%; height:46px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer; margin-top:8px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary); display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span>📜</span> Сформировать Официальный Акт 16 бар (А4)
         </button>
       </div>
     </div>

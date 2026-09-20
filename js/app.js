@@ -306,6 +306,12 @@ class LigaApp {
       btnPdf.addEventListener('click', () => this.generatePassport());
     }
 
+    // 2.1. Кнопка Официального Акта 16 бар (Флагман технадзора)
+    const btnAct = document.getElementById('btn-generate-act');
+    if (btnAct) {
+      btnAct.addEventListener('click', () => this.generatePressureAct());
+    }
+
     // 3. Менеджер резервного копирования и переноса базы (P0-4)
     const btnBackup = document.getElementById('btn-backup-top');
     if (btnBackup) {
@@ -1640,6 +1646,18 @@ ${itemsText}
   generatePassport() {
     if (!this.currentSite) return;
     window.ligaPdfEngine.generatePassport(this.currentSite, this.currentPhotos);
+  }
+
+  // Генерация Официального Акта гидравлического испытания 16 бар / 24 часа
+  generatePressureAct() {
+    if (!this.currentSite) return;
+    const isVerified = window.ligaPdfEngine.isPressureVerified(this.currentSite, this.currentPhotos);
+    if (!isVerified) {
+      alert('⚠️ Для формирования Официального Акта 16 бар необходимо зафиксировать проведение испытания (минимум 16.0 бар, выдержка 24 часа) и прикрепить фото манометра.');
+      this.openModal('modal-pressure-test');
+      return;
+    }
+    window.ligaPdfEngine.generatePressureAct(this.currentSite, this.currentPhotos);
   }
 
   // Добавление чека с интеллектуальной проверкой на дубликаты

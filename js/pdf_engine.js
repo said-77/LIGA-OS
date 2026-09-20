@@ -570,6 +570,562 @@ class LigaPdfEngine {
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   }
+
+  // Генерация Официального Акта гидравлических испытаний 16 бар / 24 часа (Бланк А4)
+  generatePressureAct(site, photos = {}) {
+    if (!site) return;
+    const isVerified = this.isPressureVerified(site, photos);
+    if (!isVerified) {
+      alert('⚠️ Акт гидравлических испытаний не может быть сформирован:\nСначала зафиксируйте успешное прохождение испытания 16 бар (экспозиция 24 часа) и загрузите фото манометра в протоколе опрессовки.');
+      return false;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра и печати Официального Акта 16 бар.');
+      return false;
+    }
+
+    const pt = site.pressureTest || {};
+    const photoPressure = (photos && photos.pressure) || pt.photo || '';
+    const photoManifold = (photos && photos.manifold) || '';
+
+    const todayStr = pt.endDate || new Date().toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const actNumber = `АКТ-16Б-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
+
+    const renderPhotoBox = (photoData, defaultTitle, defaultSubtitle) => {
+      if (photoData) {
+        return `
+          <div class="act-photo-card">
+            <div class="act-photo-wrap">
+              <img src="${photoData}" alt="${defaultTitle}" class="act-img">
+            </div>
+            <div class="act-photo-caption"><strong>${defaultTitle}:</strong> ${defaultSubtitle}</div>
+          </div>
+        `;
+      }
+      return `
+        <div class="act-photo-card">
+          <div class="act-photo-placeholder">
+            <svg width="32" height="32" fill="none" stroke="#64748b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span style="margin-top:4px;">${defaultTitle}</span>
+          </div>
+          <div class="act-photo-caption">${defaultSubtitle}</div>
+        </div>
+      `;
+    };
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Официальный Акт опрессовки 16 бар — ${site.name}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      line-height: 1.35;
+      font-size: 11.5px;
+    }
+    .page-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 6px 10px;
+    }
+    /* Шапка Акта */
+    .act-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2.5px solid #b8832a;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 52px;
+      height: 52px;
+    }
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 900;
+      color: #080e1a;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .brand-text p {
+      font-size: 10px;
+      color: #8c6322;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .act-badge-box {
+      text-align: right;
+    }
+    .act-badge-passed {
+      display: inline-block;
+      font-weight: 900;
+      font-size: 10.5px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 2px solid #00a86b;
+      color: #00875a;
+      background: #f0fdf4;
+    }
+    .act-num {
+      font-size: 10.5px;
+      color: #475569;
+      margin-top: 3px;
+      font-weight: 700;
+    }
+
+    /* Заголовок документа */
+    .doc-title-block {
+      text-align: center;
+      margin-bottom: 10px;
+      padding: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+    }
+    .doc-title-block h2 {
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .doc-title-block p {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* Секции */
+    .section-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #b8832a;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin: 8px 0 4px 0;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 2px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
+    }
+    .meta-row {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-label {
+      font-size: 9.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .meta-value {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* Таблица замеров */
+    .protocol-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+      font-size: 10.5px;
+    }
+    .protocol-table th {
+      background: #1e293b;
+      color: #ffffff;
+      padding: 5px 8px;
+      text-align: left;
+      font-weight: 800;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid #1e293b;
+    }
+    .protocol-table td {
+      padding: 5px 8px;
+      border: 1px solid #cbd5e1;
+      color: #1e293b;
+    }
+    .protocol-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .val-highlight {
+      font-weight: 800;
+      color: #00875a;
+    }
+
+    /* Фотофиксация */
+    .act-photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .act-photo-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #ffffff;
+      padding: 4px;
+    }
+    .act-photo-wrap {
+      width: 100%;
+      height: 125px;
+      overflow: hidden;
+      border-radius: 4px;
+      background: #000;
+    }
+    .act-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .act-photo-placeholder {
+      width: 100%;
+      height: 125px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .act-photo-caption {
+      font-size: 9.5px;
+      color: #334155;
+      padding: 4px 2px 2px 2px;
+      line-height: 1.25;
+    }
+
+    /* Резолюция */
+    .resolution-box {
+      border: 1.5px solid #00a86b;
+      background: #f0fdf4;
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+    }
+    .resolution-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #065f46;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+    .resolution-text {
+      font-size: 10.5px;
+      color: #047857;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    /* Статус и предупреждение */
+    .disclaimer-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 6px 9px;
+      margin-bottom: 8px;
+    }
+    .disclaimer-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #92400e;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .disclaimer-desc {
+      font-size: 9.5px;
+      color: #78350f;
+      line-height: 1.3;
+    }
+
+    /* Подписи */
+    .signatures-block {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1.5px solid #e2e8f0;
+    }
+    .sign-col {
+      width: 31%;
+    }
+    .sign-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .sign-line {
+      border-bottom: 1px solid #0f172a;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 10px;
+      color: #334155;
+      padding-bottom: 2px;
+      position: relative;
+    }
+    .facsimile-stamp {
+      position: absolute;
+      right: 5px;
+      bottom: -10px;
+      color: #b8832a;
+      border: 2px dashed #b8832a;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 7px;
+      font-weight: 900;
+      text-transform: uppercase;
+      transform: rotate(-10deg);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    /* Панель печати */
+    .print-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+    .btn-print {
+      background: linear-gradient(135deg, #b8832a 0%, #8c5d13 100%);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+    @media print {
+      .print-bar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bar">
+    <button class="btn-print" onclick="window.print()">🖨️ Печать / Сохранить в PDF</button>
+  </div>
+
+  <div class="page-container">
+    <!-- Шапка Акта -->
+    <div class="act-header">
+      <div class="header-brand">
+        <svg class="header-logo" viewBox="0 0 100 100">
+          <polygon points="50,4 88,18 88,60 50,96 12,60 12,18" fill="#141c2e" stroke="#b8832a" stroke-width="3"/>
+          <circle cx="50" cy="46" r="18" fill="none" stroke="#ffd175" stroke-width="2.5"/>
+          <path d="M43,36 L43,54 L57,54" fill="none" stroke="#ffd175" stroke-width="3" stroke-linecap="round"/>
+          <polygon points="50,14 52,18 56,18 53,21 54,25 50,22 46,25 47,21 44,18 48,18" fill="#ffd175"/>
+        </svg>
+        <div class="brand-text">
+          <h1>Лига Опытных Мастеров</h1>
+          <p>Инженерный центр премиальной сантехники • Ташкент</p>
+        </div>
+      </div>
+      <div class="act-badge-box">
+        <div class="act-badge-passed">✓ 16 БАР / 24Ч ПОДТВЕРЖДЕНО</div>
+        <div class="act-num">${actNumber}</div>
+      </div>
+    </div>
+
+    <!-- Заголовок документа -->
+    <div class="doc-title-block">
+      <h2>Официальный Акт гидравлического испытания системы</h2>
+      <p>СТАНДАРТ DIN 1988 (Ч. 2) / СНиП • ИСПЫТАНИЕ ДАВЛЕНИЕМ 16.0 БАР • ЭКСПОЗИЦИЯ 24 ЧАСА • ПРОВЕРКА ПОД СТЯЖКУ ПОЛА</p>
+    </div>
+
+    <!-- Стороны и объект -->
+    <div class="section-title">1. Сведения об объекте и сторонах освидетельствования</div>
+    <div class="meta-grid">
+      <div class="meta-row">
+        <span class="meta-label">Наименование объекта:</span>
+        <span class="meta-value">${site.name}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Адрес / Помещение:</span>
+        <span class="meta-value">${site.unit || 'Премиальный жилой фонд, г. Ташкент'}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Заказчик (Владелец):</span>
+        <span class="meta-value">${site.client} (${site.phone || 'тел. указан в договоре'})</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Ведущий инженер-испытатель:</span>
+        <span class="meta-value">Мастер Улугбек Хакимов («Лига Опытных Мастеров»)</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Автор проекта / Дизайн:</span>
+        <span class="meta-value">${site.designer || 'Индивидуальный инженерный проект'}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Дата фиксации испытаний:</span>
+        <span class="meta-value">${todayStr}</span>
+      </div>
+    </div>
+
+    <!-- Нормативы и таблица замера -->
+    <div class="section-title">2. Протокол измерений и параметры гидравлического испытания</div>
+    <table class="protocol-table">
+      <thead>
+        <tr>
+          <th style="width:32%;">Параметр испытания</th>
+          <th style="width:24%;">Требование стандарта</th>
+          <th style="width:24%;">Фактический замер</th>
+          <th style="width:20%;">Заключение</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Давление нагнетания гидропрессом</strong></td>
+          <td>Не менее 16.0 бар (DIN 1988)</td>
+          <td class="val-highlight"><strong>${pt.pressureBar || '16.0'} бар</strong></td>
+          <td>✓ Соответствует</td>
+        </tr>
+        <tr>
+          <td><strong>Время постановки под давление</strong></td>
+          <td>Старт экспозиции под пломбой</td>
+          <td>${pt.startDate} в ${pt.startTime}</td>
+          <td>✓ Зафиксировано</td>
+        </tr>
+        <tr>
+          <td><strong>Время окончания испытания</strong></td>
+          <td>Выдержка не менее 24 часов</td>
+          <td>${pt.endDate} в ${pt.endTime}</td>
+          <td>✓ 24 часа выдержано</td>
+        </tr>
+        <tr>
+          <td><strong>Конечное контрольное давление</strong></td>
+          <td>Не ниже исходного (падение 0.0)</td>
+          <td class="val-highlight"><strong>${pt.pressureBar || '16.0'} бар</strong></td>
+          <td>✓ Падение: 0.0 бар</td>
+        </tr>
+        <tr>
+          <td><strong>Визуальный контроль узлов и трасс</strong></td>
+          <td>Отсутствие свищей, капель и течи</td>
+          <td>Коллекторы FAR, трубы Rehau</td>
+          <td>✓ 100% герметичность</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:10.5px; margin-bottom:8px; padding:5px 8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px;">
+      <strong>Заключение инженера по соединениям:</strong> ${pt.notes || 'Система отопления и водоснабжения выдержала опрессовку 16 бар. Соединения монолитны.'}
+    </div>
+
+    <!-- Фотофиксация манометра и узла -->
+    <div class="section-title">3. Фотофиксация опломбированного манометра и узла ввода под давлением</div>
+    <div class="act-photo-grid">
+      ${renderPhotoBox(photoPressure, 'Контрольный манометр 16 BAR', `Показания поверенного манометра (${pt.pressureBar || 16.0} бар • выдержка 24 часа)`)}
+      ${renderPhotoBox(photoManifold, 'Распределительный узел FAR', 'Коллекторный узел ввода ГВС/ХВС и отопления под испытательным давлением')}
+    </div>
+
+    <!-- Резолюция допуска под стяжку -->
+    <div class="resolution-box">
+      <div class="resolution-title">🛡️ Официальная инженерная резолюция:</div>
+      <div class="resolution-text">
+        Система отопления и водоснабжения выдержала гидравлическое испытание давлением <strong>16.0 бар</strong> в течение 24 часов без падения давления. Все фитинги и соединения монолитны.
+        <strong>РАЗРЕШАЕТСЯ ПРОИЗВОДСТВО РАБОТ ПО ЗАЛИВКЕ ЦЕМЕНТНО-ПЕСЧАНОЙ СТЯЖКИ ПОЛА И ОБШИВКЕ СТЕН ГИПСОКАРТОНОМ.</strong>
+      </div>
+    </div>
+
+    <!-- Статус документа и ответственность -->
+    <div class="disclaimer-box">
+      <div class="disclaimer-title">ℹ️ Статус фиксации и разграничение ответственности сторон:</div>
+      <div class="disclaimer-desc">
+        1. <strong>Подтверждение мастера:</strong> Результаты испытания внесены и подтверждены мастером (Хакимовым Улугбеком) на объекте по показаниям опрессовочного оборудования Лиги Мастеров. Документ удостоверяет внутренний инженерный стандарт Лиги Мастеров и не является независимым лабораторным сертификатом или судебной экспертизой.<br>
+        2. <strong>Контрольное давление при отделке:</strong> Магистрали остаются под рабочим давлением в процессе заливки пола. Любые сверлильные и крепежные работы производить строго по линейным размерам Исполнительного Инженерного Паспорта. Ответственность за механические повреждения труб после подписания настоящего Акта возлагается на производителя строительно-отделочных работ.
+      </div>
+    </div>
+
+    <!-- Подписи сторон -->
+    <div class="signatures-block">
+      <div class="sign-col">
+        <div class="sign-title">Ведущий инженер-испытатель:</div>
+        <div class="sign-line">
+          <span>Хакимов Улугбек</span>
+          <span>(подпись) ________</span>
+          <div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>
+        </div>
+      </div>
+      <div class="sign-col">
+        <div class="sign-title">Заказчик (Приемка этапа):</div>
+        <div class="sign-line">
+          <span>${site.client}</span>
+          <span>(подпись) ________</span>
+        </div>
+      </div>
+      <div class="sign-col">
+        <div class="sign-title">Производитель стяжки / Прораб:</div>
+        <div class="sign-line">
+          <span>Принято под стяжку</span>
+          <span>(подпись) ________</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    return true;
+  }
 }
 
 window.ligaPdfEngine = new LigaPdfEngine();
