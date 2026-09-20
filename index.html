@@ -128,6 +128,47 @@
             <div class="phase-name">Сдан</div>
           </div>
         </div>
+
+        <!-- ШВЕЙЦАРСКИЙ 3D-ХРОНОМЕТР ГОТОВНОСТИ И ТЕМПА (SWISS CHRONO RADAR v2.0.7) -->
+        <div class="chrono-radar-card" id="site-chrono-radar">
+          <div class="chrono-radar-top">
+            <div class="chrono-radar-gauge">
+              <svg class="radar-svg" viewBox="0 0 120 120">
+                <circle class="radar-circle-bg" cx="60" cy="60" r="48" />
+                <circle id="radar-circle-bar" class="radar-circle-bar" cx="60" cy="60" r="48" stroke-dasharray="301.6" stroke-dashoffset="100" />
+              </svg>
+              <div class="radar-center-content">
+                <div id="chrono-progress-val" class="radar-val">0%</div>
+                <div class="radar-label">ГОТОВНОСТЬ</div>
+              </div>
+            </div>
+
+            <div class="chrono-radar-meta">
+              <div id="chrono-pace-badge" class="chrono-pace-badge on-track">
+                ⏱️ В ГРАФИКЕ (темп 100%)
+              </div>
+              <div id="chrono-days-info" class="chrono-days-info">
+                Дней в работе: <strong>1</strong> • До сдачи: <strong>21 дн.</strong>
+              </div>
+              <div id="chrono-phase-desc" class="chrono-phase-desc">
+                Объект запущен в LIGA OS. Выполняются подготовительные работы.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- КАРТОЧКА: СЛЕДУЮЩИЙ КЛЮЧЕВОЙ ШАГ МАСТЕРА (NEXT BEST ACTION) -->
+        <div id="site-next-action-card" class="next-action-card">
+          <div class="next-action-icon" id="next-action-icon">👉</div>
+          <div class="next-action-body">
+            <div class="next-action-label">СЛЕДУЮЩИЙ ШАГ ДЛЯ МАСТЕРА:</div>
+            <div class="next-action-title" id="next-action-title">Заполнить смету и аудит объекта</div>
+            <div class="next-action-desc" id="next-action-desc">Рассчитайте точки водоснабжения и отопления для согласования с заказчиком.</div>
+          </div>
+          <button id="btn-next-action-trigger" class="btn-next-action" type="button">
+            Открыть →
+          </button>
+        </div>
       </section>
 
       <!-- ФИНАНСОВЫЙ ПУЛЬС ОБЪЕКТА (CASHFLOW) -->
@@ -743,6 +784,10 @@
           <div class="form-group">
             <label class="form-label">Первичный аванс (сум):</label>
             <input id="new-site-advance" type="number" class="form-input" placeholder="10000000" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Плановый срок монтажа (дней):</label>
+            <input id="new-site-duration" type="number" class="form-input" placeholder="21" value="21" min="1" max="180">
           </div>
           <button type="submit" class="btn-submit-modal">Создать объект в LIGA OS</button>
         </form>
@@ -1500,10 +1545,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.6: Карта допуска Quality Gate, Swiss Audio, Реестр контактов) -->
-  <script src="./js/image_processor.js?v=2.0.6"></script>
-  <script src="./js/db.js?v=2.0.6"></script>
-  <script src="./js/pdf_engine.js?v=2.0.6"></script>
-  <script src="./js/app.js?v=2.0.6"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.7: 3D-хронометр готовности и темпа, Следующий шаг мастера, Quality Gate) -->
+  <script src="./js/image_processor.js?v=2.0.7"></script>
+  <script src="./js/db.js?v=2.0.7"></script>
+  <script src="./js/pdf_engine.js?v=2.0.7"></script>
+  <script src="./js/app.js?v=2.0.7"></script>
 </body>
 </html>

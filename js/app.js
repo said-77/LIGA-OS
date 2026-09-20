@@ -579,6 +579,16 @@ class LigaApp {
       });
     }
 
+    // 10.2 Кнопка перехода к «Следующему шагу мастера» (Next Best Action v2.0.7)
+    const btnNextAction = document.getElementById('btn-next-action-trigger');
+    if (btnNextAction) {
+      btnNextAction.addEventListener('click', () => {
+        if (this._currentNextAction && typeof this._currentNextAction.action === 'function') {
+          this._currentNextAction.action();
+        }
+      });
+    }
+
     // 11. Экспресс-калькулятор
     document.querySelectorAll('.btn-counter').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -863,6 +873,7 @@ class LigaApp {
     const designer = document.getElementById('new-site-designer').value.trim();
     const contractSum = parseInt(document.getElementById('new-site-contract').value) || 0;
     const advanceSum = parseInt(document.getElementById('new-site-advance').value) || 0;
+    const durationDays = parseInt(document.getElementById('new-site-duration')?.value) || 21;
 
     const newSite = {
       name,
@@ -872,10 +883,12 @@ class LigaApp {
       designer,
       contractSum,
       advanceSum,
+      durationDays,
       brigadeOwed: Math.round(contractSum * 0.15),
       designerBonus: Math.round(contractSum * 0.10),
       status: 1, // Начальный этап - 1. Аудит
       dateCreated: new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString(),
       pressTestPassed: false,
       photos: { manifold: null, pressure: null, wall: null, floor: null }
     };
@@ -1068,6 +1081,206 @@ class LigaApp {
 
     this.calculateEstimate();
     this.updateNavBadges();
+    this.renderChronoRadarAndNextAction();
+  }
+
+  // Рендеринг швейцарского 3D-хронометра готовности и карточки «Следующий шаг мастера» (v2.0.7)
+  async renderChronoRadarAndNextAction() {
+    if (!this.currentSite) return;
+    const s = this.currentSite;
+
+    // 1. Загрузка чек-листов и материалов
+    let checklists = [];
+    let materials = [];
+    if (window.ligaDB && window.ligaDB.db) {
+      try {
+        checklists = await window.ligaDB.getBySiteId('checklists', this.currentSiteId);
+      } catch (e) {
+        console.warn('Не удалось загрузить чек-листы для радара:', e);
+      }
+      try {
+        materials = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+      } catch (e) {
+        console.warn('Не удалось загрузить материалы для радара:', e);
+      }
+    }
+
+    const totalChecklist = checklists.length || 10;
+    const doneChecklist = checklists.filter(i => i.done).length;
+    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && parseFloat(s.pressureTest.pressureBar) >= 16.0);
+    const hasPressurePhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
+    const hasManifoldPhoto = Boolean(this.currentPhotos && this.currentPhotos.manifold);
+    const hasPipePhoto = Boolean(this.currentPhotos && (this.currentPhotos.wall || this.currentPhotos.floor));
+
+    // 2. Взвешенный расчет готовности (0..100%)
+    let progressScore = 0;
+    // Аудит и базовая информация (до 15%)
+    if (s.name) progressScore += 5;
+    if (s.contractSum > 0) progressScore += 10;
+    // Черновой монтаж и снабжение (до 25%)
+    if (s.status >= 2) progressScore += 15;
+    if (materials.length > 0) progressScore += 10;
+    // Гидравлические испытания 16 бар (до 30%)
+    if (hasPressureTest) progressScore += 15;
+    if (hasPressurePhoto) progressScore += 15;
+    // Скрытые трассы и чек-лист стяжки (до 20%)
+    if (totalChecklist > 0) {
+      progressScore += Math.round((doneChecklist / totalChecklist) * 10);
+    }
+    if (hasPipePhoto || hasManifoldPhoto) progressScore += 10;
+    // Финальная сдача (до 10%)
+    if (s.status >= 5) progressScore += 10;
+
+    const progress = Math.min(100, Math.max(0, progressScore));
+
+    // 3. Расчет темпа и сроков
+    const durationDays = s.durationDays || 21;
+    let daysPassed = 1;
+    if (s.createdAt || s.dateCreated) {
+      const createdDate = new Date(s.createdAt || s.dateCreated);
+      const diffMs = Date.now() - createdDate.getTime();
+      daysPassed = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
+    }
+    const daysRemaining = Math.max(0, durationDays - daysPassed);
+    const expectedProgress = Math.min(100, Math.round((daysPassed / durationDays) * 100));
+    const delta = progress - expectedProgress;
+
+    let paceStatus = 'on-track';
+    let paceLabel = `⏱️ В ГРАФИКЕ (темп ${progress}%)`;
+    if (delta >= 12) {
+      paceStatus = 'ahead';
+      paceLabel = `⚡ ОПЕРЕЖЕНИЕ ГРАФИКА (+${delta}%)`;
+    } else if (delta < -15 && daysPassed > 3) {
+      paceStatus = 'delayed';
+      paceLabel = `⚠️ ВНИМАНИЕ: ОТСТАВАНИЕ (${Math.abs(delta)}%)`;
+    }
+
+    // Обновление SVG круга (длина окружности r=48 -> C = 2 * PI * 48 ≈ 301.6)
+    const circleBar = document.getElementById('radar-circle-bar');
+    const valEl = document.getElementById('chrono-progress-val');
+    if (circleBar) {
+      const circumference = 301.6;
+      const offset = circumference - (circumference * progress) / 100;
+      circleBar.style.strokeDashoffset = offset;
+      if (progress >= 80) {
+        circleBar.style.stroke = 'var(--neon-emerald)';
+      } else if (progress >= 40) {
+        circleBar.style.stroke = 'var(--gold-primary)';
+      } else {
+        circleBar.style.stroke = '#38bdf8';
+      }
+    }
+    if (valEl) {
+      valEl.innerText = `${progress}%`;
+    }
+
+    const paceBadge = document.getElementById('chrono-pace-badge');
+    if (paceBadge) {
+      paceBadge.className = `chrono-pace-badge ${paceStatus}`;
+      paceBadge.innerText = paceLabel;
+    }
+
+    const daysInfo = document.getElementById('chrono-days-info');
+    if (daysInfo) {
+      daysInfo.innerHTML = `Дней в работе: <strong>${daysPassed}</strong> • До сдачи: <strong>${daysRemaining > 0 ? daysRemaining + ' дн.' : 'Срок настал'}</strong>`;
+    }
+
+    const phaseDesc = document.getElementById('chrono-phase-desc');
+    if (phaseDesc) {
+      const phaseMap = {
+        1: 'Объект в фазе аудита. Требуется согласование точек и сметы.',
+        2: 'Черновой монтаж: штробление, разводка Rehau, монтаж FAR.',
+        3: 'Гидроиспытания: 24-часовая выдержка под давлением 16.0 бар.',
+        4: 'Чистовой этап: заливка стяжки разрешена, монтаж приборов.',
+        5: 'Объект официально сдан. Активирована 10-летняя гарантия Лиги.'
+      };
+      phaseDesc.innerText = phaseMap[s.status] || 'Выполняются инженерные работы.';
+    }
+
+    // 4. Определение «Следующего ключевого действия мастера» (Next Best Action)
+    let nextAction = null;
+
+    if (!s.contractSum || s.contractSum <= 0) {
+      nextAction = {
+        icon: '⚡',
+        title: 'Заполнить смету и точки монтажа',
+        desc: 'Рассчитайте точки водоснабжения, канализации и отопления для фиксации договора.',
+        btnText: 'Смета →',
+        action: () => this.switchScreen('estimate')
+      };
+    } else if (!s.advanceSum || s.advanceSum <= 0) {
+      nextAction = {
+        icon: '💰',
+        title: 'Зафиксировать аванс от заказчика',
+        desc: 'Внесите полученный аванс для активации закупки премиальных материалов.',
+        btnText: '+ Аванс →',
+        action: () => this.openModal('modal-payment')
+      };
+    } else if (s.status < 2) {
+      nextAction = {
+        icon: '🛠️',
+        title: 'Перевести объект на Черновой монтаж',
+        desc: 'Аудит завершен. Начните трассировку труб Rehau и сборку коллектора FAR.',
+        btnText: 'Этап 2 →',
+        action: () => this.handlePhaseStepClick(2)
+      };
+    } else if (!hasPressureTest || !hasPressurePhoto) {
+      nextAction = {
+        icon: '🛡️',
+        title: 'Провести гидроиспытания 16.0 бар (24 часа)',
+        desc: 'Зафиксируйте протокол опрессовки с фото манометра. Без этого заливка стяжки строго запрещена.',
+        btnText: 'Акт 16 бар →',
+        action: () => this.openPressureTestModal()
+      };
+    } else if (doneChecklist < totalChecklist) {
+      nextAction = {
+        icon: '📋',
+        title: 'Закрыть чек-лист технадзора перед стяжкой',
+        desc: `Выполнено ${doneChecklist} из ${totalChecklist} пунктов. Проверьте гильзы, заглушки и трапы.`,
+        btnText: `Чек-лист (${doneChecklist}/${totalChecklist}) →`,
+        action: () => this.switchScreen('checklist')
+      };
+    } else if (!hasPipePhoto) {
+      nextAction = {
+        icon: '📐',
+        title: 'Фотофиксация скрытых трасс Rehau с рулеткой',
+        desc: 'Сделайте фото труб в полу до заливки бетоном для Исполнительного Паспорта.',
+        btnText: 'Фото трасс →',
+        action: () => this.openPassportPhotosModal()
+      };
+    } else if (s.status < 5) {
+      nextAction = {
+        icon: '🎉',
+        title: 'Финальная сдача объекта заказчику',
+        desc: 'Все 16-барные испытания и чек-листы закрыты. Сформируйте Паспорт и сдайте объект.',
+        btnText: 'Сдать объект →',
+        action: () => this.handlePhaseStepClick(5)
+      };
+    } else {
+      nextAction = {
+        icon: '📜',
+        title: 'Объект сдан! Печать Инженерного Паспорта',
+        desc: '10-летняя гарантия Лиги Мастеров активна. Отправьте клиенту официальный PDF.',
+        btnText: 'Печать PDF →',
+        action: () => this.printPassport()
+      };
+    }
+
+    this._currentNextAction = nextAction;
+
+    // Обновление карточки в DOM
+    const nextCard = document.getElementById('site-next-action-card');
+    const nextIcon = document.getElementById('next-action-icon');
+    const nextTitle = document.getElementById('next-action-title');
+    const nextDesc = document.getElementById('next-action-desc');
+    const nextBtn = document.getElementById('btn-next-action-trigger');
+
+    if (nextCard && nextAction) {
+      if (nextIcon) nextIcon.innerText = nextAction.icon;
+      if (nextTitle) nextTitle.innerText = nextAction.title;
+      if (nextDesc) nextDesc.innerText = nextAction.desc;
+      if (nextBtn) nextBtn.innerText = nextAction.btnText;
+    }
   }
 
   // Обработка нажатия на этап степпера (Инженерный рубеж допуска Quality Gate v2.0.6)
