@@ -40,6 +40,8 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Кнопка вызова меню всех инструментов мастера (v2.0.9 «Нулевая рутина») -->
+        <button id="btn-more-menu-toggle" class="btn-more-menu-toggle" title="Все инструменты и меню мастера">⋯ Ещё</button>
         <!-- Кнопка включения/выключения звуковых сигналов -->
         <button id="btn-sound-toggle" class="btn-icon-top" title="Звуковые сигналы (Вкл / Выкл)">🔊</button>
         <!-- Кнопка голосовой диктовки («Свободные руки») -->
@@ -56,6 +58,67 @@
         <button id="btn-backup-top" class="btn-icon-top master-only" title="Сохранить резервную копию базы">💾</button>
       </div>
     </header>
+
+    <!-- МОДАЛЬНОЕ ОКНО: ИНСТРУМЕНТЫ МАСТЕРА (МЕНЮ «⋯ ЕЩЁ») -->
+    <div id="modal-more-menu" class="modal-overlay">
+      <div class="modal-card modal-more-menu-card">
+        <div class="modal-header">
+          <div class="modal-title">🛠️ Инструменты мастера</div>
+          <button class="btn-close-modal" id="btn-close-more-menu">✕</button>
+        </div>
+        <div class="more-menu-grid">
+          <button id="menu-item-voice" class="more-menu-item" type="button">
+            <span class="more-menu-icon">🎙️</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Голосовой помощник</div>
+              <div class="more-menu-desc">Диктовка голосом без рук</div>
+            </div>
+          </button>
+          <button id="menu-item-client" class="more-menu-item" type="button">
+            <span class="more-menu-icon">👁️</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Показать клиенту</div>
+              <div class="more-menu-desc">Скрыть служебные и финансовые данные</div>
+            </div>
+          </button>
+          <button id="menu-item-guide" class="more-menu-item" type="button">
+            <span class="more-menu-icon">📖</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Памятка мастера</div>
+              <div class="more-menu-desc">Диалоги с дизайнерами и ответы на вопросы</div>
+            </div>
+          </button>
+          <button id="menu-item-audit" class="more-menu-item" type="button">
+            <span class="more-menu-icon">📐</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Экспресс-аудит</div>
+              <div class="more-menu-desc">Проверка объекта по швейцарским правилам</div>
+            </div>
+          </button>
+          <button id="menu-item-theme" class="more-menu-item" type="button">
+            <span class="more-menu-icon">☀️</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Тема оформления</div>
+              <div class="more-menu-desc">Светлая керамика / Тёмный титан</div>
+            </div>
+          </button>
+          <button id="menu-item-backup" class="more-menu-item" type="button">
+            <span class="more-menu-icon">💾</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Резервная копия</div>
+              <div class="more-menu-desc">Экспорт базы данных в JSON</div>
+            </div>
+          </button>
+          <button id="menu-item-sound" class="more-menu-item" type="button">
+            <span class="more-menu-icon">🔊</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Звуковые сигналы</div>
+              <div class="more-menu-desc">Швейцарский перезвон (Вкл/Выкл)</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Плашка активного режима показа клиенту (демонстрация на экране мастера) -->
     <div id="client-mode-banner" class="client-mode-banner" style="display:none;">
@@ -170,6 +233,20 @@
           </button>
         </div>
 
+        <!-- БЛОК: БЫСТРАЯ ФИКСАЦИЯ ФАКТА ЗА 3 СЕКУНДЫ (ZERO-ROUTINE v2.0.9) -->
+        <div id="quick-fact-action-box" class="quick-fact-action-box">
+          <button id="btn-quick-fact-capture" class="btn-quick-fact" type="button">
+            <div class="quick-fact-icon-wrap">📸</div>
+            <div class="quick-fact-text">
+              <div class="quick-fact-title">
+                <span>Зафиксировать факт (3 сек)</span>
+                <span class="badge badge-gold" style="font-size:9px; padding:1px 6px;">Быстро</span>
+              </div>
+              <div class="quick-fact-sub">Сделать фото скрытой трассы, узла или прибора без рутины</div>
+            </div>
+          </button>
+        </div>
+
         <!-- БЛОК: ИНЖЕНЕРНАЯ ХРОНИКА ОБЪЕКТА (ПРОЙДЕННЫЕ ВЕХИ) -->
         <div id="dashboard-timeline-preview-card" class="dash-timeline-card">
           <div class="dash-timeline-header">
@@ -263,6 +340,9 @@
       </button>
       <button id="btn-generate-act" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);">
         <span>📜</span> Официальный Акт испытания 16 бар / 24ч
+      </button>
+      <button id="btn-share-telegram" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border:none; color:#ffffff; box-shadow:0 4px 14px rgba(2,132,199,0.35);">
+        <span>✈️</span> Отправить отчет заказчику в Telegram
       </button>
       <div id="passport-status-indicator" style="font-size:11px; text-align:center; margin-top:8px; margin-bottom:16px; font-weight:700;"></div>
 
@@ -772,6 +852,22 @@
           <span>🏢 Новый инженерный объект</span>
           <button onclick="window.app.closeModal('modal-add-site')" class="btn-close-modal">&times;</button>
         </div>
+
+        <!-- Голосовое создание объекта без рутины («Свободные руки») -->
+        <div class="voice-fill-site-banner" style="background:linear-gradient(135deg, rgba(255,209,117,0.12) 0%, rgba(200,147,40,0.06) 100%); border:1px solid rgba(255,209,117,0.3); border-radius:14px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="font-size:12px; font-weight:800; color:var(--gold-primary); display:flex; align-items:center; gap:6px;">
+              <span>🎙️</span> Заполнить объект голосом
+            </div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">
+              Пример: «Самир, Чиланзар 3-комнатная, договор 25 млн, аванс 10 млн»
+            </div>
+          </div>
+          <button type="button" id="btn-voice-fill-site" class="btn-voice-quick-fill" style="background:var(--gold-gradient); color:var(--btn-gold-text); border:none; border-radius:10px; padding:8px 12px; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px; flex-shrink:0; box-shadow:0 2px 10px rgba(255,209,117,0.3);">
+            <span>🎙️</span> Сказать
+          </button>
+        </div>
+
         <form id="form-add-site">
           <div class="form-group">
             <label class="form-label">Название ЖК / Коттеджа:</label>
@@ -1528,6 +1624,76 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: БЫСТРАЯ ФИКСАЦИЯ ФАКТА (3 СЕКУНДЫ • ZERO-ROUTINE v2.0.9)
+         ==================================================================== -->
+    <div id="modal-quick-fact" class="modal-overlay">
+      <div class="modal-card modal-more-menu-card">
+        <div class="modal-header">
+          <div class="modal-title">📸 Зафиксировать факт работы</div>
+          <button class="btn-close-modal" id="btn-close-quick-fact">✕</button>
+        </div>
+
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">
+          Сделайте фото скрытого узла или чистового прибора. Система привяжет факт к объекту без рутины.
+        </div>
+
+        <!-- Область загрузки / превью фото -->
+        <input type="file" id="input-quick-fact-file" accept="image/*" capture="environment" style="display:none;">
+        <div id="box-quick-fact-photo" class="quick-fact-preview-box">
+          <div id="quick-fact-placeholder" style="text-align:center; padding:10px;">
+            <div style="font-size:32px; margin-bottom:4px;">📷</div>
+            <div style="font-size:12px; font-weight:700; color:var(--gold-primary);">Нажмите, чтобы сделать фото</div>
+            <div style="font-size:10px; color:var(--text-dim);">Автоматическое сжатие для быстрого сохранения</div>
+          </div>
+          <img id="quick-fact-img-preview" class="quick-fact-preview-img" style="display:none;" alt="Превью работы">
+        </div>
+
+        <!-- Быстрый выбор помещения -->
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Помещение / Зона:</label>
+          <div class="quick-fact-tags" id="quick-fact-rooms-tags">
+            <button type="button" class="quick-fact-tag-btn active" data-room="Санузел">Санузел</button>
+            <button type="button" class="quick-fact-tag-btn" data-room="Ванная">Ванная</button>
+            <button type="button" class="quick-fact-tag-btn" data-room="Кухня">Кухня</button>
+            <button type="button" class="quick-fact-tag-btn" data-room="Котельная">Котельная</button>
+            <button type="button" class="quick-fact-tag-btn" data-room="Балкон">Балкон</button>
+            <button type="button" class="quick-fact-tag-btn" data-room="Коридор">Коридор</button>
+          </div>
+          <input type="text" id="input-quick-fact-room" class="form-input" value="Санузел" style="height:32px; font-size:12px;" placeholder="Или введите название зоны">
+        </div>
+
+        <!-- Название выполненной работы -->
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Что сделано:</label>
+          <div class="quick-fact-tags" id="quick-fact-works-tags">
+            <button type="button" class="quick-fact-tag-btn active" data-work="Трасса труб до заливки стяжки">Трасса в полу</button>
+            <button type="button" class="quick-fact-tag-btn" data-work="Монтаж узла ввода и коллектора">Узел ввода</button>
+            <button type="button" class="quick-fact-tag-btn" data-work="Установка инсталляции сантехники">Инсталляция</button>
+            <button type="button" class="quick-fact-tag-btn" data-work="Монтаж смесителя скрытого монтажа">Смеситель</button>
+            <button type="button" class="quick-fact-tag-btn" data-work="Испытание давлением 16 бар">16 бар манометр</button>
+          </div>
+          <input type="text" id="input-quick-fact-title" class="form-input" value="Трасса труб до заливки стяжки" style="height:32px; font-size:12px;" placeholder="Описание работы">
+        </div>
+
+        <!-- Нелинейная фиксация: выполнено заранее -->
+        <div class="form-group" style="margin-bottom:14px; background:var(--box-bg); padding:8px 12px; border-radius:8px; border:1px solid var(--glass-border-subtle);">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:11px; margin-bottom:0;">
+            <input type="checkbox" id="check-quick-fact-early" style="width:16px; height:16px; accent-color:var(--gold-primary);">
+            <div>
+              <span style="font-weight:700; color:var(--text-main);">Выполнено заранее (чистовой монтаж)</span>
+              <div style="font-size:10px; color:var(--text-dim);">Зачесть работу в Этап 4 без нарушения и прерывания опрессовки 16 бар</div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Кнопка сохранения -->
+        <button id="btn-save-quick-fact" class="btn-submit-modal" type="button" style="background:var(--gold-gradient); color:var(--btn-gold-text); font-weight:800; font-size:13px;">
+          ✓ Сохранить факт в историю объекта
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar — 6 Вкладок)
          ==================================================================== -->
     <nav class="bottom-nav">
@@ -1559,12 +1725,18 @@
       </button>
     </nav>
 
+    <!-- Плавающая кнопка голосового помощника («Свободные руки на всех экранах») -->
+    <button id="btn-floating-voice" class="btn-floating-voice master-only" title="Голосовой ввод (Свободные руки)" type="button">
+      <span class="floating-voice-icon">🎙️</span>
+      <span class="floating-voice-label">Голос</span>
+    </button>
+
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.8: Хроника на дашборде, эталонный объект ЖК Infinity, 3D-хронометр) -->
-  <script src="./js/image_processor.js?v=2.0.8"></script>
-  <script src="./js/db.js?v=2.0.8"></script>
-  <script src="./js/pdf_engine.js?v=2.0.8"></script>
-  <script src="./js/app.js?v=2.0.8"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.9: Нулевая рутина мастера, меню «⋯ Ещё», 3-секундная фиксация) -->
+  <script src="./js/image_processor.js?v=2.0.9"></script>
+  <script src="./js/db.js?v=2.0.9"></script>
+  <script src="./js/pdf_engine.js?v=2.0.9"></script>
+  <script src="./js/app.js?v=2.0.9"></script>
 </body>
 </html>

@@ -598,6 +598,12 @@ class LigaApp {
       });
     }
 
+    // 10.4 Меню «⋯ Ещё» и фиксация факта за 3 секунды (v2.0.9 «Нулевая рутина»)
+    this.initMoreMenu();
+    this.initQuickFactAction();
+    // 10.5 Плавающий микрофон, голосовое заполнение объекта и Telegram-отчет
+    this.initHandsFreeVoice();
+
     // 11. Экспресс-калькулятор
     document.querySelectorAll('.btn-counter').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1328,7 +1334,9 @@ class LigaApp {
       pressure: { label: '🛡️ 16 бар', color: 'var(--neon-emerald)' },
       screed: { label: '🏗️ Стяжка', color: '#f59e0b' },
       trim: { label: '✨ Чистовая', color: '#a855f7' },
-      service: { label: '🛠️ Сервис', color: 'var(--text-muted)' }
+      service: { label: '🛠️ Сервис', color: 'var(--text-muted)' },
+      quick_fact: { label: '📸 Факт', color: '#60a5fa' },
+      early_fact: { label: '✨ Зачтено заранее', color: '#fbbf24' }
     };
 
     // Показываем последние 3 ключевые вехи на дашборде
@@ -2832,6 +2840,7 @@ ${itemsText}
     const headerBtn = document.getElementById('btn-voice-input');
     const finishBtn = document.getElementById('btn-voice-finish-recording');
     const wavesEl = document.getElementById('voice-sound-waves');
+    const floatingBtn = document.getElementById('btn-floating-voice');
 
     if (circle) {
       if (isActive) circle.classList.add('voice-recording-active');
@@ -2840,6 +2849,10 @@ ${itemsText}
     if (headerBtn) {
       if (isActive) headerBtn.classList.add('voice-recording-active');
       else headerBtn.classList.remove('voice-recording-active');
+    }
+    if (floatingBtn) {
+      if (isActive) floatingBtn.classList.add('voice-recording-active');
+      else floatingBtn.classList.remove('voice-recording-active');
     }
     if (finishBtn) {
       finishBtn.style.display = isActive ? 'block' : 'none';
@@ -2888,6 +2901,14 @@ ${itemsText}
       } else if (parsed.type === 'press_test') {
         typeEl.innerText = `🛡️ Фиксация испытания 16 бар`;
         detailsEl.innerText = `Акт опрессовки на 24 часа успешно подтвержден`;
+      } else if (parsed.type === 'calc_floor') {
+        typeEl.innerText = `📐 Инженерный расчет: Водяной теплый пол`;
+        detailsEl.innerHTML = `Площадь: <b>${parsed.area} м²</b><br>• Труба Rehau/Stout: <b>~${parsed.meters} м</b> (при шаге 150 мм)<br>• Потребуется: <b>${parsed.coils} бухт(ы) по 200 м</b><br>• Контуров: <b>${parsed.loops}</b> (коллектор FAR на ${parsed.loops} выходов)`;
+        btnConfirm.style.display = 'none';
+      } else if (parsed.type === 'currency_conv') {
+        typeEl.innerText = `💵 Экспресс-конвертер валюты`;
+        detailsEl.innerHTML = `<b>$${parsed.usd}</b> = <b style="color:var(--neon-emerald);">${this.formatSum(parsed.som)}</b><br><span style="font-size:11px; color:var(--text-dim);">Курс мастера: ${this.formatNumber(parsed.rate)} сум / $</span>`;
+        btnConfirm.style.display = 'none';
       }
     }
   }
@@ -2983,6 +3004,41 @@ ${itemsText}
         type: 'press_test',
         title: 'Опрессовка 16 бар',
         amount: 0
+      };
+    }
+
+    // 4.1. Определение типа операции: Инженерный расчет теплого пола
+    if (lower.includes('теплый пол') || lower.includes('теплого пола') || (lower.includes('труб') && (lower.includes('квадрат') || lower.includes('кв м') || lower.includes('метр')))) {
+      const areaMatch = lower.match(/(\d+[\.,]?\d*)\s*(кв|квадрат|м2|метр)?/);
+      const area = areaMatch ? Math.round(parseFloat(areaMatch[1].replace(',', '.'))) : 50;
+      const meters = Math.round(area * 6.5);
+      const coils = Math.ceil(meters / 200);
+      const loops = Math.max(1, Math.ceil(meters / 75));
+
+      return {
+        type: 'calc_floor',
+        title: `Расчет теплого пола (${area} м²)`,
+        area: area,
+        meters: meters,
+        coils: coils,
+        loops: loops,
+        amount: 0
+      };
+    }
+
+    // 4.2. Определение типа операции: Конвертер валюты (USD <-> UZS)
+    if (lower.includes('курс') || (lower.includes('сколько') && (lower.includes('доллар') || lower.includes('бакс')))) {
+      const usdMatch = lower.match(/(\d+)\s*(доллар|бакс|\$)/);
+      const usdVal = usdMatch ? parseInt(usdMatch[1]) : 100;
+      const somVal = usdVal * usdRate;
+
+      return {
+        type: 'currency_conv',
+        title: `Конвертер валют ($${usdVal})`,
+        usd: usdVal,
+        som: somVal,
+        rate: usdRate,
+        amount: somVal
       };
     }
 
@@ -3401,7 +3457,9 @@ ${itemsText}
       screed: { label: '🏗️ Стяжка', class: 'badge-event-screed' },
       trim: { label: '✨ Чистовая', class: 'badge-event-trim' },
       service: { label: '🛠️ Сервис', class: 'badge-event-service' },
-      payout: { label: '💰 Выплата', class: 'badge-event-payout' }
+      payout: { label: '💰 Выплата', class: 'badge-event-payout' },
+      quick_fact: { label: '📸 Факт', class: 'badge-event-rough' },
+      early_fact: { label: '✨ Зачтено заранее', class: 'badge-event-trim' }
     };
 
     container.innerHTML = events.map(ev => {
@@ -3925,6 +3983,469 @@ ${itemsText}
 
   formatNumber(num) {
     return new Intl.NumberFormat('ru-RU').format(num || 0);
+  }
+
+  // ==========================================================================
+  // МЕНЮ ИНСТРУМЕНТОВ МАСТЕРА (МЕНЮ «⋯ ЕЩЁ») — v2.0.9 «Нулевая рутина»
+  // ==========================================================================
+  initMoreMenu() {
+    const btnToggle = document.getElementById('btn-more-menu-toggle');
+    if (btnToggle) {
+      btnToggle.addEventListener('click', () => {
+        this.playSubtleClick();
+        this.openModal('modal-more-menu');
+      });
+    }
+
+    const btnClose = document.getElementById('btn-close-more-menu');
+    if (btnClose) {
+      btnClose.addEventListener('click', () => this.closeModal('modal-more-menu'));
+    }
+
+    // Делегирование элементов меню
+    const items = [
+      { id: 'menu-item-voice', target: 'btn-voice-input' },
+      { id: 'menu-item-client', target: 'btn-client-mode-toggle' },
+      { id: 'menu-item-guide', target: 'btn-guide-top' },
+      { id: 'menu-item-audit', target: 'btn-ai-audit-top' },
+      { id: 'menu-item-theme', target: 'btn-theme-toggle' },
+      { id: 'menu-item-backup', target: 'btn-backup-top' },
+      { id: 'menu-item-sound', target: 'btn-sound-toggle' }
+    ];
+
+    items.forEach(({ id, target }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', () => {
+          this.closeModal('modal-more-menu');
+          const targetEl = document.getElementById(target);
+          if (targetEl) targetEl.click();
+        });
+      }
+    });
+  }
+
+  // ==========================================================================
+  // БЫСТРАЯ ФИКСАЦИЯ ФАКТА ЗА 3 СЕКУНДЫ — v2.0.9 «Нулевая рутина»
+  // ==========================================================================
+  initQuickFactAction() {
+    this.pendingQuickFactPhoto = null;
+
+    const btnCapture = document.getElementById('btn-quick-fact-capture');
+    if (btnCapture) {
+      btnCapture.addEventListener('click', () => {
+        this.playSubtleClick();
+        this.openQuickFactModal();
+      });
+    }
+
+    const btnClose = document.getElementById('btn-close-quick-fact');
+    if (btnClose) {
+      btnClose.addEventListener('click', () => this.closeModal('modal-quick-fact'));
+    }
+
+    // Клик по превью фото триггерит input
+    const boxPhoto = document.getElementById('box-quick-fact-photo');
+    const inputFile = document.getElementById('input-quick-fact-file');
+    if (boxPhoto && inputFile) {
+      boxPhoto.addEventListener('click', () => inputFile.click());
+      inputFile.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.showToast('Сжатие фотографии факта...');
+          try {
+            this.pendingQuickFactPhoto = await window.ligaImageProcessor.compressImage(file, 1600, 0.85);
+            const imgPreview = document.getElementById('quick-fact-img-preview');
+            const placeholder = document.getElementById('quick-fact-placeholder');
+            if (imgPreview && placeholder) {
+              imgPreview.src = this.pendingQuickFactPhoto;
+              imgPreview.style.display = 'block';
+              placeholder.style.display = 'none';
+            }
+            this.showToast('✓ Фото готово к фиксации');
+          } catch (err) {
+            console.error('Ошибка сжатия фото:', err);
+            this.showToast('Ошибка обработки фото');
+          }
+        }
+      });
+    }
+
+    // Теги комнат
+    const roomTags = document.querySelectorAll('#quick-fact-rooms-tags .quick-fact-tag-btn');
+    const inputRoom = document.getElementById('input-quick-fact-room');
+    roomTags.forEach(tag => {
+      tag.addEventListener('click', () => {
+        roomTags.forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        if (inputRoom) inputRoom.value = tag.getAttribute('data-room');
+      });
+    });
+
+    // Теги работ
+    const workTags = document.querySelectorAll('#quick-fact-works-tags .quick-fact-tag-btn');
+    const inputWork = document.getElementById('input-quick-fact-title');
+    workTags.forEach(tag => {
+      tag.addEventListener('click', () => {
+        workTags.forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        if (inputWork) inputWork.value = tag.getAttribute('data-work');
+      });
+    });
+
+    // Сохранение факта
+    const btnSave = document.getElementById('btn-save-quick-fact');
+    if (btnSave) {
+      btnSave.addEventListener('click', async () => {
+        await this.handleSaveQuickFact();
+      });
+    }
+  }
+
+  openQuickFactModal() {
+    this.pendingQuickFactPhoto = null;
+    const imgPreview = document.getElementById('quick-fact-img-preview');
+    const placeholder = document.getElementById('quick-fact-placeholder');
+    if (imgPreview) {
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
+    }
+    if (placeholder) placeholder.style.display = 'block';
+
+    const checkEarly = document.getElementById('check-quick-fact-early');
+    if (checkEarly) {
+      // Если текущий этап объекта <= 3, по умолчанию включаем чекбокс «выполнено заранее»
+      checkEarly.checked = (this.currentSite && this.currentSite.status <= 3);
+    }
+
+    this.openModal('modal-quick-fact');
+  }
+
+  async handleSaveQuickFact() {
+    if (!this.currentSite) {
+      this.showToast('Сначала выберите активный объект');
+      return;
+    }
+
+    const inputRoom = document.getElementById('input-quick-fact-room');
+    const inputTitle = document.getElementById('input-quick-fact-title');
+    const checkEarly = document.getElementById('check-quick-fact-early');
+
+    const room = (inputRoom && inputRoom.value.trim()) || 'Санузел';
+    const workTitle = (inputTitle && inputTitle.value.trim()) || 'Инженерная фиксация';
+    const isEarly = checkEarly ? checkEarly.checked : false;
+
+    const description = `Зона: ${room} • ${workTitle}${isEarly ? ' (работа выполнена с опережением графика)' : ''}`;
+
+    const newEvent = {
+      siteId: this.currentSiteId,
+      eventType: isEarly ? 'early_fact' : 'quick_fact',
+      title: `${room}: ${workTitle}`,
+      description: description,
+      date: new Date().toISOString().slice(0, 10),
+      photo: this.pendingQuickFactPhoto || null,
+      isEarlyMilestone: isEarly,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await window.ligaDB.add('site_timeline_events', newEvent);
+      this.playSwissChime();
+      this.showToast('✓ Факт зафиксирован в истории объекта!');
+      this.closeModal('modal-quick-fact');
+
+      // Обновляем список вех на дашборде и в истории
+      await this.renderDashboardTimeline();
+      if (this.currentScreen === 'history') {
+        await this.renderTimeline();
+      }
+    } catch (e) {
+      console.error('Ошибка сохранения факта в историю:', e);
+      this.showToast('Ошибка сохранения факта');
+    }
+  }
+
+  toggleVoiceInput() {
+    this.openModal('modal-voice');
+    this.startVoiceRecording();
+  }
+
+  initHandsFreeVoice() {
+    // 1. Плавающий микрофон на всех экранах (FAB)
+    const btnFloatingVoice = document.getElementById('btn-floating-voice');
+    if (btnFloatingVoice) {
+      btnFloatingVoice.addEventListener('click', () => {
+        this.toggleVoiceInput();
+      });
+    }
+
+    // 2. Голосовое создание объекта в modal-add-site
+    const btnVoiceFillSite = document.getElementById('btn-voice-fill-site');
+    if (btnVoiceFillSite) {
+      btnVoiceFillSite.addEventListener('click', () => {
+        this.startVoiceFillSite();
+      });
+    }
+
+    // 3. Отправка отчета в Telegram в 1 клик
+    const btnShareTelegram = document.getElementById('btn-share-telegram');
+    if (btnShareTelegram) {
+      btnShareTelegram.addEventListener('click', () => {
+        this.shareSiteProgressTelegram();
+      });
+    }
+  }
+
+  // Запуск голосового ввода для формы создания объекта
+  startVoiceFillSite() {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      this.showToast('⚠️ Голосовой ввод требует подключения к сети');
+      return;
+    }
+
+    const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const btn = document.getElementById('btn-voice-fill-site');
+
+    if (!SpeechClass) {
+      const phrase = prompt('Диктуйте или введите фразу для объекта (напр: Самир, Чиланзар 3-комнатная, договор 25 млн, аванс 10 млн):');
+      if (phrase) {
+        this.applyVoiceToSiteForm(phrase);
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.innerHTML = '<span>⏳</span> Слушаю...';
+      btn.style.background = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+      btn.style.color = '#fff';
+    }
+
+    this.showToast('🎙️ Слушаю: назовите клиента, ЖК/район, сумму договора и аванс...');
+
+    try {
+      const recognizer = new SpeechClass();
+      recognizer.lang = 'ru-RU';
+      recognizer.interimResults = false;
+      recognizer.continuous = false;
+
+      recognizer.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        this.applyVoiceToSiteForm(text);
+      };
+
+      recognizer.onerror = (e) => {
+        console.warn('Voice site fill error:', e);
+        this.showToast('Речь не распознана. Попробуйте еще раз или заполните вручную.');
+        if (btn) {
+          btn.innerHTML = '<span>🎙️</span> Сказать';
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      };
+
+      recognizer.onend = () => {
+        if (btn) {
+          btn.innerHTML = '<span>🎙️</span> Сказать';
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      };
+
+      recognizer.start();
+    } catch (e) {
+      console.warn('Voice start exception:', e);
+      const phrase = prompt('Введите или скопируйте фразу для создания объекта:');
+      if (phrase) {
+        this.applyVoiceToSiteForm(phrase);
+      }
+      if (btn) {
+        btn.innerHTML = '<span>🎙️</span> Сказать';
+        btn.style.background = '';
+        btn.style.color = '';
+      }
+    }
+  }
+
+  // Парсинг естественной речи мастера и заполнение формы объекта
+  applyVoiceToSiteForm(text) {
+    if (!text || !text.trim()) return;
+    const lower = text.toLowerCase();
+
+    const usdRate = (this.tariffSettings && this.tariffSettings.usdRate) ? this.tariffSettings.usdRate : 12900;
+    let contractSum = 0;
+    let advanceSum = 0;
+
+    const parseAmount = (numStr, unitStr) => {
+      if (!numStr) return 0;
+      let val = parseFloat(numStr.replace(/\s+/g, '').replace(',', '.'));
+      if (isNaN(val)) return 0;
+      if (unitStr) {
+        const u = unitStr.toLowerCase();
+        if (u.includes('млн') || u.includes('миллион') || u.includes('лям')) val *= 1000000;
+        else if (u.includes('тыс') || u.includes('тысяч')) val *= 1000;
+        else if (u.includes('доллар') || u.includes('бакс')) val *= usdRate;
+      } else if (val < 1000) {
+        val *= 1000000;
+      }
+      return Math.round(val);
+    };
+
+    const contractMatch = lower.match(/(договор|сумма|стоимость|работа|цена)\s*([0-9\s\.,]+)\s*(млн|миллион|лям|тыс|тысяч|доллар|баксов|сум)?/);
+    const advanceMatch = lower.match(/(аванс|предоплат|взнос)\s*([0-9\s\.,]+)\s*(млн|миллион|лям|тыс|тысяч|доллар|баксов|сум)?/);
+
+    if (contractMatch) {
+      contractSum = parseAmount(contractMatch[2], contractMatch[3]);
+    }
+    if (advanceMatch) {
+      advanceSum = parseAmount(advanceMatch[2], advanceMatch[3]);
+    }
+
+    if (!contractSum) {
+      const allNums = [...lower.matchAll(/(\d+[\.,]?\d*)\s*(млн|миллион|лям|тыс|тысяч|доллар|баксов)/g)];
+      if (allNums.length > 0) {
+        contractSum = parseAmount(allNums[0][1], allNums[0][2]);
+        if (allNums.length > 1 && !advanceSum) {
+          advanceSum = parseAmount(allNums[1][1], allNums[1][2]);
+        }
+      }
+    }
+
+    // Имя клиента
+    let clientName = '';
+    const clientKeywordMatch = lower.match(/(клиент|заказчик|хозяин)\s+([А-Яа-яA-Za-z\-]+)/);
+    if (clientKeywordMatch) {
+      clientName = clientKeywordMatch[2];
+    } else {
+      const commonNames = ['самир', 'алишер', 'бахром', 'джамшид', 'сардор', 'фарход', 'тимур', 'камила', 'дилшод', 'рустам', 'бобир', 'улугбек', 'жасур', 'шахзод', 'анвар'];
+      for (const name of commonNames) {
+        if (lower.includes(name)) {
+          clientName = name.charAt(0).toUpperCase() + name.slice(1);
+          break;
+        }
+      }
+    }
+    if (!clientName) {
+      const words = text.split(/\s+/);
+      if (words.length > 0 && /^[А-ЯЁA-Z][а-яёa-z]+/.test(words[0])) {
+        clientName = words[0];
+      } else {
+        clientName = 'Заказчик';
+      }
+    } else {
+      clientName = clientName.charAt(0).toUpperCase() + clientName.slice(1);
+    }
+
+    // Название ЖК / района
+    let siteName = '';
+    const complexMatch = text.match(/(жк\s+[А-Яа-яA-Za-z0-9\s\-]+|новостройк[а-я]\s+[А-Яа-яA-Za-z0-9\s\-]+)/i);
+    if (complexMatch) {
+      siteName = complexMatch[1].trim();
+    } else {
+      const districts = ['чиланзар', 'миробод', 'мирабод', 'юнусабад', 'яшнабад', 'сергели', 'дархан', 'ойбек', 'сити', 'tashkent city', 'паркентский', 'каракамыш'];
+      for (const d of districts) {
+        if (lower.includes(d)) {
+          siteName = 'ЖК ' + d.charAt(0).toUpperCase() + d.slice(1);
+          break;
+        }
+      }
+    }
+    if (!siteName) {
+      siteName = 'Объект ' + clientName;
+    }
+
+    // Квартира / секция
+    let unitName = '';
+    const unitMatch = lower.match(/(\d+[\s\-]*комнатн[а-я]+|\d+[\s\-]*комн[а-я]*|кв[\.,\s]*\d+|коттедж|пентхаус|дом)/i);
+    if (unitMatch) {
+      unitName = unitMatch[1].trim();
+    } else {
+      unitName = '3-комнатная квартира';
+    }
+
+    // Телефон
+    let phone = '+998901234567';
+    const phoneMatch = text.match(/(\+?998[\s\-]?\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}|\b\d{9}\b)/);
+    if (phoneMatch) {
+      phone = phoneMatch[0].replace(/[\s\-]/g, '');
+      if (!phone.startsWith('+')) phone = '+' + phone;
+    }
+
+    // Срок монтажа
+    let duration = 21;
+    const durationMatch = lower.match(/(срок|дней|за)\s*(\d+)\s*(дней|дня|день)?/);
+    if (durationMatch) {
+      duration = parseInt(durationMatch[2]) || 21;
+    }
+
+    // Заполняем поля формы
+    const inputName = document.getElementById('new-site-name');
+    const inputUnit = document.getElementById('new-site-unit');
+    const inputClient = document.getElementById('new-site-client');
+    const inputPhone = document.getElementById('new-site-phone');
+    const inputContract = document.getElementById('new-site-contract');
+    const inputAdvance = document.getElementById('new-site-advance');
+    const inputDuration = document.getElementById('new-site-duration');
+
+    if (inputName) inputName.value = siteName;
+    if (inputUnit) inputUnit.value = unitName;
+    if (inputClient) inputClient.value = clientName;
+    if (inputPhone) inputPhone.value = phone;
+    if (inputContract) inputContract.value = contractSum || 20000000;
+    if (inputAdvance) inputAdvance.value = advanceSum || Math.round((contractSum || 20000000) * 0.4);
+    if (inputDuration) inputDuration.value = duration;
+
+    this.playSwissChime();
+    this.showToast(`✓ Голосом заполнено: ${siteName}, ${clientName}, ${this.formatSum(contractSum || 20000000)}!`);
+  }
+
+  // Быстрая отправка инженерного отчета заказчику в Telegram (в 1 клик)
+  shareSiteProgressTelegram() {
+    if (!this.currentSite) {
+      this.showToast('Выберите объект для формирования отчета');
+      return;
+    }
+
+    const site = this.currentSite;
+    const stageNames = {
+      1: 'Этап 1: Черновой монтаж (Узел ввода и стояки)',
+      2: 'Этап 2: Разводка трасс водоснабжения и отопления',
+      3: 'Этап 3: Опрессовка 16 бар (Гидроиспытания)',
+      4: 'Этап 4: Допуск под заливку стяжки',
+      5: 'Этап 5: Чистовая установка санфаянса'
+    };
+    const stageText = stageNames[site.status] || `Этап ${site.status}`;
+    const pressStatus = site.pressTestPassed
+      ? '✅ Двойной гидротест 16.0 бар ВЫДЕРЖАН (24 часа без падения давления)'
+      : '⏳ Готовится к гидравлическим испытаниям 16 бар';
+
+    const debt = Math.max(0, (site.contractSum || 0) - (site.advanceSum || 0));
+
+    const report = `🏛️ ИНЖЕНЕРНЫЙ ОТЧЕТ ОБЪЕКТА
+«Лига Опытных Мастеров» • Ташкент
+Ведущий инженер: Улугбек Хакимов
+
+📍 Объект: ${site.name} ${site.unit ? '(' + site.unit + ')' : ''}
+👤 Заказчик: ${site.client || 'Уважаемый клиент'}
+🛡️ Текущий статус: ${stageText}
+📊 Опрессовка: ${pressStatus}
+📋 Стандарт: 16 бар / DIN 1988 (в 4 раза строже СНиП)
+💰 Финансовый статус: оплачено ${this.formatSum(site.advanceSum || 0)} из ${this.formatSum(site.contractSum || 0)}${debt > 0 ? ' (остаток: ' + this.formatSum(debt) + ')' : ' (полный расчет)'}
+
+Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
+Сайт мастера: https://liga-masterov.vercel.app/`;
+
+    this.copyToClipboard(report).then(() => {
+      this.showToast('✓ Отчет скопирован в буфер обмена!');
+    }).catch(() => {
+      this.showToast('✓ Отчет сформирован!');
+    });
+
+    try {
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-masterov.vercel.app/')}&text=${encodeURIComponent(report)}`;
+      window.open(shareUrl, '_blank');
+    } catch (err) {
+      console.warn('Telegram share window error:', err);
+    }
   }
 }
 

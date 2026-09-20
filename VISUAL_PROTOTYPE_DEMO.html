@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>LIGA OS — Интерактивный визуальный макет для мастера</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .phone-frame {
+      width: 380px;
+      height: 740px;
+      border: 10px solid #1e293b;
+      border-radius: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #090d16;
+      position: relative;
+    }
+    .phone-notch {
+      width: 140px;
+      height: 22px;
+      background: #1e293b;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      margin: 0 auto;
+      z-index: 50;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-accent {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .btn-big-action {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.5);
+      transition: all 0.2s ease;
+    }
+    .btn-big-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.7);
+    }
+  </style>
+</head>
+<body class="p-6 min-h-screen flex flex-col items-center justify-start">
+
+  <!-- Header -->
+  <div class="max-w-4xl w-full text-center mb-6">
+    <div class="inline-block px-3 py-1 mb-2 text-xs font-semibold tracking-wider text-blue-400 uppercase bg-blue-950/60 rounded-full border border-blue-800/50">
+      Визуальный тест перед любыми изменениями в коде
+    </div>
+    <h1 class="text-3xl font-extrabold text-white mb-2">Как мастер видит и чувствует LIGA OS</h1>
+    <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+      Никаких сложных настроек, терминов и рутины. Посмотри своими глазами на 4 реальные жизненные ситуации мастера и нажми на каждую вкладку.
+    </p>
+
+    <!-- Tabs Navigation -->
+    <div class="flex flex-wrap gap-2 justify-center mt-6">
+      <button onclick="showScreen(1)" id="tab-1" class="px-4 py-2 text-sm font-medium rounded-xl transition bg-blue-600 text-white shadow-lg shadow-blue-500/30">
+        🎙️ 1. Без чертежей (Голос за 15 сек)
+      </button>
+      <button onclick="showScreen(2)" id="tab-2" class="px-4 py-2 text-sm font-medium rounded-xl transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+        ⚡ 2. Экран на объекте (1 кнопка)
+      </button>
+      <button onclick="showScreen(3)" id="tab-3" class="px-4 py-2 text-sm font-medium rounded-xl transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+        🔀 3. Сделал заранее (Без ошибок)
+      </button>
+      <button onclick="showScreen(4)" id="tab-4" class="px-4 py-2 text-sm font-medium rounded-xl transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+        📐 4. Есть проект дизайнера
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Showcase Container -->
+  <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8 max-w-5xl w-full justify-center">
+
+    <!-- Interactive Phone Frame -->
+    <div class="phone-frame flex-shrink-0">
+      <div class="phone-notch"></div>
+
+      <!-- SCREEN 1: ГОЛОСОВОЕ СОЗДАНИЕ (БЕЗ ЧЕРТЕЖЕЙ) -->
+      <div id="screen-1" class="flex-1 flex flex-col p-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 pt-1">
+          <span class="text-xs font-semibold text-slate-400">9:41</span>
+          <span class="text-xs text-blue-400 font-medium">Новый объект</span>
+          <div class="flex gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs text-slate-400">Офлайн</span>
+          </div>
+        </div>
+
+        <div class="text-center my-auto py-4">
+          <div class="w-20 h-20 mx-auto rounded-full bg-blue-600/20 border-2 border-blue-500 flex items-center justify-center mb-4 animate-pulse">
+            <span class="text-3xl">🎙️</span>
+          </div>
+          <h2 class="text-lg font-bold text-white mb-1">Что нужно сделать?</h2>
+          <p class="text-xs text-slate-400 px-4 mb-6">Просто назови заказчика и помещения. Программа поймёт сама.</p>
+
+          <div class="glass-card rounded-2xl p-4 text-left mb-4 border-l-4 border-blue-500">
+            <div class="text-[11px] text-blue-400 font-semibold uppercase tracking-wider mb-1">Сказано мастером:</div>
+            <p class="text-sm text-slate-200 italic leading-relaxed">
+              «Заказчик Самир, Чиланзар. Делаем тёплый пол на кухне и вешаем двухконтурный котёл на балконе.»
+            </p>
+          </div>
+
+          <div class="text-left mb-4">
+            <div class="text-xs text-slate-400 mb-2 font-medium flex items-center gap-1">
+              <span>✓ Распознано без ручной писанины:</span>
+            </div>
+            <div class="space-y-2">
+              <div class="glass-card rounded-xl p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">К</div>
+                  <div>
+                    <div class="text-sm font-medium text-white">Кухня</div>
+                    <div class="text-xs text-slate-400">Тёплый пол (водяной)</div>
+                  </div>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">В план</span>
+              </div>
+              <div class="glass-card rounded-xl p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">Б</div>
+                  <div>
+                    <div class="text-sm font-medium text-white">Балкон</div>
+                    <div class="text-xs text-slate-400">Монтаж котла отопления</div>
+                  </div>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">В план</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition shadow-lg shadow-blue-600/30">
+            ✓ Создать объект (1 клик)
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: ЭКРАН МАСТЕРА НА ОБЪЕКТЕ -->
+      <div id="screen-2" class="hidden flex-1 flex flex-col p-4 overflow-y-auto">
+        <!-- Top Bar: чистый, без 7 непонятных иконок -->
+        <div class="flex justify-between items-center mb-3 pt-1 border-b border-slate-800/80 pb-2">
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Объект в работе</div>
+            <div class="text-sm font-bold text-white flex items-center gap-1.5">
+              <span>ЖК Infinity, Блок C</span>
+              <span class="text-xs text-emerald-400">●</span>
+            </div>
+          </div>
+          <button class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1">
+            <span>⋯ Ещё</span>
+          </button>
+        </div>
+
+        <!-- Текущее состояние объекта -->
+        <div class="glass-card-accent rounded-2xl p-4 mb-4">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Текущий этап</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 font-mono">16 бар · 24 ч</span>
+          </div>
+          <h3 class="text-lg font-bold text-white">Гидравлическое испытание</h3>
+          <p class="text-xs text-slate-300 mt-1 mb-3">Опрессовка узла ввода и коллекторов. Давление зафиксировано.</p>
+          
+          <div class="w-full bg-slate-800 rounded-full h-2 mb-2 overflow-hidden">
+            <div class="bg-blue-500 h-2 rounded-full" style="width: 65%"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400 font-mono">
+            <span>Осталось: 8 ч 20 мин</span>
+            <span class="text-emerald-400 font-semibold">Давление в норме</span>
+          </div>
+        </div>
+
+        <!-- ГЛАВНОЕ: ОДНА БОЛЬШАЯ КНОПКА ФАКТА -->
+        <div class="my-auto py-2 text-center">
+          <button class="btn-big-action w-full py-5 rounded-2xl text-white font-bold text-base flex flex-col items-center justify-center gap-1.5 mb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📸</span>
+              <span>Зафиксировать факт</span>
+            </div>
+            <span class="text-[11px] text-blue-200 font-normal">Сделать фото скрытой работы или узла (3 сек)</span>
+          </button>
+          <div class="text-[11px] text-slate-500">Система сама привяжет фото к этому объекту и времени</div>
+        </div>
+
+        <!-- Быстрая хроника дня: что уже готово -->
+        <div class="mt-auto pt-2 border-t border-slate-800/80">
+          <div class="flex justify-between text-xs text-slate-400 mb-2">
+            <span>Сегодня сделано:</span>
+            <span class="text-blue-400">2 вехи</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="glass-card rounded-lg p-2 flex items-center gap-2 text-xs">
+              <span class="text-emerald-400">✓</span>
+              <span class="text-slate-300 truncate">Старт опрессовки 16 бар (манометр)</span>
+              <span class="text-[10px] text-slate-500 ml-auto font-mono">10:15</span>
+            </div>
+            <div class="glass-card rounded-lg p-2 flex items-center gap-2 text-xs">
+              <span class="text-emerald-400">✓</span>
+              <span class="text-slate-300 truncate">Трасса труб до заливки стяжки</span>
+              <span class="text-[10px] text-slate-500 ml-auto font-mono">11:40</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: НЕЛИНЕЙНАЯ РАБОТА -->
+      <div id="screen-3" class="hidden flex-1 flex flex-col p-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-3 pt-1">
+          <span class="text-xs text-slate-400">Фиксация работы</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">Работа заранее</span>
+        </div>
+
+        <div class="glass-card rounded-2xl p-3 mb-4 text-center">
+          <div class="w-full h-36 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center relative overflow-hidden mb-2">
+            <div class="text-4xl mb-1">🚿</div>
+            <div class="text-xs text-slate-300 font-medium">Фото только что сделано мастером</div>
+            <div class="text-[10px] text-slate-500">Смеситель скрытого монтажа (ванная)</div>
+            <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-emerald-400 font-mono">14:32</div>
+          </div>
+        </div>
+
+        <!-- Умный ответ программы -->
+        <div class="glass-card-accent rounded-2xl p-4 mb-4">
+          <div class="text-xs text-blue-400 font-semibold mb-1">LIGA OS поняла:</div>
+          <h4 class="text-sm font-bold text-white mb-2">Установка смесителя в ванной</h4>
+          
+          <div class="text-xs text-slate-300 space-y-1.5 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Текущий этап объекта:</span>
+              <span class="text-blue-300 font-medium">Этап 3 (Опрессовка)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Относится к:</span>
+              <span class="text-emerald-300 font-medium">Этап 4 (Чистовая)</span>
+            </div>
+            <div class="flex justify-between pt-1 border-t border-slate-800">
+              <span class="text-slate-400">Действие системы:</span>
+              <span class="text-amber-300 font-medium">✓ Зачтено заранее</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-[12px] text-slate-400 mb-4 px-1">
+          Никаких предупреждений об ошибке. Объект спокойно продолжает стоять на опрессовке, а сделанная работа уже зафиксирована в истории.
+        </div>
+
+        <button class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-emerald-600/30 mt-auto">
+          ✓ Сохранить факт (1 нажатие)
+        </button>
+      </div>
+
+      <!-- SCREEN 4: ЕСТЬ ПРОЕКТ ДИЗАЙНЕРА -->
+      <div id="screen-4" class="hidden flex-1 flex flex-col p-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-3 pt-1">
+          <span class="text-xs text-slate-400">Проект от дизайнера</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">PDF / Фото</span>
+        </div>
+
+        <div class="border-2 border-dashed border-slate-700 rounded-2xl p-4 text-center mb-4 bg-slate-900/40">
+          <div class="text-3xl mb-1">📑</div>
+          <div class="text-xs text-white font-semibold">Дизайн-проект_Infinity_320м.pdf</div>
+          <div class="text-[10px] text-slate-400">Распознано 8 листов чертежей водоснабжения и ОВ</div>
+        </div>
+
+        <div class="text-xs font-semibold text-slate-300 mb-2 flex justify-between items-center">
+          <span>Автоматически созданные зоны:</span>
+          <span class="text-blue-400 text-[11px]">Мастер не вбивал руками</span>
+        </div>
+
+        <div class="space-y-2 mb-4">
+          <div class="glass-card rounded-xl p-2.5 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-white">Мастер-санузел</div>
+              <div class="text-[11px] text-slate-400">Коллектор 6 выходов, трап, ванна, гиг. душ</div>
+            </div>
+            <span class="text-xs text-emerald-400 font-mono">5 точек</span>
+          </div>
+          <div class="glass-card rounded-xl p-2.5 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-white">Гостевой санузел</div>
+              <div class="text-[11px] text-slate-400">Инсталляция, раковина, смеситель</div>
+            </div>
+            <span class="text-xs text-emerald-400 font-mono">3 точки</span>
+          </div>
+          <div class="glass-card rounded-xl p-2.5 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-white">Котельная</div>
+              <div class="text-[11px] text-slate-400">Бойлер 200л, узел ввода FAR, защита от протечек</div>
+            </div>
+            <span class="text-xs text-emerald-400 font-mono">1 узел</span>
+          </div>
+        </div>
+
+        <div class="text-[11px] text-slate-400 mb-3 px-1">
+          Мастер только проверяет и нажимает «Принять». Если в чертеже что-то изменилось — исправляет голосом прямо на объекте.
+        </div>
+
+        <button class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition mt-auto">
+          ✓ Утвердить структуру объекта
+        </button>
+      </div>
+
+      <!-- Плавающий микрофон на всех экранах (FAB) -->
+      <div class="absolute bottom-16 right-4 z-40">
+        <button class="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-bold flex flex-col items-center justify-center shadow-lg shadow-amber-500/40 hover:scale-105 transition active:scale-95 border border-amber-300">
+          <span class="text-base leading-none">🎙️</span>
+          <span class="text-[7px] font-black uppercase leading-none mt-0.5">Голос</span>
+        </button>
+      </div>
+
+      <!-- Нижняя панель навигации (6 вкладок) -->
+      <div class="border-t border-slate-800 bg-slate-950/90 p-2 flex justify-around text-center text-[10px] text-slate-400 z-30">
+        <div class="text-amber-400 font-bold"><div>🏢</div>Объекты</div>
+        <div><div>💰</div>Финансы</div>
+        <div><div>📦</div>Склад</div>
+        <div><div>🛡️</div>Контроль</div>
+        <div><div>⚡</div>Смета</div>
+      </div>
+
+    </div>
+
+    <!-- Explanation Card (Справа от телефона) -->
+    <div class="max-w-md w-full glass-card rounded-3xl p-6 border border-slate-700/80">
+      <div id="desc-title" class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+        <span>🎙️ Создание объекта голосом</span>
+      </div>
+      <div id="desc-text" class="text-sm text-slate-300 leading-relaxed space-y-3 mb-6">
+        <p>
+          <strong class="text-white">В чём польза мастеру:</strong> Хозяин квартиры не дал никаких чертежей. Мастер не тыкает в телефон 20 минут, создавая таблицы.
+        </p>
+        <p>
+          Он нажал микрофон, сказал одно предложение на русском языке — и система сама создала нужные зоны без лишнего мусора.
+        </p>
+        <div class="p-3 bg-blue-950/40 rounded-xl border border-blue-900/50 text-xs text-blue-300">
+          ⏱️ <strong>Затраты времени мастера:</strong> 15 секунд.<br>
+          ❌ <strong>Ручной писанины:</strong> Ноль.
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800 pt-4">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Контрольный вопрос:</div>
+        <div id="desc-check" class="text-xs text-slate-200 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          «Не превратилась ли программа во вторую работу?»<br>
+          <span class="text-emerald-400 font-medium">Ответ: Нет, мастер просто сказал то, что и так держал в голове.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const explanations = {
+      1: {
+        title: "🎙️ 1. Создание объекта голосом (Без чертежей)",
+        text: "<p><strong class='text-white'>В чём польза мастеру:</strong> Хозяин квартиры не дал никаких чертежей. Мастер не тыкает в телефон 20 минут, создавая таблицы.</p><p>Он нажал микрофон, сказал одно предложение — и программа сама создала только те зоны, где реально предстоит работа.</p><div class='p-3 bg-blue-950/40 rounded-xl border border-blue-900/50 text-xs text-blue-300'>⏱️ <strong>Затраты времени мастера:</strong> 15 секунд.<br>❌ <strong>Ручной писанины:</strong> Ноль.</div>",
+        check: "«Не превратилась ли программа во вторую работу?»<br><span class='text-emerald-400 font-medium'>Ответ: Нет, мастер просто сказал то, что и так держал в голове.</span>"
+      },
+      2: {
+        title: "⚡ 2. Рабочий день: всего 1 кнопка на экране",
+        text: "<p><strong class='text-white'>В чём польза мастеру:</strong> Верхняя панель полностью разгружена. Никаких семи маленьких непонятных иконок-загадок.</p><p>На экране крупно: текущий объект, статус опрессовки и <strong>одна огромная кнопка фиксации</strong>. Сделал скрытую работу — нажал кнопку, щелкнул фото, убрал телефон.</p><div class='p-3 bg-blue-950/40 rounded-xl border border-blue-900/50 text-xs text-blue-300'>⏱️ <strong>Затраты времени мастера:</strong> 3 секунды.<br>🛡️ <strong>Польза:</strong> Плиточник через месяц не просверлит трубу, потому что есть фото трассы.</div>",
+        check: "«Зачем мастеру открывать программу?»<br><span class='text-emerald-400 font-medium'>Ответ: Чтобы защитить себя от чужих косяков и претензий клиента на миллионы.</span>"
+      },
+      3: {
+        title: "🔀 3. Нелинейная работа: сделал раньше срока",
+        text: "<p><strong class='text-white'>В чём польза мастеру:</strong> Пока объект ждёт 24 часа опрессовки (Этап 3), мастер поставил смеситель (Этап 4).</p><p>Глупая программа написала бы: <em>«Ошибка! Сначала закончите этап 3!»</em>. LIGA OS спокойно принимает факт, ставит пометку «Сделано заранее» и не ломает ход опрессовки.</p><div class='p-3 bg-blue-950/40 rounded-xl border border-blue-900/50 text-xs text-blue-300'>⏱️ <strong>Затраты времени мастера:</strong> 1 клик подтверждения.<br>🧘 <strong>Нервы:</strong> Программа не командует мастером, а подстраивается под жизнь.</div>",
+        check: "«Не ломает ли это логику этапов?»<br><span class='text-emerald-400 font-medium'>Ответ: Нет. Статус объекта остаётся на опрессовке, а факт смесителя уже в кармане.</span>"
+      },
+      4: {
+        title: "📐 4. Элитный объект с чертежами дизайнера",
+        text: "<p><strong class='text-white'>В чём польза мастеру:</strong> Проект на 300 м², 10 комнат, 3 санузла. Если всё это вбивать руками — уйдет полдня.</p><p>Мастер просто загружает PDF проекта. Система сама находит комнаты, выводы воды и котельную. Мастеру остаётся только нажать «Утвердить».</p><div class='p-3 bg-blue-950/40 rounded-xl border border-blue-900/50 text-xs text-blue-300'>⏱️ <strong>Затраты времени мастера:</strong> 1 минута на просмотр списка.<br>📁 <strong>Результат:</strong> Полная цифровая карта элитного объекта готова.</div>",
+        check: "«Что если в проекте была ошибка?»<br><span class='text-emerald-400 font-medium'>Ответ: Мастер может прямо на объекте сказать голосом: «Радиатор сместили на 30 см», и система запишет факт.</span>"
+      }
+    };
+
+    function showScreen(num) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`screen-${i}`).classList.add('hidden');
+        document.getElementById(`tab-${i}`).className = "px-4 py-2 text-sm font-medium rounded-xl transition bg-slate-800 text-slate-300 hover:bg-slate-700";
+      }
+      document.getElementById(`screen-${num}`).classList.remove('hidden');
+      document.getElementById(`tab-${num}`).className = "px-4 py-2 text-sm font-medium rounded-xl transition bg-blue-600 text-white shadow-lg shadow-blue-500/30";
+
+      document.getElementById('desc-title').innerHTML = `<span>${explanations[num].title}</span>`;
+      document.getElementById('desc-text').innerHTML = explanations[num].text;
+      document.getElementById('desc-check').innerHTML = explanations[num].check;
+    }
+  </script>
+</body>
+</html>
