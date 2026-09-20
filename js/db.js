@@ -12,8 +12,24 @@ class LigaDatabase {
   }
 
   async init() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+      let isSettled = false;
+
+      // Защитный таймаут 2.5 секунды: локальная база никогда не заморозит интерфейс приложения
+      const safetyTimer = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          console.warn('[LIGA OS DB] Превышено время ожидания IndexedDB, приложение продолжает запуск');
+          resolve(this.db);
+        }
+      }, 2500);
+
       const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      // Защита от блокировки открытыми вкладками браузера при обновлении схемы
+      request.onblocked = (event) => {
+        console.warn('[LIGA OS DB] Обновление базы заблокировано другой вкладкой. Закройте дублирующие вкладки LIGA OS');
+      };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
@@ -72,14 +88,33 @@ class LigaDatabase {
 
       request.onsuccess = async (event) => {
         this.db = event.target.result;
-        // Проверяем, есть ли начальные данные, если нет — заполняем элитными объектами
-        await this.seedInitialDataIfEmpty();
-        resolve(this.db);
+
+        // Автоматическое закрытие соединения при фоновом обновлении версии другой вкладкой
+        this.db.onversionchange = () => {
+          console.warn('[LIGA OS DB] Обнаружена новая версия базы, закрываем устаревшее соединение');
+          this.db.close();
+        };
+
+        try {
+          await this.seedInitialDataIfEmpty();
+        } catch (seedErr) {
+          console.warn('[LIGA OS DB] Ошибка автозаполнения демо-данных:', seedErr);
+        }
+
+        if (!isSettled) {
+          isSettled = true;
+          clearTimeout(safetyTimer);
+          resolve(this.db);
+        }
       };
 
       request.onerror = (event) => {
         console.error('Ошибка инициализации IndexedDB:', event.target.error);
-        reject(event.target.error);
+        if (!isSettled) {
+          isSettled = true;
+          clearTimeout(safetyTimer);
+          resolve(null);
+        }
       };
     });
   }

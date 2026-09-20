@@ -75,23 +75,28 @@ class LigaApp {
   async init() {
     console.log('Запуск LIGA OS v2.0 (10-Year Engineering History & Elite UI)...');
     
-    // 1. Инициализация светлой/тёмной темы
+    // 1. Инициализация светлой/тёмной темы (мгновенно)
     this.initTheme();
 
-    // 1.1. Инициализация клиентского режима демонстрации
+    // 2. Инициализация клиентского режима демонстрации (мгновенно)
     this.initClientMode();
 
-    // 2. Инициализация локальной базы данных IndexedDB
-    await window.ligaDB.init();
-    
-    // 3. Загрузка объектов
-    await this.loadSites();
-
-    // 4. Навешиваем слушатели событий
+    // 3. Синхронная привязка всех событий интерфейса ДО любых асинхронных операций
+    // Это гарантирует 100% мгновенный отклик всех кнопок (тема, микрофон, памятка, аудит, табы, модалки)
     this.initEvents();
 
-    // 5. Инициализация голосового движка Web Speech
+    // 4. Инициализация голосового движка Web Speech
     this.initVoiceEngine();
+
+    // 5. Инициализация локальной базы данных IndexedDB и загрузка объектов
+    try {
+      if (window.ligaDB) {
+        await window.ligaDB.init();
+        await this.loadSites();
+      }
+    } catch (dbErr) {
+      console.error('[LIGA OS] Ошибка подключения базы данных IndexedDB:', dbErr);
+    }
 
     // 6. Проверка цифровых расписок из URL (?verify_receipt=...)
     this.checkUrlVerification();
@@ -100,9 +105,13 @@ class LigaApp {
     this.registerServiceWorker();
 
     // 8. Первичный рендеринг
-    this.render();
-    this.calculateEstimate();
-    await this.updateNavBadges();
+    try {
+      this.render();
+      this.calculateEstimate();
+      await this.updateNavBadges();
+    } catch (renderErr) {
+      console.error('[LIGA OS] Ошибка первичного рендеринга:', renderErr);
+    }
   }
 
   // Управление темой интерфейса (Dark Titanium / Light Ceramic)
@@ -2731,7 +2740,16 @@ ${itemsText}
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new LigaApp();
-  window.app.init();
-});
+// Безотказный запуск приложения: поддерживает как ожидание DOM, так и немедленный старт
+function bootLigaApp() {
+  if (!window.app) {
+    window.app = new LigaApp();
+    window.app.init();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootLigaApp);
+} else {
+  bootLigaApp();
+}
