@@ -40,6 +40,8 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Кнопка включения/выключения звуковых сигналов -->
+        <button id="btn-sound-toggle" class="btn-icon-top" title="Звуковые сигналы (Вкл / Выкл)">🔊</button>
         <!-- Кнопка голосовой диктовки («Свободные руки») -->
         <button id="btn-voice-input" class="btn-icon-top master-only" title="Голосовая диктовка (Свободные руки)">🎙️</button>
         <!-- Кнопка Шпаргалки мастера (Скрипты диалогов) -->
@@ -213,6 +215,14 @@
          ЭКРАН 2: ФИНАНСЫ И ПЛАТЕЖИ ОБЪЕКТА + СВОДНЫЙ РАДАР
          ==================================================================== -->
     <section id="screen-finances" class="app-screen">
+      <!-- Навигационная полоса возврата к объектам -->
+      <div class="screen-top-bar">
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back" title="Вернуться к объектам">
+          <span class="back-arrow">←</span> Назад к объекту
+        </button>
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-close" title="Закрыть и вернуться к объекту">&times;</button>
+      </div>
+
       <!-- 1. Финансы текущего объекта -->
       <div class="glass-card">
         <div class="card-header-flex">
@@ -336,6 +346,14 @@
          ЭКРАН 3: СНАБЖЕНИЕ, СКЛАД И ЧЕКИ С БАЗАРОВ
          ==================================================================== -->
     <section id="screen-materials" class="app-screen">
+      <!-- Навигационная полоса возврата к объектам -->
+      <div class="screen-top-bar">
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back" title="Вернуться к объектам">
+          <span class="back-arrow">←</span> Назад к объекту
+        </button>
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-close" title="Закрыть и вернуться к объекту">&times;</button>
+      </div>
+
       <div class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">📦 Снабжение и материалы</div>
@@ -384,6 +402,14 @@
          ЭКРАН 4: ЧЕК-ЛИСТ КАЧЕСТВА ТЕХНАДЗОРА И АКТ СТЯЖКИ
          ==================================================================== -->
     <section id="screen-checklist" class="app-screen">
+      <!-- Навигационная полоса возврата к объектам -->
+      <div class="screen-top-bar">
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back" title="Вернуться к объектам">
+          <span class="back-arrow">←</span> Назад к объекту
+        </button>
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-close" title="Закрыть и вернуться к объекту">&times;</button>
+      </div>
+
       <div class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">🛡️ Технадзор перед стяжкой</div>
@@ -423,6 +449,14 @@
          ЭКРАН 5: ЭКСПРЕСС-КАЛЬКУЛЯТОР СМЕТЫ
          ==================================================================== -->
     <section id="screen-estimate" class="app-screen">
+      <!-- Навигационная полоса возврата к объектам -->
+      <div class="screen-top-bar">
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back" title="Вернуться к объектам">
+          <span class="back-arrow">←</span> Назад к объекту
+        </button>
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-close" title="Закрыть и вернуться к объекту">&times;</button>
+      </div>
+
       <div class="glass-card">
         <div class="card-label">⚡ Экспресс-смета за 60 секунд</div>
         <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 14px 0; font-weight:600;">
@@ -514,6 +548,14 @@
          ЭКРАН 6: 10-ЛЕТНЯЯ ИНЖЕНЕРНАЯ ИСТОРИЯ ОБЪЕКТА (TIMELINE & БРИГАДА)
          ==================================================================== -->
     <section id="screen-history" class="app-screen">
+      <!-- Навигационная полоса возврата к объектам -->
+      <div class="screen-top-bar">
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back" title="Вернуться к объектам">
+          <span class="back-arrow">←</span> Назад к объекту
+        </button>
+        <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-close" title="Закрыть и вернуться к объекту">&times;</button>
+      </div>
+
       <div class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">📜 Инженерная история объекта</div>
@@ -530,6 +572,9 @@
           </button>
           <button class="history-subtab-btn" data-subtab="equipment">
             <span>🏷️</span> Оборудование
+          </button>
+          <button class="history-subtab-btn master-only" data-subtab="contacts">
+            <span>👤</span> Контакты
           </button>
         </div>
 
@@ -582,6 +627,24 @@
           </div>
 
           <div id="equipment-list-container" class="equipment-grid">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+        <!-- 4. Подвкладка: Реестр контактов Лиги Мастеров (Бизнес-книга Улугбека) -->
+        <div id="subtab-content-contacts" class="history-tab-pane master-only" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
+              Реестр заказчиков, дизайнеров и подрядчиков Лиги:
+            </div>
+            <button id="btn-open-add-contact" onclick="window.app.openAddContactModal()" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary); flex-shrink:0;">
+              + Контакт
+            </button>
+          </div>
+          <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px; line-height:1.4;">
+            Постоянная база контактов Улугбека. Сохраняет историю объектов, адресов и предыдущих телефонов даже при их смене клиентом.
+          </div>
+          <div id="contacts-list-container">
             <!-- Заполняется динамически -->
           </div>
         </div>
@@ -1319,6 +1382,52 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ КОНТАКТА LIGA OS
+         ==================================================================== -->
+    <div id="modal-add-contact" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>👥 Новый контакт LIGA OS</span>
+          <button onclick="window.app.closeModal('modal-add-contact')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">
+          Бизнес-книга Улугбека. Сохраняет историю объектов, адресов и предыдущих номеров телефонов.
+        </div>
+        <form id="form-add-contact">
+          <div class="form-group">
+            <label class="form-label">ФИО / Имя контакта:</label>
+            <input id="contact-name" type="text" class="form-input" placeholder="Напр: Бахром-ака или Камила Studio 7" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Роль в проектах:</label>
+            <select id="contact-role" class="form-input">
+              <option value="Заказчик (VIP)">Заказчик (VIP)</option>
+              <option value="Дизайнер / Архитектор">Дизайнер / Архитектор</option>
+              <option value="Генподрядчик / Прораб">Генподрядчик / Прораб</option>
+              <option value="Мастер бригады">Мастер бригады</option>
+              <option value="Поставщик сантехники">Поставщик сантехники</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Основной номер телефона:</label>
+            <input id="contact-phone" type="tel" class="form-input" placeholder="+998 90 123 45 67" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Основной адрес / объект:</label>
+            <input id="contact-address" type="text" class="form-input" placeholder="Напр: ЖК Mirabad Avenue, Блок B">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Личные инженерные заметки / предпочтения:</label>
+            <textarea id="contact-notes" class="form-input" rows="2" placeholder="Напр: Предпочитает коллекторы FAR, расчет по безналу, авторский надзор"></textarea>
+          </div>
+          <button type="submit" class="btn-submit-modal" style="background:var(--gold-gradient); color:var(--btn-gold-text);">
+            ✓ Сохранить контакт в LIGA OS
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar — 6 Вкладок)
          ==================================================================== -->
     <nav class="bottom-nav">
@@ -1352,10 +1461,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.3: Реактивность интерфейса, удаление позиций, дисковая память) -->
-  <script src="./js/image_processor.js?v=2.0.3"></script>
-  <script src="./js/db.js?v=2.0.3"></script>
-  <script src="./js/pdf_engine.js?v=2.0.3"></script>
-  <script src="./js/app.js?v=2.0.3"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.4: Элитный UI, возврат со вторичных экранов, реестр контактов, Swiss Audio) -->
+  <script src="./js/image_processor.js?v=2.0.4"></script>
+  <script src="./js/db.js?v=2.0.4"></script>
+  <script src="./js/pdf_engine.js?v=2.0.4"></script>
+  <script src="./js/app.js?v=2.0.4"></script>
 </body>
 </html>

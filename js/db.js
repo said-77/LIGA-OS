@@ -4,7 +4,7 @@
    ========================================================================== */
 
 const DB_NAME = 'LigaOS_DB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 class LigaDatabase {
   constructor() {
@@ -83,6 +83,14 @@ class LigaDatabase {
           const timeStore = db.createObjectStore('site_timeline_events', { keyPath: 'id', autoIncrement: true });
           timeStore.createIndex('siteId', 'siteId', { unique: false });
           timeStore.createIndex('date', 'date', { unique: false });
+        }
+
+        // 9. Хранилище постоянных контактов Лиги Мастеров (Contacts Registry) — Бизнес-книга Улугбека
+        if (!db.objectStoreNames.contains('contacts')) {
+          const contactStore = db.createObjectStore('contacts', { keyPath: 'id', autoIncrement: true });
+          contactStore.createIndex('contactId', 'contactId', { unique: true });
+          contactStore.createIndex('role', 'role', { unique: false });
+          contactStore.createIndex('name', 'name', { unique: false });
         }
       };
 
@@ -234,6 +242,62 @@ class LigaDatabase {
       for (let p of defaultPayouts) {
         await this.add('brigade_payouts', p);
       }
+
+      // 9. Начальные постоянные контакты Лиги Мастеров (Бизнес-книга Улугбека)
+      if (this.db.objectStoreNames.contains('contacts')) {
+        const existingContacts = await this.getAll('contacts');
+        if (existingContacts.length === 0) {
+          const defaultContacts = [
+            {
+              contactId: 'LIGA-C-001',
+              name: 'Бахром-ака',
+              role: 'Заказчик (VIP)',
+              phone: '+998901234567',
+              phoneHistory: ['+998901234567'],
+              addressHistory: ['ЖК Mirabad Avenue, Блок B, кв. 142'],
+              notes: 'VIP-клиент. Предпочитает Rehau Pink и коллекторы FAR. Оплата строго по графику.',
+              siteIds: [site1],
+              createdAt: '2026-09-10'
+            },
+            {
+              contactId: 'LIGA-C-002',
+              name: 'Камила (Studio 7)',
+              role: 'Дизайнер / Архитектор',
+              phone: '+998939876543',
+              phoneHistory: ['+998939876543'],
+              addressHistory: ['Ташкент, ул. Чехова 14 (Студия 7)'],
+              notes: 'Ведущий дизайнер интерьеров. Всегда требует соосность водорозеток с раскладкой плитки.',
+              siteIds: [site1],
+              createdAt: '2026-09-10'
+            },
+            {
+              contactId: 'LIGA-C-003',
+              name: 'Джамшид-ака',
+              role: 'Заказчик (VIP)',
+              phone: '+998971112233',
+              phoneHistory: ['+998971112233'],
+              addressHistory: ['Nest One, Башня A, Пентхаус 41'],
+              notes: 'Двухуровневый пентхаус. Шумоизоляция стояков Comfort Mat и система Нептун Smart.',
+              siteIds: [site2],
+              createdAt: '2026-09-15'
+            },
+            {
+              contactId: 'LIGA-C-004',
+              name: 'Сарвар Архитект',
+              role: 'Дизайнер / Архитектор',
+              phone: '+998909998877',
+              phoneHistory: ['+998909998877'],
+              addressHistory: ['Nest One'],
+              notes: 'Авторский надзор отопления, согласование трасс теплых полов.',
+              siteIds: [site2],
+              createdAt: '2026-09-15'
+            }
+          ];
+          for (let c of defaultContacts) {
+            await this.add('contacts', c);
+          }
+        }
+      }
     }
   }
 
@@ -307,13 +371,15 @@ class LigaDatabase {
     const payouts = this.db && this.db.objectStoreNames.contains('brigade_payouts') ? await this.getAll('brigade_payouts') : [];
     const equipment = this.db && this.db.objectStoreNames.contains('installed_equipment') ? await this.getAll('installed_equipment') : [];
     const timeline = this.db && this.db.objectStoreNames.contains('site_timeline_events') ? await this.getAll('site_timeline_events') : [];
+    const contacts = this.db && this.db.objectStoreNames.contains('contacts') ? await this.getAll('contacts') : [];
     return {
       sitesCount: sites.length,
       materialsCount: materials.length,
       checklistsCount: checklists.length,
       payoutsCount: payouts.length,
       equipmentCount: equipment.length,
-      timelineCount: timeline.length
+      timelineCount: timeline.length,
+      contactsCount: contacts.length
     };
   }
 
@@ -337,13 +403,14 @@ class LigaDatabase {
     const brigade_payouts = this.db && this.db.objectStoreNames.contains('brigade_payouts') ? await this.getAll('brigade_payouts') : [];
     const installed_equipment = this.db && this.db.objectStoreNames.contains('installed_equipment') ? await this.getAll('installed_equipment') : [];
     const site_timeline_events = this.db && this.db.objectStoreNames.contains('site_timeline_events') ? await this.getAll('site_timeline_events') : [];
+    const contacts = this.db && this.db.objectStoreNames.contains('contacts') ? await this.getAll('contacts') : [];
 
     return {
       appName: 'LIGA OS',
       schemaVersion: 1,
       dbVersion: DB_VERSION,
       exportDate: new Date().toISOString(),
-      appVersion: '2.0.0',
+      appVersion: '2.0.4',
       sites,
       materials,
       checklists,
@@ -352,6 +419,7 @@ class LigaDatabase {
       brigade_payouts,
       installed_equipment,
       site_timeline_events,
+      contacts,
       tariffSettings
     };
   }
@@ -480,6 +548,7 @@ class LigaDatabase {
       payoutsCount: Array.isArray(data.brigade_payouts) ? data.brigade_payouts.length : 0,
       equipmentCount: Array.isArray(data.installed_equipment) ? data.installed_equipment.length : 0,
       timelineCount: Array.isArray(data.site_timeline_events) ? data.site_timeline_events.length : 0,
+      contactsCount: Array.isArray(data.contacts) ? data.contacts.length : 0,
       hasTariffs: Boolean(data.tariffSettings && typeof data.tariffSettings === 'object'),
       raw: data
     };
@@ -494,7 +563,7 @@ class LigaDatabase {
     const currentSnapshot = await this.createBackupPayload();
     const stores = [
       'sites', 'materials', 'checklists', 'finances', 'passports',
-      'brigade_payouts', 'installed_equipment', 'site_timeline_events'
+      'brigade_payouts', 'installed_equipment', 'site_timeline_events', 'contacts'
     ];
 
     const writeStores = async (sourceData) => {

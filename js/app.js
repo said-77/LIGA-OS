@@ -72,8 +72,12 @@ class LigaApp {
     // Клиентский режим демонстрации заказчику (Client View)
     this.isClientMode = localStorage.getItem('liga_client_mode') === 'true';
 
-    // Подвкладка 10-летней истории (timeline / payouts / equipment)
+    // Подвкладка 10-летней истории (timeline / payouts / equipment / contacts)
     this.currentHistorySubtab = 'timeline';
+
+    // Звуковой движок (Swiss Audio Feedback)
+    this.isSoundEnabled = localStorage.getItem('liga_sound_enabled') !== 'false';
+    this.audioCtx = null;
   }
 
   async init() {
@@ -154,6 +158,97 @@ class LigaApp {
     if (showToastNotification) {
       const label = theme === 'dark' ? '🌙 Тёмный титан активен' : '☀️ Светлая керамика активна';
       this.showToast(label);
+    }
+  }
+
+  // ==========================================================================
+  // ОФЛАЙН ЗВУКОВОЙ ДВИЖОК (SWISS AUDIO FEEDBACK ENGINE НА WEB AUDIO API)
+  // ==========================================================================
+  initAudioEngine() {
+    if (!this.audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+      try {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        this.audioCtx = new AudioCtor();
+      } catch (e) {
+        console.warn('Web Audio API не поддерживается:', e);
+      }
+    }
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+  }
+
+  // Благородный швейцарский двухтональный аккорд (опрессовка 16 бар / успешный этап)
+  playSwissChime() {
+    if (!this.isSoundEnabled) return;
+    try {
+      this.initAudioEngine();
+      if (!this.audioCtx) return;
+      const now = this.audioCtx.currentTime;
+
+      // Первый тон (A5 - 880Hz)
+      const osc1 = this.audioCtx.createOscillator();
+      const gain1 = this.audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.2, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc1.connect(gain1);
+      gain1.connect(this.audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.5);
+
+      // Второй тон (A6 - 1760Hz) с благородным затуханием
+      const osc2 = this.audioCtx.createOscillator();
+      const gain2 = this.audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1760, now + 0.08);
+      gain2.gain.setValueAtTime(0.25, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc2.connect(gain2);
+      gain2.connect(this.audioCtx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.65);
+    } catch (e) {
+      console.warn('Ошибка воспроизведения звука chime:', e);
+    }
+  }
+
+  // Тактильный мягкий клик подтверждения
+  playSubtleClick() {
+    if (!this.isSoundEnabled) return;
+    try {
+      this.initAudioEngine();
+      if (!this.audioCtx) return;
+      const now = this.audioCtx.currentTime;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch (e) {
+      console.warn('Ошибка воспроизведения click:', e);
+    }
+  }
+
+  toggleSound() {
+    this.isSoundEnabled = !this.isSoundEnabled;
+    localStorage.setItem('liga_sound_enabled', this.isSoundEnabled ? 'true' : 'false');
+    const btn = document.getElementById('btn-sound-toggle');
+    if (btn) {
+      btn.innerText = this.isSoundEnabled ? '🔊' : '🔇';
+    }
+    if (this.isSoundEnabled) {
+      this.playSubtleClick();
+      this.showToast('🔊 Звуковые сигналы включены');
+    } else {
+      this.showToast('🔇 Звуковые сигналы выключены');
     }
   }
 
@@ -303,10 +398,16 @@ class LigaApp {
 
   // Привязка событий интерфейса
   initEvents() {
-    // 0. Кнопка переключения темы
+    // 0. Кнопка переключения темы и звука
     const btnTheme = document.getElementById('btn-theme-toggle');
     if (btnTheme) {
       btnTheme.addEventListener('click', () => this.toggleTheme());
+    }
+
+    const btnSound = document.getElementById('btn-sound-toggle');
+    if (btnSound) {
+      btnSound.innerText = this.isSoundEnabled ? '🔊' : '🔇';
+      btnSound.addEventListener('click', () => this.toggleSound());
     }
 
     // 1. Нижняя панель навигации (Bottom Bar)
@@ -627,6 +728,19 @@ class LigaApp {
         await this.handleAddEquipment();
       });
     }
+
+    const btnOpenContact = document.getElementById('btn-open-add-contact');
+    if (btnOpenContact) {
+      btnOpenContact.addEventListener('click', () => this.openAddContactModal());
+    }
+
+    const formAddContact = document.getElementById('form-add-contact');
+    if (formAddContact) {
+      formAddContact.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleAddContact();
+      });
+    }
   }
 
   // Привязка инпутов камеры для фотофиксации
@@ -830,7 +944,7 @@ class LigaApp {
       }
     });
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     this.renderScreenContent(screenName);
   }
 
@@ -1048,6 +1162,7 @@ class LigaApp {
 
     await window.ligaDB.put('sites', this.currentSite);
     this.closeModal('modal-pressure-test');
+    this.playSwissChime();
     this.showToast('✓ Акт опрессовки 16 бар: УСПЕШНО ЗАФИКСИРОВАН!');
     this.render();
   }
@@ -1129,6 +1244,7 @@ class LigaApp {
       item.done = !item.done;
       await window.ligaDB.put('checklists', item);
       await this.renderChecklist();
+      this.playSubtleClick();
       this.showToast(item.done ? 'Пункт выполнен' : 'Пункт снят');
     }
   }
@@ -1258,6 +1374,7 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
       await window.ligaDB.put('materials', item);
       await this.renderMaterials();
       await this.updateNavBadges();
+      this.playSubtleClick();
       this.showToast(item.isPurchased ? '✓ Отмечено как куплено!' : 'Статус: Требуется докупить');
     }
   }
@@ -2544,10 +2661,13 @@ ${itemsText}
     const paneTimeline = document.getElementById('subtab-content-timeline');
     const panePayouts = document.getElementById('subtab-content-payouts');
     const paneEquipment = document.getElementById('subtab-content-equipment');
+    const paneContacts = document.getElementById('subtab-content-contacts');
 
     if (paneTimeline) paneTimeline.style.display = subtabName === 'timeline' ? 'block' : 'none';
     if (panePayouts) panePayouts.style.display = subtabName === 'payouts' && !this.isClientMode ? 'block' : 'none';
     if (paneEquipment) paneEquipment.style.display = subtabName === 'equipment' ? 'block' : 'none';
+    if (paneContacts) paneContacts.style.display = subtabName === 'contacts' && !this.isClientMode ? 'block' : 'none';
+    window.scrollTo({ left: 0 });
 
     this.renderHistorySubtabContent(subtabName);
   }
@@ -2556,6 +2676,7 @@ ${itemsText}
     await this.renderTimeline();
     await this.renderBrigadePayouts();
     await this.renderEquipment();
+    await this.renderContacts();
   }
 
   async renderHistorySubtabContent(subtabName) {
@@ -2565,6 +2686,8 @@ ${itemsText}
       await this.renderBrigadePayouts();
     } else if (subtabName === 'equipment') {
       await this.renderEquipment();
+    } else if (subtabName === 'contacts') {
+      await this.renderContacts();
     }
   }
 
@@ -2883,6 +3006,152 @@ ${itemsText}
     this.showToast('✓ Оборудование удалено из паспорта объекта');
   }
 
+  // ==========================================================================
+  // РЕЕСТР КОНТАКТОВ ЛИГИ МАСТЕРОВ (БИЗНЕС-КНИГА УЛУГБЕКА) — v2.0.4
+  // ==========================================================================
+  async renderContacts() {
+    if (this.isClientMode) return;
+    const container = document.getElementById('contacts-list-container');
+    if (!container) return;
+
+    let contacts = [];
+    if (window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('contacts')) {
+      contacts = await window.ligaDB.getAll('contacts');
+    }
+
+    if (contacts.length === 0) {
+      container.innerHTML = `
+        <div style="color:var(--text-dim); padding:24px 10px; text-align:center; font-size:12px; font-weight:700;">
+          В реестре контактов Лиги пока нет записей.<br>Нажмите «+ Контакт», чтобы добавить заказчика, дизайнера или партнера.
+        </div>`;
+      return;
+    }
+
+    let sitesMap = {};
+    if (window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('sites')) {
+      const sites = await window.ligaDB.getAll('sites');
+      sites.forEach(s => { sitesMap[s.id] = s.name; });
+    }
+
+    container.innerHTML = contacts.map(c => {
+      let roleClass = 'role-client';
+      if (c.role && (c.role.includes('Дизайнер') || c.role.includes('Архитектор'))) {
+        roleClass = 'role-designer';
+      } else if (c.role && (c.role.includes('Генподрядчик') || c.role.includes('Прораб') || c.role.includes('Мастер') || c.role.includes('Поставщик'))) {
+        roleClass = 'role-contractor';
+      }
+
+      let sitesHtml = '';
+      if (Array.isArray(c.siteIds) && c.siteIds.length > 0) {
+        const siteNames = c.siteIds.map(id => sitesMap[id] || `Объект #${id}`).join(', ');
+        sitesHtml = `
+          <div class="contact-sites-list">
+            <b>📍 Объекты в LIGA OS:</b> ${siteNames}
+          </div>
+        `;
+      } else if (Array.isArray(c.addressHistory) && c.addressHistory.length > 0) {
+        sitesHtml = `
+          <div class="contact-sites-list">
+            <b>📍 Адрес:</b> ${c.addressHistory[c.addressHistory.length - 1]}
+          </div>
+        `;
+      }
+
+      let phoneHistoryHtml = '';
+      if (Array.isArray(c.phoneHistory) && c.phoneHistory.length > 1) {
+        const oldPhones = c.phoneHistory.filter(p => p !== c.phone).join(', ');
+        if (oldPhones) {
+          phoneHistoryHtml = `<div style="font-size:10px; color:var(--text-dim); margin-top:3px;">Прежние номера: ${oldPhones}</div>`;
+        }
+      }
+
+      const safePhone = (c.phone || '').replace(/[^\d+]/g, '');
+
+      return `
+        <div class="contact-card-item">
+          <div class="contact-header-row">
+            <div>
+              <div class="contact-name-title">${c.name}</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+                <span class="contact-code-badge">${c.contactId || 'LIGA-C'}</span>
+                <span class="contact-role-badge ${roleClass}">${c.role}</span>
+              </div>
+            </div>
+            <button class="btn-item-delete" onclick="window.app.deleteContact(${c.id})" title="Удалить контакт" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px 6px; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🗑️</button>
+          </div>
+
+          <div class="contact-details-box">
+            <div class="contact-phone-row">
+              <a href="tel:${safePhone}" class="contact-phone-link" title="Позвонить">
+                📞 ${c.phone}
+              </a>
+            </div>
+            ${phoneHistoryHtml}
+            ${c.notes ? `<div style="margin-top:6px; font-style:italic; color:var(--text-muted);">📝 ${c.notes}</div>` : ''}
+            ${sitesHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  openAddContactModal() {
+    if (this.isClientMode) {
+      this.showToast('⚠️ Функция недоступна в режиме демонстрации');
+      return;
+    }
+    const addrInput = document.getElementById('contact-address');
+    if (addrInput && this.currentSite && !addrInput.value) {
+      addrInput.placeholder = `Напр: ${this.currentSite.name}`;
+    }
+    this.openModal('modal-add-contact');
+  }
+
+  async handleAddContact() {
+    if (this.isClientMode) return;
+    const name = (document.getElementById('contact-name')?.value || '').trim();
+    const role = document.getElementById('contact-role')?.value || 'Заказчик (VIP)';
+    const phone = (document.getElementById('contact-phone')?.value || '').trim();
+    const address = (document.getElementById('contact-address')?.value || '').trim();
+    const notes = (document.getElementById('contact-notes')?.value || '').trim();
+
+    if (!name || !phone) {
+      alert('Пожалуйста, заполните ФИО/имя и основной номер телефона контакта.');
+      return;
+    }
+
+    const uniqueNum = Math.floor(100 + Math.random() * 900);
+    const newContact = {
+      contactId: `LIGA-C-${uniqueNum}`,
+      name,
+      role,
+      phone,
+      phoneHistory: [phone],
+      addressHistory: address ? [address] : (this.currentSite ? [this.currentSite.name] : []),
+      notes,
+      siteIds: this.currentSiteId ? [this.currentSiteId] : [],
+      createdAt: new Date().toISOString().slice(0, 10)
+    };
+
+    await window.ligaDB.add('contacts', newContact);
+
+    const form = document.getElementById('form-add-contact');
+    if (form) form.reset();
+
+    this.closeModal('modal-add-contact');
+    this.playSubtleClick();
+    this.showToast(`✓ Контакт «${name}» внесен в реестр LIGA OS!`);
+    await this.renderContacts();
+  }
+
+  async deleteContact(id) {
+    if (!confirm('Удалить этот контакт из постоянного реестра Лиги Мастеров?')) return;
+    await window.ligaDB.delete('contacts', id);
+    this.playSubtleClick();
+    await this.renderContacts();
+    this.showToast('✓ Контакт удален из реестра Лиги');
+  }
+
   // Обновление бейджей уведомлений на нижней навигации
   async updateNavBadges() {
     if (!this.currentSiteId) return;
@@ -2922,7 +3191,7 @@ ${itemsText}
     if (this.isClientMode && [
       'modal-master-guide', 'modal-tariffs', 'modal-payment',
       'modal-receipt', 'modal-ai-audit', 'modal-backup-manager',
-      'modal-add-payout', 'modal-add-event', 'modal-add-equipment'
+      'modal-add-payout', 'modal-add-event', 'modal-add-equipment', 'modal-add-contact'
     ].includes(modalId)) {
       this.showToast('⚠️ Функция недоступна в режиме демонстрации');
       return;
