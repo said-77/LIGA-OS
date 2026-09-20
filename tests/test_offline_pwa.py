@@ -42,30 +42,31 @@ def test_pwa_offline_resilience(http_server):
         page.goto(f"{http_server}/index.html")
         page.wait_for_selector(".bottom-nav")
 
-        # Даем Service Worker время установить кэш
-        page.wait_for_timeout(1500)
+        # Ожидаем готовности Service Worker и взятия страницы под контроль (controller)
+        page.evaluate("""async () => {
+            const reg = await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve) => {
+                    navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
+                    setTimeout(resolve, 2000);
+                });
+            }
+            // Убеждаемся, что кэш заполнен ресурсами
+            const cache = await caches.open('liga-os-v1.4.6-p0');
+            const keys = await cache.keys();
+            return keys.length > 0;
+        }""")
+        page.wait_for_timeout(500)
 
-        # Проверяем, что Service Worker зарегистрирован
-        sw_registered = page.evaluate("() => Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)")
-        # В headless chromium иногда требуется явное ожидание ready
-        if not sw_registered:
-            page.evaluate("() => navigator.serviceWorker.ready")
-            page.wait_for_timeout(1000)
-
-        # 2. Имитируем монолитный подвал: ПОЛНОЕ ОТКЛЮЧЕНИЕ СЕТИ
+        # 2. Имитируем монолитный подвал новостройки: ПОЛНОЕ ОТКЛЮЧЕНИЕ СЕТИ
         context.set_offline(True)
         page.wait_for_timeout(300)
 
-        # 3. Перезагружаем страницу в условиях жесткого офлайна
-        # Приложение ОБЯЗАНО загрузиться из кэша SW или локальной памяти
-        try:
-            page.reload()
-            page.wait_for_selector(".bottom-nav", timeout=5000)
-            assert page.locator(".bottom-nav").is_visible(), "Навигация обязана загрузиться в офлайне!"
-        except Exception:
-            # Если reload в headless не поддержал SW controller при первом старте,
-            # проверяем функционал страницы при offline
-            pass
+        # 3. Перезагружаем страницу в условиях жесткого офлайна БЕЗ СКРЫТИЯ ОШИБОК
+        # Если Service Worker не закэшировал приложение, этот вызов гарантированно уронит тест!
+        page.reload()
+        page.wait_for_selector(".bottom-nav", timeout=8000)
+        assert page.locator(".bottom-nav").is_visible(), "Приложение обязано загружаться из кэша Service Worker при полном отсутствии сети!"
 
         # 4. Проверяем работу базы и экранов без интернета
         site_name = page.locator("#site-name-display").inner_text()

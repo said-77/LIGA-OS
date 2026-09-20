@@ -130,7 +130,7 @@ def test_finances_online_offline_badges(http_server):
         fin_text = page.locator("#screen-finances").inner_text()
 
         # Проверяем наличие бейджей
-        assert "100% офлайн" in fin_text.lower(), "Должен присутствовать бейдж '100% Офлайн' для бэкапа"
+        assert "офлайн" in fin_text.lower(), "Должен присутствовать бейдж 'Локально (офлайн)' для бэкапа"
         assert "онлайн" in fin_text.lower(), "Должен присутствовать бейдж 'Онлайн' для внешних ссылок"
 
         browser.close()

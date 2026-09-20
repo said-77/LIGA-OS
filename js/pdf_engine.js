@@ -459,6 +459,9 @@ class LigaPdfEngine {
           <td class="highlight-cell">СООТВЕТСТВУЕТ</td>
         </tr>
       </table>
+      <div style="margin-top: 8px; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 10px; color: #475569; line-height: 1.4;">
+        ℹ️ <strong>Статус фиксации:</strong> Результаты испытания внесены и подтверждены мастером (Улугбек Хакимов) по показаниям опрессовочного манометра на объекте. Документ удостоверяет внутренний инженерный стандарт Лиги Мастеров и не является независимым лабораторным сертификатом или судебной экспертизой.
+      </div>
       ` : `
       <table class="protocol-table">
         <tr>
