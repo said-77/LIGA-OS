@@ -23,10 +23,14 @@ class LigaApp {
     this.currentMatFilter = 'all';
     this.pendingReceiptPhoto = null;
 
-    // Голосовой ввод и Voice AI
+    // Голосовой ввод и Voice AI (Непрерывный режим «Свободные руки» мирового уровня)
     this.isRecordingVoice = false;
     this.recognition = null;
     this.parsedVoiceAction = null;
+    this.voiceAccumulatedText = '';
+    this.voiceInterimText = '';
+    this.voiceKeepAliveActive = false;
+    this.voiceRestartTimeout = null;
 
     // Защита от дубликатов
     this.pendingDuplicateSave = null;
@@ -1836,39 +1840,88 @@ ${itemsText}
   }
 
   // ==========================================================================
-  // МОДУЛЬ ГОЛОСОВОЙ ДИКТОВКИ («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ»)
+  // МОДУЛЬ ГОЛОСОВОГО АССИСТЕНТА («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ») — МИРОВОЙ УРОВЕНЬ
+  // Непрерывное распознавание (continuous listening), живой вывод, Keep-Alive при паузах
   // ==========================================================================
   initVoiceEngine() {
     const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechClass) {
       this.recognition = new SpeechClass();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
       this.recognition.lang = 'ru-RU';
 
       this.recognition.onstart = () => {
         this.isRecordingVoice = true;
         this.updateVoiceUI(true);
+        const statusEl = document.getElementById('voice-status-text');
+        if (statusEl) {
+          statusEl.innerHTML = '🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю вас...</span> Говорите свободно, можно делать паузы';
+        }
       };
 
       this.recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        this.handleVoiceResult(transcript);
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          const transcriptPiece = e.results[i][0].transcript;
+          if (e.results[i].isFinal) {
+            this.voiceAccumulatedText = (this.voiceAccumulatedText + ' ' + transcriptPiece).trim();
+          } else {
+            interim += transcriptPiece;
+          }
+        }
+        this.voiceInterimText = interim;
+
+        const currentFull = (this.voiceAccumulatedText + (interim ? ' ' + interim : '')).trim();
+        this.handleVoiceResult(currentFull);
+
+        const statusEl = document.getElementById('voice-status-text');
+        if (statusEl) {
+          statusEl.innerHTML = '🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю речь...</span> Записываю каждое слово';
+        }
       };
 
       this.recognition.onerror = (e) => {
-        console.warn('SpeechRecognition error:', e.error);
-        this.isRecordingVoice = false;
-        this.updateVoiceUI(false);
-        const statusEl = document.getElementById('voice-status-text');
-        if (statusEl) {
-          statusEl.innerText = 'Не удалось разобрать речь. Введите фразу текстом:';
+        console.warn('[LIGA OS Voice] SpeechRecognition event:', e.error);
+        // no-speech возникает, когда мастер думает/молчит перед произнесением следующей фразы
+        if (e.error === 'no-speech') {
+          const statusEl = document.getElementById('voice-status-text');
+          if (statusEl) {
+            statusEl.innerHTML = '⏳ <span style="color:var(--gold-primary); font-weight:800;">Жду продолжения мысли...</span> Нажмите «Закончил», когда скажете всё';
+          }
+          return;
+        }
+
+        if (e.error === 'network') {
+          const statusEl = document.getElementById('voice-status-text');
+          if (statusEl) {
+            statusEl.innerText = '⚠️ Нет подключения к сети для распознавания. Введите фразу текстом ниже:';
+          }
+          this.showToast('⚠️ Распознавание речи требует интернета');
         }
       };
 
       this.recognition.onend = () => {
-        this.isRecordingVoice = false;
-        this.updateVoiceUI(false);
+        // Keep-Alive: если пользователь сам не нажал стоп, мягко возобновляем сессию без потери накопленного текста
+        if (this.isRecordingVoice && this.voiceKeepAliveActive) {
+          const statusEl = document.getElementById('voice-status-text');
+          if (statusEl) {
+            statusEl.innerHTML = '🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю...</span> Жду продолжения фразы';
+          }
+          clearTimeout(this.voiceRestartTimeout);
+          this.voiceRestartTimeout = setTimeout(() => {
+            if (this.isRecordingVoice && this.voiceKeepAliveActive && this.recognition) {
+              try {
+                this.recognition.start();
+              } catch (err) {
+                console.warn('[LIGA OS Voice] Auto-restart note:', err.message);
+              }
+            }
+          }, 150);
+        } else {
+          this.isRecordingVoice = false;
+          this.updateVoiceUI(false);
+        }
       };
     }
   }
@@ -1891,33 +1944,75 @@ ${itemsText}
       return;
     }
 
+    this.voiceKeepAliveActive = true;
+    const inputEl = document.getElementById('voice-recognized-input');
+    if (inputEl && inputEl.value.trim().length > 0 && !this.voiceAccumulatedText) {
+      this.voiceAccumulatedText = inputEl.value.trim();
+    }
+
     if (this.recognition) {
       try {
         this.recognition.start();
-        const statusEl = document.getElementById('voice-status-text');
-        if (statusEl) statusEl.innerText = '🔴 Запись... Говорите фразу';
       } catch (err) {
-        console.warn('Recognition already started or error:', err);
+        console.warn('[LIGA OS Voice] Recognition already started or error:', err);
       }
-    } else {
-      const statusEl = document.getElementById('voice-status-text');
-      if (statusEl) {
-        statusEl.innerText = 'Диктовка доступна. Введите фразу в поле ниже:';
-      }
+    }
+
+    this.isRecordingVoice = true;
+    this.updateVoiceUI(true);
+
+    const statusEl = document.getElementById('voice-status-text');
+    if (statusEl) {
+      statusEl.innerHTML = '🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю вас...</span> Говорите свободно, можно делать паузы';
     }
   }
 
   stopVoiceRecording() {
-    if (this.recognition && this.isRecordingVoice) {
-      this.recognition.stop();
+    this.voiceKeepAliveActive = false;
+    clearTimeout(this.voiceRestartTimeout);
+
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (e) {
+        console.warn('[LIGA OS Voice] Stop error:', e);
+      }
     }
+
     this.isRecordingVoice = false;
     this.updateVoiceUI(false);
+
+    const statusEl = document.getElementById('voice-status-text');
+    if (statusEl) {
+      statusEl.innerHTML = '✓ <span style="color:var(--neon-emerald); font-weight:800;">Запись завершена.</span> Проверьте результат ниже:';
+    }
+
+    const inputEl = document.getElementById('voice-recognized-input');
+    const finalText = inputEl ? inputEl.value.trim() : (this.voiceAccumulatedText + ' ' + this.voiceInterimText).trim();
+    if (finalText) {
+      this.handleVoiceInputText(finalText);
+    }
+  }
+
+  clearVoiceText() {
+    this.voiceAccumulatedText = '';
+    this.voiceInterimText = '';
+    const inputEl = document.getElementById('voice-recognized-input');
+    if (inputEl) inputEl.value = '';
+    const preview = document.getElementById('voice-parse-preview');
+    const btnConfirm = document.getElementById('btn-voice-confirm');
+    if (preview) preview.style.display = 'none';
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    this.parsedVoiceAction = null;
+    this.showToast('Поле ввода очищено');
   }
 
   updateVoiceUI(isActive) {
     const circle = document.getElementById('voice-pulse-circle');
     const headerBtn = document.getElementById('btn-voice-input');
+    const finishBtn = document.getElementById('btn-voice-finish-recording');
+    const wavesEl = document.getElementById('voice-sound-waves');
+
     if (circle) {
       if (isActive) circle.classList.add('voice-recording-active');
       else circle.classList.remove('voice-recording-active');
@@ -1925,6 +2020,12 @@ ${itemsText}
     if (headerBtn) {
       if (isActive) headerBtn.classList.add('voice-recording-active');
       else headerBtn.classList.remove('voice-recording-active');
+    }
+    if (finishBtn) {
+      finishBtn.style.display = isActive ? 'block' : 'none';
+    }
+    if (wavesEl) {
+      wavesEl.style.display = isActive ? 'flex' : 'none';
     }
   }
 
@@ -1960,7 +2061,7 @@ ${itemsText}
         detailsEl.innerText = `${parsed.title} • ${this.formatSum(parsed.amount)}`;
       } else if (parsed.type === 'brigade_pay') {
         typeEl.innerText = `💰 Выплата помощнику (${parsed.recipient})`;
-        detailsEl.innerText = `Сумма аванса: ${this.formatSum(parsed.amount)}`;
+        detailsEl.innerText = `Сумма: ${this.formatSum(parsed.amount)}`;
       } else if (parsed.type === 'client_advance') {
         typeEl.innerText = `💵 Поступление аванса от заказчика`;
         detailsEl.innerText = `Зачислено: ${this.formatSum(parsed.amount)}`;
@@ -1975,23 +2076,78 @@ ${itemsText}
     const lower = text.toLowerCase();
     let amount = 0;
 
-    const millionsMatch = lower.match(/(\d+[\.,]?\d*)\s*(млн|миллион|лям)/);
-    const thousandsMatch = lower.match(/(\d+[\.,]?\d*)\s*(тыс|тысяч)/);
-    const plainNumberMatch = lower.match(/(\d{4,9})/);
+    // 1. Парсинг сумм на естественном языке мастера (миллионы, тысячи, доллары, узбекский)
+    const usdRate = (this.tariffSettings && this.tariffSettings.usdRate) ? this.tariffSettings.usdRate : 12900;
 
-    if (millionsMatch) {
-      const val = parseFloat(millionsMatch[1].replace(',', '.'));
-      amount = Math.round(val * 1000000);
-    } else if (thousandsMatch) {
-      const val = parseFloat(thousandsMatch[1].replace(',', '.'));
-      amount = Math.round(val * 1000);
-    } else if (plainNumberMatch) {
-      amount = parseInt(plainNumberMatch[1]);
+    // Доллары («100 долларов», «50 баксов», «сто баксов», «$50»)
+    const usdMatch = lower.match(/(\d+)\s*(доллар|бакс|\$)/);
+    if (usdMatch) {
+      const usdVal = parseInt(usdMatch[1]);
+      amount = usdVal * usdRate;
+    } else if (lower.includes('сто долларов') || lower.includes('сто баксов')) {
+      amount = 100 * usdRate;
+    } else if (lower.includes('двести долларов') || lower.includes('двести баксов')) {
+      amount = 200 * usdRate;
+    } else if (lower.includes('полтора миллиона') || lower.includes('полтора млн') || lower.includes('полтора ляма')) {
+      amount = 1500000;
+    } else if (lower.includes('два с половиной миллиона') || lower.includes('два с половиной млн') || lower.includes('два с половиной ляма')) {
+      amount = 2500000;
+    } else if (lower.includes('три с половиной миллиона') || lower.includes('три с половиной млн')) {
+      amount = 3500000;
+    } else if (lower.includes('миллион') || lower.includes('один миллион') || lower.includes('лям') || lower.includes('лимон')) {
+      const mMatch = lower.match(/(\d+[\.,]?\d*)\s*(млн|миллион|лям|лимон)/);
+      if (mMatch) {
+        const val = parseFloat(mMatch[1].replace(',', '.'));
+        amount = Math.round(val * 1000000);
+      } else {
+        amount = 1000000;
+      }
+    } else if (lower.includes('двести тысяч') || lower.includes('икки юз минг')) {
+      amount = 200000;
+    } else if (lower.includes('триста тысяч')) {
+      amount = 300000;
+    } else if (lower.includes('четыреста тысяч')) {
+      amount = 400000;
+    } else if (lower.includes('пятьсот тысяч')) {
+      amount = 500000;
+    } else if (lower.includes('шестьсот тысяч')) {
+      amount = 600000;
+    } else if (lower.includes('семьсот тысяч')) {
+      amount = 700000;
+    } else if (lower.includes('восемьсот тысяч')) {
+      amount = 800000;
+    } else if (lower.includes('девятьсот тысяч')) {
+      amount = 900000;
+    } else if (lower.includes('сто тысяч') || lower.includes('юз минг')) {
+      amount = 100000;
+    } else {
+      const thousandsMatch = lower.match(/(\d+[\.,]?\d*)\s*(тыс|тысяч|тыщ|минг)/);
+      const plainNumberMatch = lower.match(/(\d{4,9})/);
+
+      if (thousandsMatch) {
+        const val = parseFloat(thousandsMatch[1].replace(',', '.'));
+        amount = Math.round(val * 1000);
+      } else if (plainNumberMatch) {
+        amount = parseInt(plainNumberMatch[1]);
+      }
     }
 
-    if (lower.includes('выдал') || lower.includes('аванс') || lower.includes('алишер') || lower.includes('сардор') || lower.includes('зарплат')) {
+    // 2. Определение типа операции: Аванс / Оплата от заказчика (Приоритет №1)
+    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('перевел') || lower.includes('бахром') || lower.includes('поступил аванс') || lower.includes('аванс от')) {
+      return {
+        type: 'client_advance',
+        title: 'Аванс от заказчика',
+        amount: amount || 2000000
+      };
+    }
+
+    // 3. Определение типа операции: Выплата бригаде / помощнику
+    if (lower.includes('выдал') || lower.includes('аванс') || lower.includes('алишер') || lower.includes('сардор') || lower.includes('рустам') || lower.includes('зарплат') || lower.includes('помощник') || lower.includes('дал денег')) {
       let recipient = 'Алишер';
       if (lower.includes('сардор')) recipient = 'Сардор';
+      else if (lower.includes('рустам')) recipient = 'Рустам';
+      else if (lower.includes('помощник') || lower.includes('бригад')) recipient = 'Помощник';
+
       return {
         type: 'brigade_pay',
         title: `Выплата помощнику (${recipient})`,
@@ -2001,15 +2157,8 @@ ${itemsText}
       };
     }
 
-    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('перевел') || lower.includes('бахром')) {
-      return {
-        type: 'client_advance',
-        title: 'Аванс от заказчика',
-        amount: amount || 2000000
-      };
-    }
-
-    if (lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('давление')) {
+    // 4. Определение типа операции: Опрессовка 16 бар
+    if (lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('давление') || lower.includes('гидравлик')) {
       return {
         type: 'press_test',
         title: 'Опрессовка 16 бар',
@@ -2017,14 +2166,24 @@ ${itemsText}
       };
     }
 
+    // 5. Определение типа операции: Материалы и Снабжение сантехники
     let category = 'Трубы и фитинги';
-    if (lower.includes('коллектор') || lower.includes('far')) category = 'Коллекторы';
-    if (lower.includes('инсталляц') || lower.includes('трап') || lower.includes('geberit') || lower.includes('tece')) category = 'Инсталляции';
-    if (lower.includes('нептун') || lower.includes('протечк')) category = 'Защита от протечек';
-    if (lower.includes('клей') || lower.includes('герметик') || lower.includes('изоляц')) category = 'Расходники';
+    if (lower.includes('коллектор') || lower.includes('far') || lower.includes('гребенк') || lower.includes('расходомер')) {
+      category = 'Коллекторы';
+    } else if (lower.includes('инсталляц') || lower.includes('трап') || lower.includes('geberit') || lower.includes('геберит') || lower.includes('tece') || lower.includes('теце') || lower.includes('viega')) {
+      category = 'Инсталляции';
+    } else if (lower.includes('нептун') || lower.includes('neptun') || lower.includes('протечк') || lower.includes('gidrolock') || lower.includes('гидролок') || lower.includes('сервопривод')) {
+      category = 'Защита от протечек';
+    } else if (lower.includes('канализац') || lower.includes('ostendorf') || lower.includes('остендорф') || lower.includes('фанов')) {
+      category = 'Канализация';
+    } else if (lower.includes('теплый пол') || lower.includes('насос') || lower.includes('grundfos') || lower.includes('bwt') || lower.includes('фильтр')) {
+      category = 'Отопление и фильтрация';
+    } else if (lower.includes('клей') || lower.includes('герметик') || lower.includes('изоляц') || lower.includes('k-flex') || lower.includes('лен') || lower.includes('паста') || lower.includes('unipak')) {
+      category = 'Расходники';
+    }
 
     let cleanName = text
-      .replace(/(купил|купили|взял|на базаре|на джами|за|на сумму|сум|суммов|тысяч|миллион|рублей)/gi, '')
+      .replace(/(купил|купили|взял|на базаре|на джами|на урикзаре|за|на сумму|сум|суммов|тысяч|тыщ|миллион|миллиона|рублей|долларов|баксов)/gi, '')
       .replace(/\d+/g, '')
       .trim();
     if (cleanName.length < 3) cleanName = 'Материалы сантехники';
@@ -2066,6 +2225,17 @@ ${itemsText}
           recipient: action.recipient,
           date: new Date().toISOString().slice(0, 10)
         });
+        // Также дублируем запись в 10-летнюю хронику выплат мастера (P0-History)
+        await window.ligaDB.add('brigade_payouts', {
+          siteId: this.currentSiteId,
+          employeeName: action.recipient,
+          role: 'Помощник',
+          amountUZS: action.amount,
+          amountUSD: Math.round(action.amount / (this.tariffSettings ? this.tariffSettings.usdRate : 12900)),
+          usdRate: (this.tariffSettings ? this.tariffSettings.usdRate : 12900),
+          workDescription: 'Голосовая фиксация аванса мастера',
+          date: new Date().toISOString().slice(0, 10)
+        });
         this.showToast(`✓ Выплата ${action.recipient} ${this.formatSum(action.amount)} зафиксирована!`);
         this.render();
       }
@@ -2073,6 +2243,14 @@ ${itemsText}
       if (this.currentSite) {
         this.currentSite.advanceSum = (this.currentSite.advanceSum || 0) + action.amount;
         await window.ligaDB.put('sites', this.currentSite);
+        await window.ligaDB.add('finances', {
+          siteId: this.currentSiteId,
+          type: 'client_advance',
+          amount: action.amount,
+          method: 'Банковский перевод / Наличные',
+          recipient: this.currentSite.client || 'Заказчик',
+          date: new Date().toISOString().slice(0, 10)
+        });
         this.showToast(`✓ Аванс ${this.formatSum(action.amount)} зачислен!`);
         this.render();
       }

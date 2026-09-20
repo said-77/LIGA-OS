@@ -1632,4 +1632,31 @@ body.client-mode .client-view-placeholder,
   }
 }
 
+/* ==========================================================================
+   12. ГОЛОСОВОЙ АССИСТЕНТ «СВОБОДНЫЕ РУКИ» (Sound Waves & Animations)
+   ========================================================================== */
+@keyframes waveAnim {
+  0% {
+    height: 4px;
+    opacity: 0.4;
+  }
+  100% {
+    height: 18px;
+    opacity: 1;
+  }
+}
 
+.voice-recording-active {
+  animation: voicePulseGlow 1.2s infinite alternate !important;
+}
+
+@keyframes voicePulseGlow {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 42, 95, 0.5), inset 0 0 8px rgba(255, 42, 95, 0.4);
+    transform: scale(0.97);
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(255, 42, 95, 0.85), inset 0 0 14px rgba(255, 42, 95, 0.6);
+    transform: scale(1.05);
+  }
+}
