@@ -1517,6 +1517,15 @@ ${itemsText}
   }
 
   startVoiceRecording() {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      const statusEl = document.getElementById('voice-status-text');
+      if (statusEl) {
+        statusEl.innerText = '⚠️ Нет подключения к сети: введите текст фразы вручную в поле ниже';
+      }
+      this.showToast('⚠️ Распознавание речи требует интернета');
+      return;
+    }
+
     if (this.recognition) {
       try {
         this.recognition.start();
@@ -1906,7 +1915,7 @@ ${itemsText}
   }
 
   // ==========================================================================
-  // ИИ-АНАЛИТИК ОБЪЕКТА И РИСКОВ
+  // ИНЖЕНЕРНЫЙ ЭКСПРЕСС-АУДИТ (ЭКСПЕРТНЫЕ ПРАВИЛА) — P0-5
   // ==========================================================================
   runAiAudit() {
     this.openModal('modal-ai-audit');
@@ -1948,7 +1957,7 @@ ${itemsText}
 
   saveAiAuditNotes() {
     this.closeModal('modal-ai-audit');
-    this.showToast('✓ Выводы ИИ-аналитика зафиксированы в истории объекта!');
+    this.showToast('✓ Выводы инженерного аудита зафиксированы в истории объекта!');
   }
 
   openModal(modalId) {
