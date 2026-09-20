@@ -189,6 +189,19 @@ body {
   width: 36px;
   height: 36px;
   filter: drop-shadow(0 0 6px rgba(255, 209, 117, 0.4));
+  animation: logoBreathe 3.5s ease-in-out infinite;
+  transition: transform 0.25s ease;
+}
+
+@keyframes logoBreathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(255, 209, 117, 0.4));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 14px rgba(255, 209, 117, 0.8));
+  }
 }
 
 [data-theme="light"] .brand-logo {
@@ -477,6 +490,22 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.debt-banner.has-debt {
+  animation: debtPulse 3s ease-in-out infinite;
+}
+
+@keyframes debtPulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), 0 0 0 0 rgba(255, 42, 95, 0.15);
+    border-color: var(--debt-border);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), 0 0 16px rgba(255, 42, 95, 0.35);
+    border-color: rgba(255, 42, 95, 0.65);
+  }
 }
 
 .debt-banner::after {
@@ -635,7 +664,7 @@ body {
   -webkit-backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-border-subtle);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   align-items: center;
   padding: 0 4px;
   z-index: 200;
@@ -652,11 +681,11 @@ body {
   gap: 3px;
   color: var(--text-dim);
   text-decoration: none;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: -0.2px;
   cursor: pointer;
-  padding: 6px 2px;
+  padding: 8px 2px;
   border-radius: var(--radius-sm);
   transition: var(--transition-fast);
   background: none;
@@ -666,16 +695,51 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  position: relative;
 }
 
 .nav-icon {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1;
   transition: var(--transition-fast);
 }
 
+.nav-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 15px);
+  min-width: 15px;
+  height: 15px;
+  line-height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--neon-ruby);
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(255, 42, 95, 0.6);
+  pointer-events: none;
+  display: none;
+}
+
+.nav-badge.active {
+  display: inline-block;
+}
+
 .nav-item.active {
   color: var(--gold-primary);
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 16px;
+  height: 2.5px;
+  background: var(--gold-gradient);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(255, 209, 117, 0.8);
 }
 
 .nav-item.active .nav-icon {
@@ -696,11 +760,31 @@ body {
    ========================================================================== */
 .app-screen {
   display: none;
-  animation: fadeIn 0.25s ease-out;
+  animation: fadeIn 0.22s ease-out;
 }
 
 .app-screen.active {
   display: block;
+}
+
+.app-screen.active .glass-card {
+  animation: cardReveal 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.app-screen.active .glass-card:nth-child(1) { animation-delay: 0.02s; }
+.app-screen.active .glass-card:nth-child(2) { animation-delay: 0.06s; }
+.app-screen.active .glass-card:nth-child(3) { animation-delay: 0.10s; }
+.app-screen.active .glass-card:nth-child(4) { animation-delay: 0.14s; }
+
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes fadeIn {
@@ -1234,6 +1318,318 @@ body.client-mode .client-view-placeholder,
   border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   8. ЭЛИТНЫЙ UI: SKELETON SHIMMER & TACTILE STATES
+   ========================================================================== */
+.shimmer-loading {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shimmer-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 209, 117, 0.12) 50%, transparent 100%);
+  animation: shimmerSweep 1.8s infinite;
+}
+
+@keyframes shimmerSweep {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(200%); }
+}
+
+/* ==========================================================================
+   9. ХРОНОЛОГИЯ 10-ЛЕТНЕЙ ИСТОРИИ (TIMELINE & HISTORY UI)
+   ========================================================================== */
+.history-subtabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  background: var(--box-bg);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border-subtle);
+}
+
+.history-subtab-btn {
+  flex: 1;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.history-subtab-btn.active {
+  background: var(--gold-gradient);
+  color: var(--btn-gold-text);
+  box-shadow: 0 2px 8px rgba(184, 131, 42, 0.3);
+}
+
+.timeline-container {
+  position: relative;
+  padding-left: 24px;
+  margin-top: 10px;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--gold-primary) 0%, rgba(255, 209, 117, 0.2) 100%);
+  border-radius: 2px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-titanium);
+  border: 2px solid var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  box-shadow: var(--gold-glow);
+  z-index: 2;
+}
+
+.timeline-card {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  transition: var(--transition-fast);
+}
+
+.timeline-card:hover {
+  border-color: rgba(255, 209, 117, 0.3);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.timeline-date {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold-primary);
+}
+
+.timeline-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-event-audit { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+.badge-event-rough { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+.badge-event-pressure { background: rgba(0, 245, 160, 0.15); color: var(--neon-emerald); border: 1px solid var(--neon-emerald-glow); }
+.badge-event-screed { background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-event-trim { background: rgba(212, 163, 89, 0.15); color: var(--gold-primary); border: 1px solid var(--gold-secondary); }
+.badge-event-service { background: rgba(0, 242, 254, 0.15); color: var(--neon-cyan); border: 1px solid var(--neon-cyan-border); }
+.badge-event-payout { background: rgba(255, 42, 95, 0.15); color: var(--neon-ruby); border: 1px solid rgba(255, 42, 95, 0.3); }
+
+.timeline-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.timeline-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.timeline-photo-thumb {
+  width: 100%;
+  max-height: 140px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-top: 8px;
+  border: 1px solid var(--glass-border-subtle);
+}
+
+/* Таблица выплат бригаде */
+.payout-card-item {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payout-left-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.payout-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.payout-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.payout-amounts {
+  text-align: right;
+}
+
+.payout-uzs {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--neon-ruby);
+}
+
+.payout-usd {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+/* Карточки оборудования */
+.equipment-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.equipment-card {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  position: relative;
+}
+
+.equipment-brand {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.equipment-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 2px 0 6px 0;
+}
+
+.equipment-details {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.equipment-warranty-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 3px 8px;
+  background: rgba(0, 245, 160, 0.12);
+  border: 1px solid rgba(0, 245, 160, 0.35);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--neon-emerald);
+}
+
+/* ==========================================================================
+   10. ПЛАНШЕТНАЯ АДАПТАЦИЯ (iPad & Tablet Layout @media >= 768px)
+   ========================================================================== */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 760px;
+    padding: 0 24px;
+  }
+  .bottom-nav {
+    max-width: 760px;
+    border-radius: 20px 20px 0 0;
+  }
+  .quick-actions-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .counter-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .equipment-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==========================================================================
+   11. ПЕЧАТЬ И PDF (@media print)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .bottom-nav,
+  .top-header,
+  .client-mode-banner,
+  .btn-print-bar,
+  #app-toast {
+    display: none !important;
+  }
+  .app-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  .glass-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    page-break-inside: avoid;
+  }
 }
 
 

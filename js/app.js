@@ -67,10 +67,13 @@ class LigaApp {
 
     // Клиентский режим демонстрации заказчику (Client View)
     this.isClientMode = localStorage.getItem('liga_client_mode') === 'true';
+
+    // Подвкладка 10-летней истории (timeline / payouts / equipment)
+    this.currentHistorySubtab = 'timeline';
   }
 
   async init() {
-    console.log('Запуск LIGA OS v1.2...');
+    console.log('Запуск LIGA OS v2.0 (10-Year Engineering History & Elite UI)...');
     
     // 1. Инициализация светлой/тёмной темы
     this.initTheme();
@@ -99,6 +102,7 @@ class LigaApp {
     // 8. Первичный рендеринг
     this.render();
     this.calculateEstimate();
+    await this.updateNavBadges();
   }
 
   // Управление темой интерфейса (Dark Titanium / Light Ceramic)
@@ -561,6 +565,53 @@ class LigaApp {
         this.switchGuideTab(tab);
       });
     });
+
+    // 16. 10-летняя инженерная история: переключение подвкладок и модалки
+    document.querySelectorAll('.history-subtab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const subtab = btn.getAttribute('data-subtab');
+        this.switchHistorySubtab(subtab);
+      });
+    });
+
+    const btnOpenAddEvent = document.getElementById('btn-open-add-event');
+    if (btnOpenAddEvent) {
+      btnOpenAddEvent.addEventListener('click', () => this.openAddEventModal());
+    }
+
+    const formAddEvent = document.getElementById('form-add-event');
+    if (formAddEvent) {
+      formAddEvent.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleAddTimelineEvent();
+      });
+    }
+
+    const btnOpenAddPayout = document.getElementById('btn-open-add-payout');
+    if (btnOpenAddPayout) {
+      btnOpenAddPayout.addEventListener('click', () => this.openAddPayoutModal());
+    }
+
+    const formAddPayout = document.getElementById('form-add-payout');
+    if (formAddPayout) {
+      formAddPayout.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleAddBrigadePayout();
+      });
+    }
+
+    const btnOpenAddEq = document.getElementById('btn-open-add-equipment');
+    if (btnOpenAddEq) {
+      btnOpenAddEq.addEventListener('click', () => this.openAddEquipmentModal());
+    }
+
+    const formAddEq = document.getElementById('form-add-equipment');
+    if (formAddEq) {
+      formAddEq.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleAddEquipment();
+      });
+    }
   }
 
   // Привязка инпутов камеры для фотофиксации
@@ -777,6 +828,8 @@ class LigaApp {
       await this.renderFinances();
     } else if (screenName === 'estimate') {
       this.calculateEstimate();
+    } else if (screenName === 'history') {
+      await this.renderHistory();
     }
   }
 
@@ -828,6 +881,16 @@ class LigaApp {
 
     document.getElementById('fin-contract-val').innerText = this.formatSum(contract);
     document.getElementById('fin-advance-val').innerText = this.formatSum(advance);
+    const debtValEl = document.getElementById('fin-debt-val');
+    if (debtValEl) {
+      debtValEl.innerText = this.formatSum(debt);
+    }
+    const debtBanners = document.querySelectorAll('.debt-banner');
+    debtBanners.forEach(b => {
+      if (debt > 0) b.classList.add('has-debt');
+      else b.classList.remove('has-debt');
+    });
+
     const brigadeEl = document.getElementById('fin-brigade-val');
     if (brigadeEl) {
       brigadeEl.innerText = this.isClientMode ? '—' : this.formatSum(s.brigadeOwed || 0);
@@ -852,6 +915,7 @@ class LigaApp {
     }
 
     this.calculateEstimate();
+    this.updateNavBadges();
   }
 
   // Обновление статуса объекта
@@ -1090,7 +1154,7 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
 Сайт: https://liga-masterov.vercel.app`;
 
     try {
-      await navigator.clipboard.writeText(message);
+      await this.copyToClipboard(message);
       this.showToast('✓ Акт стяжки скопирован! Переход в Telegram...');
     } catch (e) {
       console.warn('Clipboard write failed:', e);
@@ -1219,7 +1283,7 @@ ${itemsText}
 Сформировано в LIGA OS: https://liga-masterov.vercel.app`;
 
     try {
-      await navigator.clipboard.writeText(message);
+      await this.copyToClipboard(message);
       this.showToast('✓ Список для базара скопирован в буфер!');
     } catch (e) {
       console.warn('Clipboard write failed:', e);
@@ -1634,12 +1698,50 @@ ${itemsText}
 
 Сайт-портфолио: https://liga-masterov.vercel.app/`;
 
-    navigator.clipboard.writeText(message).then(() => {
+    this.copyToClipboard(message).then(() => {
       this.showToast('✓ Смета скопирована! Вставьте её в чат Telegram.');
     }).catch(err => {
       console.warn('Clipboard write failed:', err);
       this.showToast('✓ Смета сформирована!');
     });
+  }
+
+  // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
+  async toggleMaterialStatus(id) {
+    const item = await window.ligaDB.get('materials', id);
+    if (item) {
+      item.isPurchased = !item.isPurchased;
+      await window.ligaDB.put('materials', item);
+      await this.renderMaterials();
+      this.updateNavBadges();
+      this.showToast(item.isPurchased ? '✓ Материал отмечен как купленный' : 'Материал возвращён в план закупки');
+    }
+  }
+
+  // Универсальный clipboard с fallback для старых браузеров — P0-audit fix
+  async copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        console.warn('Clipboard API failed, using fallback:', e);
+      }
+    }
+    // Fallback через временный textarea
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    } catch (e) {
+      console.warn('Clipboard fallback failed:', e);
+      return false;
+    }
   }
 
   // Генерация PDF с живыми фото
@@ -2214,8 +2316,364 @@ ${itemsText}
     this.showToast('✓ Выводы инженерного аудита зафиксированы в истории объекта!');
   }
 
+  // ==========================================================================
+  // 10-ЛЕТНЯЯ ИНЖЕНЕРНАЯ ИСТОРИЯ ОБЪЕКТА (TIMELINE, BRIGADE, EQUIPMENT)
+  // ==========================================================================
+  switchHistorySubtab(subtabName) {
+    this.currentHistorySubtab = subtabName;
+    document.querySelectorAll('.history-subtab-btn').forEach(btn => {
+      if (btn.getAttribute('data-subtab') === subtabName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    const paneTimeline = document.getElementById('subtab-content-timeline');
+    const panePayouts = document.getElementById('subtab-content-payouts');
+    const paneEquipment = document.getElementById('subtab-content-equipment');
+
+    if (paneTimeline) paneTimeline.style.display = subtabName === 'timeline' ? 'block' : 'none';
+    if (panePayouts) panePayouts.style.display = subtabName === 'payouts' && !this.isClientMode ? 'block' : 'none';
+    if (paneEquipment) paneEquipment.style.display = subtabName === 'equipment' ? 'block' : 'none';
+
+    this.renderHistorySubtabContent(subtabName);
+  }
+
+  async renderHistory() {
+    await this.renderTimeline();
+    await this.renderBrigadePayouts();
+    await this.renderEquipment();
+  }
+
+  async renderHistorySubtabContent(subtabName) {
+    if (subtabName === 'timeline') {
+      await this.renderTimeline();
+    } else if (subtabName === 'payouts') {
+      await this.renderBrigadePayouts();
+    } else if (subtabName === 'equipment') {
+      await this.renderEquipment();
+    }
+  }
+
+  // Рендеринг хронологической ленты событий объекта
+  async renderTimeline() {
+    const container = document.getElementById('timeline-events-container');
+    if (!container) return;
+
+    let events = [];
+    if (window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('site_timeline_events')) {
+      events = await window.ligaDB.getBySiteId('site_timeline_events', this.currentSiteId);
+    }
+
+    events.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    const badgeCount = document.getElementById('history-events-count-badge');
+    if (badgeCount) {
+      badgeCount.innerText = `${events.length} записей`;
+    }
+
+    if (events.length === 0) {
+      container.innerHTML = `
+        <div style="color:var(--text-dim); padding:24px 10px; text-align:center; font-size:12px; font-weight:700;">
+          Пока нет записей в хронике объекта.<br>Нажмите «+ Событие», чтобы зафиксировать инженерный этап.
+        </div>`;
+      return;
+    }
+
+    const typeBadges = {
+      audit: { label: '📐 Аудит', class: 'badge-event-audit' },
+      rough: { label: '🔧 Черновой', class: 'badge-event-rough' },
+      pressure: { label: '🛡️ 16 бар', class: 'badge-event-pressure' },
+      screed: { label: '🏗️ Стяжка', class: 'badge-event-screed' },
+      trim: { label: '✨ Чистовая', class: 'badge-event-trim' },
+      service: { label: '🛠️ Сервис', class: 'badge-event-service' },
+      payout: { label: '💰 Выплата', class: 'badge-event-payout' }
+    };
+
+    container.innerHTML = events.map(ev => {
+      const tb = typeBadges[ev.eventType] || { label: 'Этап', class: 'badge-event-audit' };
+      const dateFormatted = ev.date 
+        ? new Date(ev.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })
+        : 'Дата не указана';
+
+      return `
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <span class="timeline-date">${dateFormatted}</span>
+              <span class="timeline-badge ${tb.class}">${tb.label}</span>
+            </div>
+            <div class="timeline-title">${ev.title}</div>
+            <div class="timeline-desc">${ev.description}</div>
+            ${ev.photo ? `<img src="${ev.photo}" alt="Фото этапа" class="timeline-photo-thumb">` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Рендеринг выплат бригаде (учет труда помощников)
+  async renderBrigadePayouts() {
+    if (this.isClientMode) return;
+    const container = document.getElementById('brigade-payouts-container');
+    if (!container) return;
+
+    let payouts = [];
+    if (window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('brigade_payouts')) {
+      payouts = await window.ligaDB.getBySiteId('brigade_payouts', this.currentSiteId);
+    }
+
+    payouts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const totalUZS = payouts.reduce((acc, p) => acc + (p.amountUZS || 0), 0);
+    const totalEl = document.getElementById('history-total-payouts');
+    if (totalEl) {
+      totalEl.innerText = this.formatSum(totalUZS);
+    }
+
+    if (payouts.length === 0) {
+      container.innerHTML = `
+        <div style="color:var(--text-dim); padding:20px; text-align:center; font-size:12px; font-weight:700;">
+          Выплаты помощникам по данному объекту еще не зафиксированы.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = payouts.map(p => {
+      const dateStr = p.date 
+        ? new Date(p.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+      const methodLabel = p.paymentType === 'card' ? '💳 Карта' : '💵 Наличные';
+
+      return `
+        <div class="payout-card-item">
+          <div class="payout-left-info">
+            <div class="payout-name">${p.name} ${p.role ? `<span style="font-size:11px; color:var(--text-dim); font-weight:normal;">(${p.role})</span>` : ''}</div>
+            <div class="payout-desc">${p.workDescription}</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">
+              <span>📅 ${dateStr}</span> • <span>${methodLabel}</span>
+            </div>
+          </div>
+          <div class="payout-amounts">
+            <div class="payout-uzs">${this.formatSum(p.amountUZS)}</div>
+            ${p.amountUSD ? `<div class="payout-usd">≈ $${p.amountUSD}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Рендеринг паспортов европейского оборудования
+  async renderEquipment() {
+    const container = document.getElementById('equipment-list-container');
+    if (!container) return;
+
+    let equipment = [];
+    if (window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('installed_equipment')) {
+      equipment = await window.ligaDB.getBySiteId('installed_equipment', this.currentSiteId);
+    }
+
+    if (equipment.length === 0) {
+      container.innerHTML = `
+        <div style="color:var(--text-dim); padding:20px; text-align:center; font-size:12px; font-weight:700;">
+          Оборудование еще не зарегистрировано в паспорте объекта.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = equipment.map(eq => `
+      <div class="equipment-card">
+        <div class="equipment-warranty-badge">Гарантия ${eq.warrantyYears || 10} лет</div>
+        <div class="equipment-brand">${eq.brand}</div>
+        <div class="equipment-title">${eq.model}</div>
+        <div class="equipment-details">
+          <div><b>Категория:</b> ${eq.category}</div>
+          ${eq.serialNumber ? `<div><b>Серийный №:</b> ${eq.serialNumber}</div>` : ''}
+          ${eq.installDate ? `<div><b>Дата монтажа:</b> ${eq.installDate}</div>` : ''}
+          ${eq.notes ? `<div style="margin-top:4px; font-style:italic;">${eq.notes}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Открытие модальных окон
+  openAddEventModal() {
+    const dateInput = document.getElementById('event-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    this.openModal('modal-add-event');
+  }
+
+  openAddPayoutModal() {
+    const dateInput = document.getElementById('payout-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    this.openModal('modal-add-payout');
+  }
+
+  openAddEquipmentModal() {
+    const dateInput = document.getElementById('eq-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    this.openModal('modal-add-equipment');
+  }
+
+  // Добавление записи хронологии (Append-Only)
+  async handleAddTimelineEvent() {
+    if (!this.currentSite) return;
+    const date = (document.getElementById('event-date')?.value || '').trim();
+    const eventType = document.getElementById('event-type')?.value || 'rough';
+    const title = (document.getElementById('event-title')?.value || '').trim();
+    const description = (document.getElementById('event-desc')?.value || '').trim();
+
+    if (!date || !title || !description) {
+      alert('Пожалуйста, заполните дату, заголовок и описание события.');
+      return;
+    }
+
+    await window.ligaDB.add('site_timeline_events', {
+      siteId: this.currentSiteId,
+      date,
+      eventType,
+      title,
+      description,
+      createdAt: new Date().toISOString()
+    });
+
+    const form = document.getElementById('form-add-event');
+    if (form) form.reset();
+
+    this.closeModal('modal-add-event');
+    this.showToast('✓ Событие зафиксировано в хронике объекта!');
+    await this.renderTimeline();
+  }
+
+  // Добавление выплаты помощнику бригады
+  async handleAddBrigadePayout() {
+    if (!this.currentSite) return;
+    const date = (document.getElementById('payout-date')?.value || '').trim();
+    const name = (document.getElementById('payout-name')?.value || '').trim();
+    const role = (document.getElementById('payout-role')?.value || '').trim();
+    const amountUZS = parseInt(document.getElementById('payout-amount')?.value) || 0;
+    const paymentType = document.getElementById('payout-method')?.value || 'cash';
+    const workDescription = (document.getElementById('payout-desc')?.value || '').trim();
+
+    if (!date || !name || amountUZS <= 0) {
+      alert('Пожалуйста, укажите дату, имя сотрудника и сумму выплаты.');
+      return;
+    }
+
+    const usdRate = (this.tariffSettings && this.tariffSettings.usdRate) || 12900;
+    const amountUSD = Math.round(amountUZS / usdRate);
+
+    await window.ligaDB.add('brigade_payouts', {
+      siteId: this.currentSiteId,
+      date,
+      name,
+      role,
+      amountUZS,
+      amountUSD,
+      usdRate,
+      paymentType,
+      workDescription,
+      createdAt: new Date().toISOString()
+    });
+
+    // Уменьшаем долг бригаде в объекте
+    this.currentSite.brigadeOwed = Math.max(0, (this.currentSite.brigadeOwed || 0) - amountUZS);
+    await window.ligaDB.put('sites', this.currentSite);
+
+    const form = document.getElementById('form-add-payout');
+    if (form) form.reset();
+
+    this.closeModal('modal-add-payout');
+    this.showToast(`✓ Выплата ${this.formatSum(amountUZS)} для ${name} зафиксирована!`);
+    await this.renderBrigadePayouts();
+    this.render();
+  }
+
+  // Добавление паспорта оборудования
+  async handleAddEquipment() {
+    if (!this.currentSite) return;
+    const brand = (document.getElementById('eq-brand')?.value || '').trim();
+    const model = (document.getElementById('eq-model')?.value || '').trim();
+    const category = document.getElementById('eq-category')?.value || 'Коллекторный узел';
+    const serialNumber = (document.getElementById('eq-serial')?.value || '').trim();
+    const warrantyYears = parseInt(document.getElementById('eq-warranty')?.value) || 10;
+    const installDate = (document.getElementById('eq-date')?.value || '').trim();
+    const notes = (document.getElementById('eq-notes')?.value || '').trim();
+
+    if (!brand || !model || !installDate) {
+      alert('Пожалуйста, заполните бренд, модель и дату установки оборудования.');
+      return;
+    }
+
+    await window.ligaDB.add('installed_equipment', {
+      siteId: this.currentSiteId,
+      brand,
+      model,
+      category,
+      serialNumber,
+      warrantyYears,
+      installDate,
+      notes,
+      createdAt: new Date().toISOString()
+    });
+
+    const form = document.getElementById('form-add-equipment');
+    if (form) form.reset();
+
+    this.closeModal('modal-add-equipment');
+    this.showToast(`✓ Паспорт «${brand} ${model}» сохранен!`);
+    await this.renderEquipment();
+  }
+
+  // Обновление бейджей уведомлений на нижней навигации
+  async updateNavBadges() {
+    if (!this.currentSiteId) return;
+
+    try {
+      // 1. Бейдж склада (позиции «Нужно купить»)
+      const materials = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+      const neededCount = materials.filter(m => !m.isPurchased).length;
+      const badgeMat = document.getElementById('badge-nav-materials');
+      if (badgeMat) {
+        if (neededCount > 0) {
+          badgeMat.innerText = neededCount > 9 ? '9+' : neededCount;
+          badgeMat.classList.add('active');
+        } else {
+          badgeMat.classList.remove('active');
+        }
+      }
+
+      // 2. Бейдж контроля (незакрытые пункты технадзора)
+      const checklists = await window.ligaDB.getBySiteId('checklists', this.currentSiteId);
+      const remainingCount = checklists.filter(c => !c.done).length;
+      const badgeCheck = document.getElementById('badge-nav-checklist');
+      if (badgeCheck) {
+        if (remainingCount > 0) {
+          badgeCheck.innerText = remainingCount > 9 ? '9+' : remainingCount;
+          badgeCheck.classList.add('active');
+        } else {
+          badgeCheck.classList.remove('active');
+        }
+      }
+    } catch (e) {
+      console.warn('Ошибка обновления навигационных бейджей:', e);
+    }
+  }
+
   openModal(modalId) {
-    if (this.isClientMode && ['modal-master-guide', 'modal-tariffs', 'modal-payment', 'modal-receipt', 'modal-ai-audit', 'modal-backup-manager'].includes(modalId)) {
+    if (this.isClientMode && [
+      'modal-master-guide', 'modal-tariffs', 'modal-payment',
+      'modal-receipt', 'modal-ai-audit', 'modal-backup-manager',
+      'modal-add-payout', 'modal-add-event', 'modal-add-equipment'
+    ].includes(modalId)) {
       this.showToast('⚠️ Функция недоступна в режиме демонстрации');
       return;
     }

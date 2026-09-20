@@ -4,7 +4,7 @@
    ========================================================================== */
 
 const DB_NAME = 'LigaOS_DB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 class LigaDatabase {
   constructor() {
@@ -46,6 +46,27 @@ class LigaDatabase {
         if (!db.objectStoreNames.contains('passports')) {
           const passStore = db.createObjectStore('passports', { keyPath: 'id', autoIncrement: true });
           passStore.createIndex('siteId', 'siteId', { unique: false });
+        }
+
+        // 6. Хранилище выплат бригаде (Brigade Payouts) — 10-летняя история мастера
+        if (!db.objectStoreNames.contains('brigade_payouts')) {
+          const bpStore = db.createObjectStore('brigade_payouts', { keyPath: 'id', autoIncrement: true });
+          bpStore.createIndex('siteId', 'siteId', { unique: false });
+          bpStore.createIndex('date', 'date', { unique: false });
+        }
+
+        // 7. Хранилище паспортов оборудования (Installed Equipment)
+        if (!db.objectStoreNames.contains('installed_equipment')) {
+          const eqStore = db.createObjectStore('installed_equipment', { keyPath: 'id', autoIncrement: true });
+          eqStore.createIndex('siteId', 'siteId', { unique: false });
+          eqStore.createIndex('brand', 'brand', { unique: false });
+        }
+
+        // 8. Хронологическая лента объекта (Site Timeline Events) — Append-Only журнал
+        if (!db.objectStoreNames.contains('site_timeline_events')) {
+          const timeStore = db.createObjectStore('site_timeline_events', { keyPath: 'id', autoIncrement: true });
+          timeStore.createIndex('siteId', 'siteId', { unique: false });
+          timeStore.createIndex('date', 'date', { unique: false });
         }
       };
 
@@ -149,6 +170,35 @@ class LigaDatabase {
       for (let mat of defaultMaterials) {
         await this.add('materials', mat);
       }
+
+      // 6. Хронологическая лента объекта 1 (10-летняя история — Timeline)
+      const defaultTimeline = [
+        { siteId: site1, date: '2026-09-10', eventType: 'audit', title: 'Инженерный аудит и лазерные замеры', description: 'Выверены отметки чистового пола, согласованы высоты смесителей с дизайнером Камилой (Studio 7). Привязка осей строго по центру раскладки плитки.' },
+        { siteId: site1, date: '2026-09-12', eventType: 'rough', title: 'Черновой монтаж трасс Rehau & FAR', description: 'Смонтирован распределительный узел FAR, проложены лучевые трассы Rehau Pink в защитной теплоизоляции к 12 водорозеткам.' },
+        { siteId: site1, date: '2026-09-14', eventType: 'pressure', title: 'Гидравлическое испытание 16 бар (24 часа)', description: 'Система поставлена под опрессовочное давление 16.0 бар. 24 часа выдержано без падения стрелки манометра (0.0 бар). Сформирован Официальный Акт.' }
+      ];
+      for (let t of defaultTimeline) {
+        await this.add('site_timeline_events', t);
+      }
+
+      // 7. Паспорта установленного оборудования для объекта 1
+      const defaultEquipment = [
+        { siteId: site1, brand: 'FAR Rubinetterie', model: 'FAR 1" Flat-Faced 5-way', category: 'Коллекторный узел', serialNumber: 'FAR-IT-2026-091', warrantyYears: 10, installDate: '2026-09-12', notes: 'Оригинальный итальянский коллектор с вентилями тонкой регулировки.' },
+        { siteId: site1, brand: 'Rehau', model: 'Rautitan Pink / Flex 20x2.8', category: 'Трубы и надвижные гильзы', serialNumber: 'RH-DE-BATCH-884', warrantyYears: 50, installDate: '2026-09-12', notes: 'Заводская гарантия Германии 50 лет. Скрытый монолитный монтаж в полу.' },
+        { siteId: site1, brand: 'Geberit', model: 'Duofix Sigma 112 см (111.300.00.5)', category: 'Инсталляция подвесного унитаза', serialNumber: 'GEB-CH-44120', warrantyYears: 10, installDate: '2026-09-13', notes: 'Швейцарская инсталляция с бесшовным бачком. Установлена строго по проектному уровню.' }
+      ];
+      for (let eq of defaultEquipment) {
+        await this.add('installed_equipment', eq);
+      }
+
+      // 8. Выплаты бригаде по объекту 1 (учет труда помощников)
+      const defaultPayouts = [
+        { siteId: site1, name: 'Алишер', role: 'Монтажник / Подмастерье', amountUZS: 500000, amountUSD: 39, usdRate: 12900, date: '2026-09-12', paymentType: 'cash', workDescription: 'Штробление стен и укладка лучевых трасс Rehau' },
+        { siteId: site1, name: 'Сардор', role: 'Слесарь-монтажник', amountUZS: 300000, amountUSD: 23, usdRate: 12900, date: '2026-09-14', paymentType: 'card', workDescription: 'Помощь в опрессовке 16 бар и фотофиксация узлов' }
+      ];
+      for (let p of defaultPayouts) {
+        await this.add('brigade_payouts', p);
+      }
     }
   }
 
@@ -219,10 +269,16 @@ class LigaDatabase {
     const sites = await this.getAll('sites');
     const materials = await this.getAll('materials');
     const checklists = await this.getAll('checklists');
+    const payouts = this.db && this.db.objectStoreNames.contains('brigade_payouts') ? await this.getAll('brigade_payouts') : [];
+    const equipment = this.db && this.db.objectStoreNames.contains('installed_equipment') ? await this.getAll('installed_equipment') : [];
+    const timeline = this.db && this.db.objectStoreNames.contains('site_timeline_events') ? await this.getAll('site_timeline_events') : [];
     return {
       sitesCount: sites.length,
       materialsCount: materials.length,
-      checklistsCount: checklists.length
+      checklistsCount: checklists.length,
+      payoutsCount: payouts.length,
+      equipmentCount: equipment.length,
+      timelineCount: timeline.length
     };
   }
 
@@ -243,18 +299,24 @@ class LigaDatabase {
     const checklists = await this.getAll('checklists');
     const finances = await this.getAll('finances');
     const passports = await this.getAll('passports');
+    const brigade_payouts = this.db && this.db.objectStoreNames.contains('brigade_payouts') ? await this.getAll('brigade_payouts') : [];
+    const installed_equipment = this.db && this.db.objectStoreNames.contains('installed_equipment') ? await this.getAll('installed_equipment') : [];
+    const site_timeline_events = this.db && this.db.objectStoreNames.contains('site_timeline_events') ? await this.getAll('site_timeline_events') : [];
 
     return {
       appName: 'LIGA OS',
       schemaVersion: 1,
       dbVersion: DB_VERSION,
       exportDate: new Date().toISOString(),
-      appVersion: '1.4.4',
+      appVersion: '2.0.0',
       sites,
       materials,
       checklists,
       finances,
       passports,
+      brigade_payouts,
+      installed_equipment,
+      site_timeline_events,
       tariffSettings
     };
   }
@@ -319,7 +381,7 @@ class LigaDatabase {
       throw new Error('Несовместимый файл: данный файл не является резервной копией LIGA OS (отсутствует appName="LIGA OS").');
     }
 
-    // 2. Проверяем версию схемы
+    // 2. Проверяем версию схемы (поддерживаем v1 и v2)
     if (typeof data.schemaVersion !== 'number' || data.schemaVersion < 1) {
       throw new Error('Несовместимая версия схемы резервной копии: ожидается числовая schemaVersion >= 1.');
     }
@@ -350,6 +412,7 @@ class LigaDatabase {
 
     // 5. Проверка целостности внешних ключей (Foreign Key Integrity) по siteId
     const checkForeignKeyIntegrity = (items, sectionName) => {
+      if (!Array.isArray(items)) return;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (!item || typeof item !== 'object') continue;
@@ -365,6 +428,9 @@ class LigaDatabase {
     checkForeignKeyIntegrity(data.checklists, 'checklists');
     checkForeignKeyIntegrity(data.finances, 'finances');
     checkForeignKeyIntegrity(data.passports, 'passports');
+    if (data.brigade_payouts) checkForeignKeyIntegrity(data.brigade_payouts, 'brigade_payouts');
+    if (data.installed_equipment) checkForeignKeyIntegrity(data.installed_equipment, 'installed_equipment');
+    if (data.site_timeline_events) checkForeignKeyIntegrity(data.site_timeline_events, 'site_timeline_events');
 
     return {
       valid: true,
@@ -376,6 +442,9 @@ class LigaDatabase {
       checklistsCount: data.checklists.length,
       financesCount: data.finances.length,
       passportsCount: data.passports.length,
+      payoutsCount: Array.isArray(data.brigade_payouts) ? data.brigade_payouts.length : 0,
+      equipmentCount: Array.isArray(data.installed_equipment) ? data.installed_equipment.length : 0,
+      timelineCount: Array.isArray(data.site_timeline_events) ? data.site_timeline_events.length : 0,
       hasTariffs: Boolean(data.tariffSettings && typeof data.tariffSettings === 'object'),
       raw: data
     };
@@ -388,7 +457,10 @@ class LigaDatabase {
 
     // Делаем снимок текущей базы данных для гарантированного отката при сбое
     const currentSnapshot = await this.createBackupPayload();
-    const stores = ['sites', 'materials', 'checklists', 'finances', 'passports'];
+    const stores = [
+      'sites', 'materials', 'checklists', 'finances', 'passports',
+      'brigade_payouts', 'installed_equipment', 'site_timeline_events'
+    ];
 
     const writeStores = async (sourceData) => {
       for (const s of stores) {

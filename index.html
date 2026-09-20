@@ -511,6 +511,85 @@
     </section>
 
     <!-- ====================================================================
+         ЭКРАН 6: 10-ЛЕТНЯЯ ИНЖЕНЕРНАЯ ИСТОРИЯ ОБЪЕКТА (TIMELINE & БРИГАДА)
+         ==================================================================== -->
+    <section id="screen-history" class="app-screen">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-label">📜 Инженерная история объекта</div>
+          <span id="history-events-count-badge" class="badge badge-gold">0 записей</span>
+        </div>
+
+        <!-- Подвкладки экрана истории -->
+        <div class="history-subtabs">
+          <button class="history-subtab-btn active" data-subtab="timeline">
+            <span>⏱️</span> Хронология
+          </button>
+          <button class="history-subtab-btn master-only" data-subtab="payouts">
+            <span>👥</span> Бригада
+          </button>
+          <button class="history-subtab-btn" data-subtab="equipment">
+            <span>🏷️</span> Оборудование
+          </button>
+        </div>
+
+        <!-- 1. Подвкладка: Хронология объекта (Timeline) -->
+        <div id="subtab-content-timeline" class="history-tab-pane">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
+              Неизменяемый журнал этапов монтажа и скрытых работ:
+            </div>
+            <button id="btn-open-add-event" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary); flex-shrink:0;">
+              + Событие
+            </button>
+          </div>
+
+          <div id="timeline-events-container" class="timeline-container">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+        <!-- 2. Подвкладка: Выплаты бригаде (Master Only) -->
+        <div id="subtab-content-payouts" class="history-tab-pane master-only" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
+              Учет выдачи средств помощникам и мастерам:
+            </div>
+            <button id="btn-open-add-payout" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--neon-ruby); border-color:var(--neon-ruby); flex-shrink:0;">
+              + Выплата
+            </button>
+          </div>
+
+          <div class="finance-box" style="margin-bottom:12px; background:rgba(255,42,95,0.06); border-color:rgba(255,42,95,0.25);">
+            <div class="finance-box-label" style="color:var(--neon-ruby);">Всего выплачено бригаде по объекту:</div>
+            <div id="history-total-payouts" class="finance-box-val" style="color:var(--neon-ruby); font-size:16px;">0 сум</div>
+          </div>
+
+          <div id="brigade-payouts-container">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+        <!-- 3. Подвкладка: Оборудование и гарантии -->
+        <div id="subtab-content-equipment" class="history-tab-pane" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
+              Паспорта европейских узлов с заводской гарантией:
+            </div>
+            <button id="btn-open-add-equipment" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald); flex-shrink:0;">
+              + Оборудование
+            </button>
+          </div>
+
+          <div id="equipment-list-container" class="equipment-grid">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 0: НАСТРОЙКА ТАРИФОВ СМЕТЫ (P0-1)
          ==================================================================== -->
     <div id="modal-tariffs" class="modal-overlay">
@@ -1088,7 +1167,138 @@
     </div>
 
     <!-- ====================================================================
-         6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar)
+         МОДАЛЬНОЕ ОКНО: СОБЫТИЕ ХРОНОЛОГИИ (10-ЛЕТНЯЯ ИСТОРИЯ)
+         ==================================================================== -->
+    <div id="modal-add-event" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>⏱️ Запись в хронику объекта</span>
+          <button onclick="window.app.closeModal('modal-add-event')" class="btn-close-modal">&times;</button>
+        </div>
+        <form id="form-add-event">
+          <div class="form-group">
+            <label class="form-label">Дата события:</label>
+            <input id="event-date" type="date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Тип инженерного этапа:</label>
+            <select id="event-type" class="form-input">
+              <option value="audit">📐 Инженерный аудит / Проект</option>
+              <option value="rough">🔧 Черновой монтаж (Rehau / FAR)</option>
+              <option value="pressure">🛡️ Опрессовка 16 бар (Гидротест)</option>
+              <option value="screed">🏗️ Стяжка / Допуск под отделку</option>
+              <option value="trim">✨ Чистовая сантехника</option>
+              <option value="service">🛠️ Сервисный выезд / Перепланировка</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Заголовок события:</label>
+            <input id="event-title" type="text" class="form-input" placeholder="Напр: Прокладка трасс отопления" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Подробное описание и привязки:</label>
+            <textarea id="event-desc" class="form-input" rows="3" style="resize:vertical; min-height:60px;" placeholder="Укажите выполненные узлы, отметки и важные детали для истории через 10 лет..." required></textarea>
+          </div>
+          <button type="submit" class="btn-submit-modal">Сохранить в историю объекта</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ВЫПЛАТА ПОМОЩНИКУ БРИГАДЫ
+         ==================================================================== -->
+    <div id="modal-add-payout" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>👥 Выплата помощнику бригады</span>
+          <button onclick="window.app.closeModal('modal-add-payout')" class="btn-close-modal">&times;</button>
+        </div>
+        <form id="form-add-payout">
+          <div class="form-group">
+            <label class="form-label">Дата выплаты:</label>
+            <input id="payout-date" type="date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Имя сотрудника / помощника:</label>
+            <input id="payout-name" type="text" class="form-input" placeholder="Напр: Алишер, Сардор" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Роль / специальность:</label>
+            <input id="payout-role" type="text" class="form-input" placeholder="Напр: Монтажник, Слесарь, Штроборез">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Сумма к выдаче (сум):</label>
+            <input id="payout-amount" type="number" class="form-input" placeholder="Напр: 500000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Способ выдачи:</label>
+            <select id="payout-method" class="form-input">
+              <option value="cash">Наличные (сум)</option>
+              <option value="card">Перевод на карту (Uzcard / Humo)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">За какие работы начислено:</label>
+            <input id="payout-desc" type="text" class="form-input" placeholder="Напр: Штробление стен под коллектор, укладка труб" required>
+          </div>
+          <button type="submit" class="btn-submit-modal" style="background:var(--neon-ruby); color:#fff;">Зафиксировать выплату</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ПАСПОРТ УСТАНОВЛЕННОГО ОБОРУДОВАНИЯ
+         ==================================================================== -->
+    <div id="modal-add-equipment" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>🏷️ Паспорт оборудования</span>
+          <button onclick="window.app.closeModal('modal-add-equipment')" class="btn-close-modal">&times;</button>
+        </div>
+        <form id="form-add-equipment">
+          <div class="form-group">
+            <label class="form-label">Бренд производителя:</label>
+            <input id="eq-brand" type="text" class="form-input" placeholder="Напр: FAR, Rehau, Geberit, Caleffi, TECE" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Модель / артикул узла:</label>
+            <input id="eq-model" type="text" class="form-input" placeholder="Напр: Коллектор FAR 1 Flat-Faced 5-way" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Категория оборудования:</label>
+            <select id="eq-category" class="form-input">
+              <option value="Коллекторный узел">Коллекторный узел</option>
+              <option value="Трубы и фитинги">Трубы и фитинги (Rehau / Stout)</option>
+              <option value="Инсталляция">Инсталляция (Geberit / TECE)</option>
+              <option value="Защита от протечек">Защита от протечек (Gidrolock / Нептун)</option>
+              <option value="Редукторы давления">Редукторы и фильтры (Caleffi / FAR)</option>
+              <option value="Запорная арматура">Запорная арматура (Bugatti / Oventrop)</option>
+              <option value="Трап в пол">Душевой трап</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Заводской серийный номер / партия:</label>
+            <input id="eq-serial" type="text" class="form-input" placeholder="Напр: SN-2026-IT-9921">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Заводская гарантия производителя (лет):</label>
+            <input id="eq-warranty" type="number" class="form-input" value="10" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Дата установки:</label>
+            <input id="eq-date" type="date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Особенности монтажа / примечания:</label>
+            <input id="eq-notes" type="text" class="form-input" placeholder="Напр: Опрессован на 16 бар, гарантийный талон у заказчика">
+          </div>
+          <button type="submit" class="btn-submit-modal" style="background:var(--neon-emerald); color:#000;">Сохранить паспорт узла</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar — 6 Вкладок)
          ==================================================================== -->
     <nav class="bottom-nav">
       <button class="nav-item active" data-screen="dashboard">
@@ -1102,14 +1312,20 @@
       <button class="nav-item" data-screen="materials">
         <div class="nav-icon">📦</div>
         <span>Склад</span>
+        <span id="badge-nav-materials" class="nav-badge">0</span>
       </button>
       <button class="nav-item" data-screen="checklist">
         <div class="nav-icon">🛡️</div>
         <span>Контроль</span>
+        <span id="badge-nav-checklist" class="nav-badge">0</span>
       </button>
       <button class="nav-item" data-screen="estimate">
         <div class="nav-icon">⚡</div>
         <span>Смета</span>
+      </button>
+      <button class="nav-item" data-screen="history">
+        <div class="nav-icon">📜</div>
+        <span>История</span>
       </button>
     </nav>
 
