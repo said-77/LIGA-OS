@@ -30,18 +30,22 @@
     
     <!-- 1. ВЕРХНИЙ СТАТУС-БАР -->
     <header class="top-header">
-      <div class="brand-badge">
-        <img src="./icons/logo.svg" alt="LIGA Logo" class="brand-logo">
-        <div>
-          <div class="brand-title">LIGA OS</div>
-          <div class="brand-subtitle" title="Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть">
-            <span class="offline-pulse"></span> ТАШКЕНТ • 🟢 БАЗА ОФФЛАЙН
+      <div class="top-header-primary">
+        <div class="brand-badge">
+          <img src="./icons/logo.svg" alt="LIGA Logo" class="brand-logo">
+          <div>
+            <div class="brand-title">LIGA OS</div>
+            <div class="brand-subtitle" title="Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть">
+              <span class="offline-pulse"></span> ТАШКЕНТ • 🟢 БАЗА ОФФЛАЙН
+            </div>
           </div>
+        </div>
+        <div class="header-main-actions">
+          <button id="btn-client-mode-toggle" class="btn-icon-top" title="Режим показа клиенту (демонстрация на экране мастера)">👁️</button>
+          <button id="btn-more-menu-toggle" class="btn-more-menu-toggle" title="Все инструменты и меню мастера">⋯ Ещё</button>
         </div>
       </div>
       <div class="header-actions">
-        <!-- Кнопка вызова меню всех инструментов мастера (v2.0.9 «Нулевая рутина») -->
-        <button id="btn-more-menu-toggle" class="btn-more-menu-toggle" title="Все инструменты и меню мастера">⋯ Ещё</button>
         <!-- Кнопка включения/выключения звуковых сигналов -->
         <button id="btn-sound-toggle" class="btn-icon-top" title="Звуковые сигналы (Вкл / Выкл)">🔊</button>
         <!-- Кнопка голосовой диктовки («Свободные руки») -->
@@ -50,8 +54,6 @@
         <button id="btn-guide-top" class="btn-icon-top master-only" title="Памятка мастера: диалоги с дизайнерами и клиентами">📖</button>
         <!-- Кнопка Инженерного экспресс-аудита объекта -->
         <button id="btn-ai-audit-top" class="btn-icon-top master-only" title="Инженерный экспресс-аудит (экспертные правила)">📐</button>
-        <!-- Кнопка переключения в режим показа клиенту -->
-        <button id="btn-client-mode-toggle" class="btn-icon-top" title="Режим показа клиенту (демонстрация на экране мастера)">👁️</button>
         <!-- Кнопка переключения Светлой и Тёмной темы -->
         <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
         <!-- Кнопка резервной копии базы данных -->
@@ -139,9 +141,24 @@
           <span class="onboarding-title">Как работать с LIGA OS за 3 шага:</span>
         </div>
         <div class="onboarding-steps">
-          <div class="onboarding-step"><b>1.</b> Нажмите 🎙️ <b>«Голос»</b> и скажите: <i>«Купил коллектор FAR за 1.8 млн»</i> или <i>«Покажи деньги»</i>.</div>
-          <div class="onboarding-step"><b>2.</b> Нажмите 📸 <b>«Зафиксировать факт»</b>, чтобы сохранить фото скрытого узла до стяжки.</div>
-          <div class="onboarding-step"><b>3.</b> Нажмите 🖨️ <b>«Печать / Экспорт в PDF»</b> для выдачи швейцарского паспорта клиенту.</div>
+          <div class="onboarding-step-row">
+            <span class="onboarding-step-num">1</span>
+            <div class="onboarding-step-content">
+              <b>Нажмите 🎙️ «Голос»</b> и скажите: <i>«Купил коллектор FAR за 1.8 млн»</i> или <i>«Покажи деньги»</i>.
+            </div>
+          </div>
+          <div class="onboarding-step-row">
+            <span class="onboarding-step-num">2</span>
+            <div class="onboarding-step-content">
+              <b>Нажмите 📸 «Зафиксировать факт»</b>, чтобы сохранить фото скрытого узла до стяжки за 3 секунды.
+            </div>
+          </div>
+          <div class="onboarding-step-row">
+            <span class="onboarding-step-num">3</span>
+            <div class="onboarding-step-content">
+              <b>Нажмите 🖨️ «Печать / Экспорт в PDF»</b> для выдачи швейцарского паспорта клиенту.
+            </div>
+          </div>
         </div>
       </div>
 

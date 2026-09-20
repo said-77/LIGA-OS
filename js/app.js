@@ -439,15 +439,28 @@ class LigaApp {
     }
 
     const pocket = advance - purchasedSum;
+    const isDeficit = pocket < 0;
     const formatted = this.formatSum(pocket);
 
     if (elDash) {
       elDash.innerText = formatted;
-      elDash.style.color = pocket < 0 ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
+      elDash.style.color = isDeficit ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
     }
     if (elPage) {
       elPage.innerText = formatted;
-      elPage.style.color = pocket < 0 ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
+      elPage.style.color = isDeficit ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
+    }
+
+    const titleDash = bannerDash ? bannerDash.querySelector('.bazaar-pocket-title') : null;
+    const descDash = bannerDash ? bannerDash.querySelector('.bazaar-pocket-desc') : null;
+    if (titleDash && descDash) {
+      if (isDeficit) {
+        titleDash.innerHTML = '⚠️ Доплата за материалы с клиента:';
+        descDash.innerText = 'Мастер вложил свои деньги (закупка превысила аванс)';
+      } else {
+        titleDash.innerHTML = '🛒 На руках на закупку (Базар):';
+        descDash.innerText = 'Свободный остаток подотчетных средств (Урикзор)';
+      }
     }
   }
 
@@ -4207,17 +4220,17 @@ ${itemsText}
       toast.id = 'app-toast';
       toast.style.cssText = `
         position: fixed;
-        top: 66px;
+        bottom: 84px;
         left: 50%;
-        transform: translateX(-50%) translateY(-10px);
+        transform: translateX(-50%) translateY(10px);
         background: var(--gold-gradient);
         color: var(--btn-gold-text);
         font-weight: 800;
-        font-size: 13px;
-        padding: 9px 18px;
+        font-size: 12px;
+        padding: 8px 16px;
         border-radius: 9999px;
-        z-index: 999;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        z-index: 10000;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.35);
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.25s ease, transform 0.25s ease;
@@ -4232,7 +4245,7 @@ ${itemsText}
     toast.style.transform = 'translateX(-50%) translateY(0)';
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(-10px)';
+      toast.style.transform = 'translateX(-50%) translateY(10px)';
     }, 2200);
   }
 
