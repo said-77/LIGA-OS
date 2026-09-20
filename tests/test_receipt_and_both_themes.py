@@ -14,7 +14,7 @@ if sys.platform == "win32":
         pass
 
 PORT = 8091
-DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):

@@ -409,6 +409,7 @@ class LigaApp {
               }
 
               this.updatePhotoBadges();
+              this.render();
               this.showToast('✓ Фото узла сохранено в паспорт!');
             } catch (err) {
               console.error('Ошибка сжатия фото:', err);
@@ -615,6 +616,20 @@ class LigaApp {
     document.getElementById('fin-debt-val').innerText = this.formatSum(debt);
     document.getElementById('fin-brigade-val').innerText = this.formatSum(s.brigadeOwed || 0);
     document.getElementById('fin-designer-val').innerText = this.formatSum(s.designerBonus || 0);
+
+    // Честный статус готовности инженерного паспорта
+    const passportStatusEl = document.getElementById('passport-status-indicator');
+    if (passportStatusEl) {
+      const isVerified = window.ligaPdfEngine && typeof window.ligaPdfEngine.isPressureVerified === 'function'
+        ? window.ligaPdfEngine.isPressureVerified(s, this.currentPhotos)
+        : Boolean(s.pressTestPassed && this.currentPhotos && this.currentPhotos.pressure);
+
+      if (isVerified) {
+        passportStatusEl.innerHTML = '<span style="color:var(--neon-emerald);">🟢 Паспорт готов к сдаче (16 бар подтверждено)</span>';
+      } else {
+        passportStatusEl.innerHTML = '<span style="color:#d97706;">⚠️ Паспорт в режиме черновика (испытания 16 бар не подтверждены фотофиксацией)</span>';
+      }
+    }
 
     this.calculateEstimate();
   }

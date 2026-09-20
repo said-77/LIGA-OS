@@ -12,8 +12,14 @@ class LigaPdfEngine {
     return new Intl.NumberFormat('ru-RU').format(num || 0) + ' сум';
   }
 
+  isPressureVerified(site, photos = {}) {
+    return Boolean(site && site.pressTestPassed && photos && photos.pressure);
+  }
+
   // Генерация и открытие официального паспорта объекта с реальными фото
   generatePassport(site, photos = {}) {
+    if (!site) return;
+    const isPressureVerified = this.isPressureVerified(site, photos);
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра и печати PDF-паспорта.');
@@ -114,15 +120,22 @@ class LigaPdfEngine {
     }
     .stamp-badge {
       display: inline-block;
-      border: 2px solid #00a86b;
-      color: #00a86b;
       font-weight: 900;
-      font-size: 12px;
-      padding: 5px 12px;
-      border-radius: 4px;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+    .stamp-badge-passed {
+      border: 2px solid #00a86b;
+      color: #00875a;
       background: #f0fdf4;
+    }
+    .stamp-badge-draft {
+      border: 2px solid #d97706;
+      color: #b45309;
+      background: #fef3c7;
     }
     .passport-num {
       font-size: 11px;
@@ -195,6 +208,10 @@ class LigaPdfEngine {
     .highlight-cell {
       font-weight: 900;
       color: #00875a;
+    }
+    .highlight-draft {
+      font-weight: 900;
+      color: #b45309;
     }
 
     /* Предупреждение для отделочников */
@@ -315,6 +332,10 @@ class LigaPdfEngine {
       opacity: 0.85;
       pointer-events: none;
     }
+    .facsimile-stamp.draft {
+      color: #b45309;
+      border-color: #d97706;
+    }
 
     /* Панель печати */
     .print-bar {
@@ -362,7 +383,10 @@ class LigaPdfEngine {
         </div>
       </div>
       <div class="header-status-box">
-        <div class="stamp-badge">✓ 16 БАР ПРОЙДЕНО</div>
+        ${isPressureVerified 
+          ? '<div class="stamp-badge stamp-badge-passed">✓ 16 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)</div>'
+          : '<div class="stamp-badge stamp-badge-draft">ЧЕРНОВИК / ИСПЫТАНИЯ НЕ ПРОВОДИЛИСЬ</div>'
+        }
         <div class="passport-num">Паспорт № LIGA-${site.id}-${new Date().getFullYear()}</div>
       </div>
     </div>
@@ -399,6 +423,7 @@ class LigaPdfEngine {
     <!-- Официальный протокол гидравлических испытаний -->
     <div class="section-title">2. Протокол гидравлических испытаний (Акт опрессовки)</div>
     <div class="protocol-box">
+      ${isPressureVerified ? `
       <table class="protocol-table">
         <tr>
           <th>Параметр испытания</th>
@@ -425,6 +450,37 @@ class LigaPdfEngine {
           <td class="highlight-cell">СООТВЕТСТВУЕТ</td>
         </tr>
       </table>
+      ` : `
+      <table class="protocol-table">
+        <tr>
+          <th>Параметр испытания</th>
+          <th>Норматив СНиП</th>
+          <th>Фактическое состояние</th>
+          <th>Статус</th>
+        </tr>
+        <tr>
+          <td>Испытательное гидростатическое давление (16 бар)</td>
+          <td>1.5 x рабочее (~6 бар)</td>
+          <td><strong>ИСПЫТАНИЯ НЕ ПРОВОДИЛИСЬ</strong></td>
+          <td class="highlight-draft">НЕ ПОДТВЕРЖДЕНО</td>
+        </tr>
+        <tr>
+          <td>Время экспозиции под давлением (24 часа)</td>
+          <td>1 час</td>
+          <td><strong>ОТСУТСТВУЕТ ФОТОФИКСАЦИЯ</strong></td>
+          <td class="highlight-draft">ТРЕБУЕТ ТЕСТА</td>
+        </tr>
+        <tr>
+          <td>Визуальный осмотр соединений и узлов</td>
+          <td>Отсутствие течи</td>
+          <td><strong>ОЖИДАЕТ ОПРЕССОВКИ</strong></td>
+          <td class="highlight-draft">НЕ ПРИНЯТО</td>
+        </tr>
+      </table>
+      <div style="margin-top: 10px; padding: 8px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 11px; color: #92400e; line-height: 1.4;">
+        ⚠️ <strong>Внимание:</strong> Гидравлические испытания давлением 16 бар не зафиксированы или отсутствует фото манометра. Данный документ является предварительным <strong>рабочим черновиком</strong> и не подтверждает готовность скрытых систем к заливке стяжки или обшивке.
+      </div>
+      `}
     </div>
 
     <!-- Юридическое предупреждение для отделочников -->
@@ -446,6 +502,7 @@ class LigaPdfEngine {
 
     <!-- Блок гарантии и подписей -->
     <div class="section-title">4. Двухуровневая модель гарантии и приемка</div>
+    ${isPressureVerified ? `
     <p style="font-size:11px; color:#475569; margin-bottom: 12px;">
       1. Заводская гарантия на оригинальные европейские материалы (Rehau, FAR, Geberit) составляет от 10 до 50 лет согласно паспортам заводов-изготовителей.<br>
       2. Официальная гарантия на качество монтажных работ предоставляется по индивидуальному договору под проект на основании успешного прохождения гидравлического испытания 16 бар.
@@ -468,6 +525,30 @@ class LigaPdfEngine {
         </div>
       </div>
     </div>
+    ` : `
+    <p style="font-size:11px; color:#b45309; margin-bottom: 12px; font-weight: 600;">
+      1. Заводская гарантия на оригинальные европейские материалы сохраняется согласно паспортам заводов-изготовителей.<br>
+      2. ⚠️ ВНИМАНИЕ: Официальная гарантия на качество монтажных работ НЕ АКТИВИРОВАНА до проведения гидравлического испытания давлением 16 бар и фотофиксации манометра.
+    </p>
+
+    <div class="signatures-block">
+      <div class="sign-col">
+        <div class="sign-title">Ведущий инженер-монтажник:</div>
+        <div class="sign-line">
+          <span>Хакимов Улугбек</span>
+          <span>(подпись) _________________</span>
+          <div class="facsimile-stamp draft">ЧЕРНОВИК<br>БЕЗ ТЕСТА<br>16 BAR</div>
+        </div>
+      </div>
+      <div class="sign-col">
+        <div class="sign-title">Заказчик (Ознакомлен со статусом черновика):</div>
+        <div class="sign-line">
+          <span>${site.client}</span>
+          <span>(подпись) _________________</span>
+        </div>
+      </div>
+    </div>
+    `}
   </div>
 </body>
 </html>
