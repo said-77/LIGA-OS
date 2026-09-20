@@ -1428,6 +1428,45 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ИНЖЕНЕРНАЯ КАРТА ЭКСПРЕСС-ДОПУСКА ЭТАПА (QUALITY GATE v2.0.6)
+         ==================================================================== -->
+    <div id="modal-stage-quality-gate" class="modal-overlay">
+      <div class="modal-sheet quality-gate-sheet">
+        <div class="modal-title">
+          <span id="gate-modal-title">🛡️ Карта допуска: Этап</span>
+          <button onclick="window.app.closeModal('modal-stage-quality-gate')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">
+          Автоматический экспресс-контроль инженерных стандартов LIGA OS без чертежей и лишней рутины.
+        </div>
+
+        <!-- Баннер вердикта допуска -->
+        <div id="gate-verdict-banner" class="gate-verdict-banner pending">
+          <div class="gate-verdict-icon" id="gate-verdict-icon">⚠️</div>
+          <div class="gate-verdict-info">
+            <div class="gate-verdict-title" id="gate-verdict-title">ТРЕБУЮТСЯ ИНЖЕНЕРНЫЕ ДОКАЗАТЕЛЬСТВА</div>
+            <div class="gate-verdict-desc" id="gate-verdict-desc">Выполните обязательные условия для подтверждения этапа.</div>
+          </div>
+        </div>
+
+        <!-- Список критериев проверки -->
+        <div id="gate-criteria-list" class="gate-criteria-list">
+          <!-- Генерируется динамически через JS -->
+        </div>
+
+        <!-- Кнопки действий -->
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-gate-approve" class="btn-submit-modal" style="background:var(--gold-gradient); color:var(--btn-gold-text); font-weight:700;">
+            ✓ Утвердить допуск и перевести этап
+          </button>
+          <button id="btn-gate-force" type="button" style="width:100%; background:rgba(239, 68, 68, 0.1); color:var(--neon-ruby); border:1px solid rgba(239, 68, 68, 0.25); border-radius:12px; padding:10px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s ease;">
+            ⚠️ Допустить под личную ответственность мастера
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          6. НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (Bottom Navigation Bar — 6 Вкладок)
          ==================================================================== -->
     <nav class="bottom-nav">
@@ -1461,10 +1500,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.5: Инженерный пульт этапов объекта, авто-вехи Timeline, Swiss Audio) -->
-  <script src="./js/image_processor.js?v=2.0.5"></script>
-  <script src="./js/db.js?v=2.0.5"></script>
-  <script src="./js/pdf_engine.js?v=2.0.5"></script>
-  <script src="./js/app.js?v=2.0.5"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.6: Карта допуска Quality Gate, Swiss Audio, Реестр контактов) -->
+  <script src="./js/image_processor.js?v=2.0.6"></script>
+  <script src="./js/db.js?v=2.0.6"></script>
+  <script src="./js/pdf_engine.js?v=2.0.6"></script>
+  <script src="./js/app.js?v=2.0.6"></script>
 </body>
 </html>

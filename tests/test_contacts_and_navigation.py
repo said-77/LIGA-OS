@@ -235,29 +235,81 @@ def test_phase_stepper_milestones_and_timeline(http_server):
         assert "Черновой" in status_badge.inner_text(), "Статус объекта должен обновиться на Черновой монтаж"
         assert "active" in (step_2.get_attribute("class") or ""), "Шаг 2 должен получить класс active"
 
-        # 3. Кликаем на этап 3 («16 бар»)
+        # 3. Кликаем на этап 3 («16 бар») — активируется рубеж допуска Quality Gate
         step_3 = page.locator(".phase-step[data-phase='3']")
         step_3.click()
         page.wait_for_timeout(600)
 
-        assert "16 бар" in status_badge.inner_text(), "Статус объекта должен обновиться на Опрессовка 16 бар"
+        # Проверяем открытие модального окна Карты допуска (Quality Gate)
+        gate_modal = page.locator("#modal-stage-quality-gate")
+        assert gate_modal.is_visible(), "Модальное окно Карты допуска Quality Gate должно открыться при нехватке доказательств"
+
+        # Проверяем отображение вердикта о нехватке доказательств 16 бар
+        verdict_title = page.locator("#gate-verdict-title").inner_text()
+        assert "ТРЕБУЮТСЯ" in verdict_title, "Вердикт должен требовать инженерные доказательства"
+
+        # Проверяем, что в списке критериев есть опрессовка 16 бар
+        criteria_text = page.locator("#gate-criteria-list").inner_text()
+        assert "16.0 бар" in criteria_text or "манометр" in criteria_text.lower(), \
+            "В критериях допуска должна быть указана опрессовка 16 бар"
+
+        # Мастер нажимает кнопку допуска под свою личную ответственность
+        btn_force = page.locator("#btn-gate-force")
+        assert btn_force.is_visible(), "Кнопка принудительного допуска мастера должна быть доступна"
+        btn_force.click()
+        page.wait_for_timeout(600)
+
+        assert "16 бар" in status_badge.inner_text(), "После подтверждения допуска статус должен стать 3. Опрессовка 16 бар"
         assert "active" in (step_3.get_attribute("class") or ""), "Шаг 3 должен получить класс active"
 
-        # Проверяем, что открылось модальное окно опрессовки после согласия на подсказку
+        # Если открылось модальное окно опрессовки по подсказке — закрываем его
         modal_pt = page.locator("#modal-pressure-test")
-        assert modal_pt.is_visible(), "Модальное окно опрессовки 16 бар должно открыться по подсказке"
+        if modal_pt.is_visible():
+            page.click("#modal-pressure-test .btn-close-modal")
+            page.wait_for_timeout(300)
 
-        # Закрываем модальное окно опрессовки
-        page.click("#modal-pressure-test .btn-close-modal")
-        page.wait_for_timeout(400)
-
-        # 4. Переходим на экран Истории и проверяем авто-запись вехи
+        # 4. Переходим на экран Истории и проверяем авто-запись вехи допуска
         page.click("button[data-screen='history']")
         page.wait_for_timeout(400)
 
         timeline_text = page.locator("#timeline-events-container").inner_text()
-        assert "Веха проекта" in timeline_text or "16 бар" in timeline_text, \
-            "В хронике объекта должна автоматически появиться запись о смене инженерного этапа"
+        assert "допуск" in timeline_text.lower() or "16 бар" in timeline_text or "веха" in timeline_text.lower(), \
+            "В хронике объекта должна автоматически появиться запись о переводе инженерного этапа"
 
         browser.close()
+
+
+def test_quality_gate_action_navigation(http_server):
+    """Тест быстрого перехода к устранению замечаний из Карты допуска Quality Gate (в 1 клик)"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 393, "height": 852})
+        page = context.new_page()
+
+        page.goto(f"{http_server}/index.html")
+        page.wait_for_selector(".phase-stepper")
+
+        # Кликаем на этап 4 («Чистовая сантехника / стяжка») без опрессовки и чек-листа
+        step_4 = page.locator(".phase-step[data-phase='4']")
+        step_4.click()
+        page.wait_for_timeout(600)
+
+        gate_modal = page.locator("#modal-stage-quality-gate")
+        assert gate_modal.is_visible(), "Карта допуска для этапа 4 должна открыться"
+
+        # Находим кнопку быстрого перехода к чек-листу стяжки
+        btn_checklist_action = page.locator(".btn-gate-action:has-text('Чек-лист')")
+        assert btn_checklist_action.is_visible(), "Кнопка быстрого перехода к чек-листу должна быть видна"
+
+        # Кликаем на кнопку перехода
+        btn_checklist_action.click()
+        page.wait_for_timeout(500)
+
+        # Модалка допуска должна закрыться, и экран должен переключиться на чек-лист
+        assert not gate_modal.is_visible(), "Карта допуска должна закрыться при переходе"
+        screed_screen = page.locator("#screen-checklist")
+        assert screed_screen.is_visible(), "Экран чек-листа технадзора перед стяжкой должен быть открыт"
+
+        browser.close()
+
 

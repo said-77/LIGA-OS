@@ -548,13 +548,36 @@ class LigaApp {
       });
     }
 
-    // 10. Степпер этапов объекта
+    // 10. Степпер этапов объекта (Инженерный рубеж допуска Quality Gate v2.0.6)
     document.querySelectorAll('.phase-step').forEach(step => {
       step.addEventListener('click', async () => {
         const newStatus = parseInt(step.getAttribute('data-phase'));
-        await this.updateSiteStatus(newStatus);
+        await this.handlePhaseStepClick(newStatus);
       });
     });
+
+    // 10.1 Кнопки модального окна Карты допуска этапа (Quality Gate)
+    const btnGateApprove = document.getElementById('btn-gate-approve');
+    if (btnGateApprove) {
+      btnGateApprove.addEventListener('click', async () => {
+        if (this._pendingGateResult) {
+          await this.confirmStageTransfer(this._pendingGateResult.targetStage, false);
+        }
+      });
+    }
+
+    const btnGateForce = document.getElementById('btn-gate-force');
+    if (btnGateForce) {
+      btnGateForce.addEventListener('click', async () => {
+        if (this._pendingGateResult) {
+          const count = this._pendingGateResult.unfulfilledCount;
+          const name = this._pendingGateResult.stageName;
+          if (confirm(`⚠️ Внимание! Объект переводится на «${name}» без полного пакета доказательств (не закрыто критериев: ${count}).\n\nЗафиксировать принудительный допуск под личную ответственность мастера в 10-летней Хронике объекта?`)) {
+            await this.confirmStageTransfer(this._pendingGateResult.targetStage, true);
+          }
+        }
+      });
+    }
 
     // 11. Экспресс-калькулятор
     document.querySelectorAll('.btn-counter').forEach(btn => {
@@ -1047,8 +1070,314 @@ class LigaApp {
     this.updateNavBadges();
   }
 
-  // Обновление статуса объекта (Инженерный пульт мастера — v2.0.5)
-  async updateSiteStatus(status) {
+  // Обработка нажатия на этап степпера (Инженерный рубеж допуска Quality Gate v2.0.6)
+  async handlePhaseStepClick(newStatus) {
+    if (!this.currentSite) return;
+    const currentStatus = this.currentSite.status || 1;
+
+    // Если мастер кликает на уже пройденный этап — предложение вернуться для доработок
+    if (newStatus < currentStatus) {
+      const statusNames = {
+        1: '1. Аудит проекта',
+        2: '2. Черновой монтаж',
+        3: '3. Опрессовка 16 бар',
+        4: '4. Чистовая сантехника',
+        5: '5. Объект сдан'
+      };
+      const name = statusNames[newStatus] || `Этап ${newStatus}`;
+      if (confirm(`Вернуть объект на предыдущий этап «${name}» для внесения инженерных правок?`)) {
+        await this.updateSiteStatus(newStatus, false);
+      }
+      return;
+    }
+
+    // Если мастер кликает на текущий этап — открываем карту допуска для инспекции готовности
+    if (newStatus === currentStatus) {
+      const gate = await this.evaluateStageQualityGate(newStatus);
+      this.openStageQualityGateModal(gate);
+      return;
+    }
+
+    // Переход вперед к следующему этапу — строгая проверка Quality Gate
+    const gate = await this.evaluateStageQualityGate(newStatus);
+    if (gate.isApproved) {
+      await this.updateSiteStatus(newStatus, false);
+      this.playSwissChime();
+      this.showToast(`✓ Допуск этапа «${gate.stageName}» открыт! Все критерии соблюдены.`);
+    } else {
+      this.playSubtleClick();
+      this.openStageQualityGateModal(gate);
+    }
+  }
+
+  // Оценка инженерных доказательств допуска на этап (Quality Gate v2.0.6)
+  async evaluateStageQualityGate(targetStage) {
+    if (!this.currentSite) {
+      return { targetStage, stageName: `Этап ${targetStage}`, criteria: [], unfulfilledCount: 0, isApproved: false };
+    }
+
+    const s = this.currentSite;
+    const stageNames = {
+      1: '1. Аудит проекта',
+      2: '2. Черновой монтаж',
+      3: '3. Опрессовка 16 бар',
+      4: '4. Чистовая сантехника',
+      5: '5. Объект сдан'
+    };
+    const stageName = stageNames[targetStage] || `Этап ${targetStage}`;
+
+    // Загрузка чек-листов объекта
+    let checklists = [];
+    if (window.ligaDB && window.ligaDB.db) {
+      try {
+        checklists = await window.ligaDB.getBySiteId('checklists', this.currentSiteId);
+      } catch (e) {
+        console.warn('Не удалось загрузить чек-листы для карты допуска:', e);
+      }
+    }
+    const totalChecklist = checklists.length || 10;
+    const doneChecklist = checklists.filter(item => item.done).length;
+
+    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && (parseFloat(s.pressureTest.pressureBar) >= 16.0));
+    const hasPressurePhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
+    const hasManifoldPhoto = Boolean(this.currentPhotos && this.currentPhotos.manifold);
+    const hasPipePhoto = Boolean(this.currentPhotos && (this.currentPhotos.wall || this.currentPhotos.floor));
+
+    const criteria = [];
+
+    if (targetStage === 1) {
+      criteria.push({
+        id: 'site_created',
+        title: 'Регистрация объекта в LIGA OS',
+        desc: 'Базовые реквизиты объекта и привязка к мастеру',
+        passed: Boolean(s.name && s.name.trim()),
+        actionText: 'Настроить объект',
+        action: () => this.switchScreen('dashboard')
+      });
+    } else if (targetStage === 2) {
+      // Этап 2: Черновой монтаж
+      criteria.push({
+        id: 'site_requisites',
+        title: 'Реквизиты и адрес объекта',
+        desc: s.name ? `${s.name} ${s.unit ? '(' + s.unit + ')' : ''}` : 'Не заполнены реквизиты',
+        passed: Boolean(s.name && s.name.trim()),
+        actionText: 'Проверить объект',
+        action: () => this.switchScreen('dashboard')
+      });
+      criteria.push({
+        id: 'estimate_draft',
+        title: 'Предварительный сметный расчет точек',
+        desc: (s.waterPoints > 0 || s.contractSum > 0)
+          ? `Точек воды: ${s.waterPoints || 0}, Сумма: ${this.formatSum(s.contractSum || 0)} сум`
+          : 'Не заданы точки водоснабжения / отопления',
+        passed: Boolean((s.waterPoints || 0) > 0 || (s.radiators || 0) > 0 || (s.contractSum || 0) > 0),
+        actionText: 'Открыть смету',
+        action: () => this.switchScreen('estimate')
+      });
+    } else if (targetStage === 3) {
+      // Этап 3: Опрессовка 16 бар (Критический рубеж Лиги)
+      criteria.push({
+        id: 'pressure_protocol',
+        title: 'Протокол гидроиспытаний 16.0 бар (24 часа)',
+        desc: hasPressureTest
+          ? `Испытание проведено: ${s.pressureTest.pressureBar} бар (${s.pressureTest.startDate})`
+          : 'Требуется фиксация 24-часовой выдержки под давлением 16.0 бар',
+        passed: hasPressureTest,
+        actionText: 'Заполнить протокол 16 бар',
+        action: () => this.openPressureTestModal()
+      });
+      criteria.push({
+        id: 'pressure_gauge_photo',
+        title: 'Фотофиксация манометра под давлением 16 бар',
+        desc: hasPressurePhoto
+          ? 'Фото манометра прикреплено к акту опрессовки'
+          : 'Обязательное фото шкалы манометра с отметкой 16 бар',
+        passed: hasPressurePhoto,
+        actionText: 'Прикрепить фото манометра',
+        action: () => this.openPressureTestModal()
+      });
+      criteria.push({
+        id: 'plugs_mounted',
+        title: 'Металлические опрессовочные заглушки',
+        desc: 'Выводы заглушены металлическими пробками на коллекторе и трассах',
+        passed: Boolean(checklists.find(c => c.title && c.title.includes('заглушены') && c.done)),
+        actionText: 'Чек-лист заглушек',
+        action: () => this.switchScreen('checklist')
+      });
+    } else if (targetStage === 4) {
+      // Этап 4: Чистовая сантехника (Допуск перед заливкой стяжки)
+      criteria.push({
+        id: 'pressure_verified',
+        title: 'Опрессовка 16.0 бар успешно сдана',
+        desc: (hasPressureTest && hasPressurePhoto)
+          ? 'Гидроиспытания 16.0 бар подтверждены протоколом и фото'
+          : 'Опрессовка 16 бар не завершена или отсутствует фото манометра',
+        passed: hasPressureTest && hasPressurePhoto,
+        actionText: 'Открыть протокол 16 бар',
+        action: () => this.openPressureTestModal()
+      });
+      criteria.push({
+        id: 'screed_checklist',
+        title: 'Чек-лист технадзора перед стяжкой (10/10)',
+        desc: doneChecklist >= totalChecklist
+          ? `Все ${totalChecklist} пунктов технадзора закрыты (100%)`
+          : `Выполнено ${doneChecklist} из ${totalChecklist} пунктов (осталось: ${totalChecklist - doneChecklist})`,
+        passed: doneChecklist >= totalChecklist && totalChecklist > 0,
+        actionText: `Чек-лист стяжки (${doneChecklist}/${totalChecklist})`,
+        action: () => this.switchScreen('checklist')
+      });
+      criteria.push({
+        id: 'pipe_routes_photo',
+        title: 'Фотофиксация скрытых трасс Rehau с рулеткой',
+        desc: hasPipePhoto
+          ? 'Фото скрытых трасс перед заливкой стяжки зафиксировано'
+          : 'Необходимо фото трасс в полу до заливки стяжкой',
+        passed: hasPipePhoto,
+        actionText: 'Прикрепить фото трасс',
+        action: () => this.openPassportPhotosModal()
+      });
+    } else if (targetStage === 5) {
+      // Этап 5: Объект сдан (10-летняя гарантия Лиги)
+      criteria.push({
+        id: 'full_pressure_proof',
+        title: 'Официальный протокол 16 бар с фото манометра',
+        desc: (hasPressureTest && hasPressurePhoto) ? 'Подтверждено' : 'Не подтверждено',
+        passed: hasPressureTest && hasPressurePhoto,
+        actionText: 'Протокол 16 бар',
+        action: () => this.openPressureTestModal()
+      });
+      criteria.push({
+        id: 'full_checklist_proof',
+        title: 'Полный чек-лист технадзора (100%)',
+        desc: `${doneChecklist} из ${totalChecklist} пунктов выполнено`,
+        passed: doneChecklist >= totalChecklist && totalChecklist > 0,
+        actionText: 'Чек-лист стяжки',
+        action: () => this.switchScreen('checklist')
+      });
+      const contract = s.contractSum || 0;
+      const advance = s.advanceSum || 0;
+      const debt = Math.max(0, contract - advance);
+      criteria.push({
+        id: 'finance_cleared',
+        title: 'Финансовый расчет по контракту',
+        desc: debt <= 0
+          ? 'Контракт полностью оплачен заказчиком'
+          : `Остаток долга заказчика: ${this.formatSum(debt)} сум`,
+        passed: debt <= 0,
+        actionText: 'Открыть финансы',
+        action: () => this.switchScreen('finances')
+      });
+      criteria.push({
+        id: 'passport_ready',
+        title: 'Исполнительный Инженерный Паспорт готов',
+        desc: 'Сформирован документ с гарантией 10 лет и фото скрытых узлов',
+        passed: Boolean(hasPressureTest && hasPressurePhoto),
+        actionText: 'Печать паспорта',
+        action: () => this.printPassport()
+      });
+    }
+
+    const unfulfilledCount = criteria.filter(c => !c.passed).length;
+    const isApproved = unfulfilledCount === 0;
+
+    return {
+      targetStage,
+      stageName,
+      criteria,
+      unfulfilledCount,
+      isApproved
+    };
+  }
+
+  // Отображение модального окна Карты допуска (Quality Gate v2.0.6)
+  openStageQualityGateModal(gateResult) {
+    this._pendingGateResult = gateResult;
+
+    const titleEl = document.getElementById('gate-modal-title');
+    if (titleEl) {
+      titleEl.innerText = `🛡️ Карта допуска: ${gateResult.stageName}`;
+    }
+
+    const bannerEl = document.getElementById('gate-verdict-banner');
+    const iconEl = document.getElementById('gate-verdict-icon');
+    const verdictTitleEl = document.getElementById('gate-verdict-title');
+    const verdictDescEl = document.getElementById('gate-verdict-desc');
+    const btnApprove = document.getElementById('btn-gate-approve');
+    const btnForce = document.getElementById('btn-gate-force');
+
+    if (gateResult.isApproved) {
+      if (bannerEl) bannerEl.className = 'gate-verdict-banner ready';
+      if (iconEl) iconEl.innerText = '🟢';
+      if (verdictTitleEl) verdictTitleEl.innerText = 'ДОПУСК РАЗРЕШЕН (100% СТАНДАРТОВ LIGA)';
+      if (verdictDescEl) {
+        verdictDescEl.innerText = 'Все инженерные требования выполнены. Вы можете перевести объект на данный этап.';
+      }
+      if (btnApprove) {
+        btnApprove.style.display = 'block';
+        btnApprove.innerText = `✓ Утвердить допуск: ${gateResult.stageName}`;
+      }
+      if (btnForce) btnForce.style.display = 'none';
+    } else {
+      if (bannerEl) bannerEl.className = 'gate-verdict-banner pending';
+      if (iconEl) iconEl.innerText = '⚠️';
+      if (verdictTitleEl) {
+        verdictTitleEl.innerText = `ТРЕБУЮТСЯ ДОКАЗАТЕЛЬСТВА (Осталось: ${gateResult.unfulfilledCount})`;
+      }
+      if (verdictDescEl) {
+        verdictDescEl.innerText = 'Для официального перевода выполните критерии ниже или допустите объект под ответственность мастера.';
+      }
+      if (btnApprove) btnApprove.style.display = 'none';
+      if (btnForce) {
+        btnForce.style.display = 'block';
+        btnForce.innerText = `⚠️ Допустить на этап под ответственность мастера`;
+      }
+    }
+
+    // Рендеринг списка критериев
+    const container = document.getElementById('gate-criteria-list');
+    if (container) {
+      container.innerHTML = gateResult.criteria.map((c, idx) => `
+        <div class="gate-criterion-card ${c.passed ? 'passed' : 'failed'}">
+          <div class="gate-criterion-main">
+            <div class="gate-check-icon">${c.passed ? '✓' : '✕'}</div>
+            <div class="gate-criterion-text">
+              <div class="gate-criterion-title">${c.title}</div>
+              <div class="gate-criterion-desc">${c.desc}</div>
+            </div>
+          </div>
+          <div class="gate-criterion-action">
+            ${c.passed
+              ? '<span class="gate-badge-passed">✓ Готово</span>'
+              : `<button type="button" class="btn-gate-action" data-criterion-idx="${idx}">${c.actionText}</button>`}
+          </div>
+        </div>
+      `).join('');
+
+      // Привязка обработчиков быстрых действий
+      container.querySelectorAll('.btn-gate-action').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-criterion-idx'));
+          const crit = gateResult.criteria[idx];
+          if (crit && typeof crit.action === 'function') {
+            this.closeModal('modal-stage-quality-gate');
+            crit.action();
+          }
+        });
+      });
+    }
+
+    this.openModal('modal-stage-quality-gate');
+  }
+
+  // Подтверждение перехода на этап из Quality Gate
+  async confirmStageTransfer(targetStage, isForced = false) {
+    this.closeModal('modal-stage-quality-gate');
+    await this.updateSiteStatus(targetStage, isForced);
+    this._pendingGateResult = null;
+  }
+
+  // Обновление статуса объекта (Инженерный пульт мастера — v2.0.6)
+  async updateSiteStatus(status, isForced = false) {
     if (!this.currentSite) return;
     const oldStatus = this.currentSite.status;
     this.currentSite.status = status;
@@ -1071,7 +1400,11 @@ class LigaApp {
     }
 
     // 2. Уважительный статус
-    this.showToast(`✓ Объект переведен на этап: ${phaseName}`);
+    if (isForced) {
+      this.showToast(`⚠️ Объект переведен на «${phaseName}» (под ответственность мастера)`);
+    } else {
+      this.showToast(`✓ Объект переведен на этап: ${phaseName}`);
+    }
     this.render();
 
     // 3. Автоматическая фиксация вехи в 10-летней Хронике объекта (Timeline)
@@ -1088,9 +1421,11 @@ class LigaApp {
         await window.ligaDB.add('site_timeline_events', {
           siteId: this.currentSiteId,
           date: today,
-          eventType: typeMap[status] || 'audit',
-          title: `Веха проекта: ${phaseName}`,
-          description: `Инженерный этап официально зафиксирован мастером в бортовом журнале LIGA OS.`,
+          eventType: isForced ? 'service' : (typeMap[status] || 'audit'),
+          title: isForced ? `⚠️ Принудительный допуск: ${phaseName}` : `Веха проекта: ${phaseName}`,
+          description: isForced
+            ? `Этап активирован под личную ответственность мастера без полного пакета фотодоказательств и чек-листов.`
+            : `Инженерный этап официально зафиксирован мастером в бортовом журнале LIGA OS.`,
           createdAt: new Date().toISOString()
         });
       } catch (err) {
