@@ -78,10 +78,13 @@ class LigaApp {
     // Звуковой движок (Swiss Audio Feedback)
     this.isSoundEnabled = localStorage.getItem('liga_sound_enabled') !== 'false';
     this.audioCtx = null;
+
+    // Ситуации мастера (v2.1.0: on-site / voice-create / ahead-work / designer-project)
+    this.currentSituation = localStorage.getItem('liga_os_situation') || 'on-site';
   }
 
   async init() {
-    console.log('Запуск LIGA OS v2.0 (10-Year Engineering History & Elite UI)...');
+    console.log('Запуск LIGA OS v2.1.0 (Royal Swiss Edition & Zero Routine)...');
     
     // 1. Инициализация светлой/тёмной темы (мгновенно)
     this.initTheme();
@@ -92,6 +95,9 @@ class LigaApp {
     // 3. Синхронная привязка всех событий интерфейса ДО любых асинхронных операций
     // Это гарантирует 100% мгновенный отклик всех кнопок (тема, микрофон, памятка, аудит, табы, модалки)
     this.initEvents();
+
+    // 4. Инициализация ситуаций мастера (4 режима фокусировки)
+    this.initSituations();
 
     // 4. Инициализация голосового движка Web Speech
     this.initVoiceEngine();
@@ -159,6 +165,67 @@ class LigaApp {
     if (showToastNotification) {
       const label = theme === 'dark' ? '🌙 Тёмный титан активен' : '☀️ Светлая керамика активна';
       this.showToast(label);
+    }
+  }
+
+  // ==========================================================================
+  // ЖИЗНЕННЫЕ СИТУАЦИИ МАСТЕРА (ZERO-ROUTINE & SWISS FOCUS v2.1.0)
+  // ==========================================================================
+  initSituations() {
+    this.switchSituation(this.currentSituation, false);
+  }
+
+  switchSituation(situationKey, playSound = true) {
+    this.currentSituation = situationKey;
+    localStorage.setItem('liga_os_situation', situationKey);
+
+    const pills = document.querySelectorAll('.situation-pill');
+    pills.forEach(pill => {
+      if (pill.getAttribute('data-situation') === situationKey) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+
+    const views = {
+      'on-site': document.getElementById('situation-view-on-site'),
+      'voice-create': document.getElementById('situation-view-voice-create'),
+      'ahead-work': document.getElementById('situation-view-ahead-work'),
+      'designer-project': document.getElementById('situation-view-designer-project')
+    };
+
+    Object.entries(views).forEach(([key, el]) => {
+      if (!el) return;
+      if (key === situationKey) {
+        el.style.display = 'block';
+        el.classList.add('situation-view');
+      } else {
+        el.style.display = 'none';
+        el.classList.remove('situation-view');
+      }
+    });
+
+    if (playSound && this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(660, 0.08);
+    }
+
+    if (situationKey === 'on-site') {
+      if (typeof this.render === 'function') {
+        this.render();
+      }
+      if (typeof this.renderBazaarPocket === 'function') {
+        this.renderBazaarPocket();
+      }
+    }
+  }
+
+  openQuickFactModal() {
+    const btn = document.getElementById('btn-quick-fact-capture');
+    if (btn) {
+      btn.click();
+    } else {
+      this.openModal('modal-passport-photos');
     }
   }
 

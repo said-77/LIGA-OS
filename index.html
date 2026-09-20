@@ -23,7 +23,7 @@
   <link rel="apple-touch-icon" href="./icons/logo.svg">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism -->
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=2.1.0">
 </head>
 <body>
   <div class="app-container">
@@ -133,8 +133,33 @@
          ==================================================================== -->
     <main id="screen-dashboard" class="app-screen active">
       
-      <!-- ПОДСКАЗКА ДЛЯ НОВИЧКА: 3 ПРОСТЫХ ШАГА (ZERO-ROUTINE v2.0.10) -->
-      <div id="quick-onboarding-hint" class="quick-onboarding-card master-only">
+      <!-- ВЫБОР ЖИЗНЕННОЙ СИТУАЦИИ МАСТЕРА (ZERO-ROUTINE & SWISS FOCUS v2.1.0) -->
+      <div class="master-situations-bar">
+        <button type="button" class="situation-pill active" data-situation="on-site" onclick="window.app.switchSituation('on-site')">
+          <span class="situation-pill-icon">⚡</span>
+          <span class="situation-pill-text">1. На объекте</span>
+        </button>
+        <button type="button" class="situation-pill" data-situation="voice-create" onclick="window.app.switchSituation('voice-create')">
+          <span class="situation-pill-icon">🎙️</span>
+          <span class="situation-pill-text">2. Без чертежей (Голос)</span>
+        </button>
+        <button type="button" class="situation-pill" data-situation="ahead-work" onclick="window.app.switchSituation('ahead-work')">
+          <span class="situation-pill-icon">🔀</span>
+          <span class="situation-pill-text">3. Сделал заранее</span>
+        </button>
+        <button type="button" class="situation-pill" data-situation="designer-project" onclick="window.app.switchSituation('designer-project')">
+          <span class="situation-pill-icon">📐</span>
+          <span class="situation-pill-text">4. Есть проект</span>
+        </button>
+      </div>
+
+      <!-- ====================================================================
+           СИТУАЦИЯ 1: НА ОБЪЕКТЕ (ГЛАВНЫЙ ФОКУС: ФАКТ И 16 БАР)
+           ==================================================================== -->
+      <div id="situation-view-on-site" class="situation-view">
+
+        <!-- ПОДСКАЗКА ДЛЯ НОВИЧКА: 3 ПРОСТЫХ ШАГА (ZERO-ROUTINE v2.0.10) -->
+        <div id="quick-onboarding-hint" class="quick-onboarding-card master-only">
         <button type="button" id="btn-dismiss-onboarding" onclick="window.app.dismissOnboardingHint()" class="btn-dismiss-onboarding" title="Скрыть подсказку">✕</button>
         <div class="onboarding-header">
           <span class="onboarding-icon">💡</span>
@@ -264,18 +289,16 @@
           </button>
         </div>
 
-        <!-- БЛОК: БЫСТРАЯ ФИКСАЦИЯ ФАКТА ЗА 3 СЕКУНДЫ (ZERO-ROUTINE v2.0.9) -->
-        <div id="quick-fact-action-box" class="quick-fact-action-box">
-          <button id="btn-quick-fact-capture" class="btn-quick-fact" type="button">
-            <div class="quick-fact-icon-wrap">📸</div>
-            <div class="quick-fact-text">
-              <div class="quick-fact-title">
-                <span>Зафиксировать факт (3 сек)</span>
-                <span class="badge badge-gold" style="font-size:9px; padding:1px 6px;">Быстро</span>
-              </div>
-              <div class="quick-fact-sub">Сделать фото скрытой трассы, узла или прибора без рутины</div>
+        <!-- БЛОК: ГИГАНТСКАЯ КОРОЛЕВСКАЯ КНОПКА ФАКТА (ZERO-ROUTINE & SWISS FOCUS) -->
+        <div id="quick-fact-action-box" class="hero-fact-wrapper">
+          <button id="btn-quick-fact-capture" class="btn-hero-fact" type="button">
+            <div class="hero-fact-icon">📸</div>
+            <div class="hero-fact-info">
+              <div class="hero-fact-title">Зафиксировать факт (3 сек)</div>
+              <div class="hero-fact-sub">Сделать фото скрытого узла до стяжки или прибора</div>
             </div>
           </button>
+          <div class="hero-fact-hint">Система привяжет фото к объекту и дате без ручной писанины</div>
         </div>
 
         <!-- БЛОК: ИНЖЕНЕРНАЯ ХРОНИКА ОБЪЕКТА (ПРОЙДЕННЫЕ ВЕХИ) -->
@@ -385,6 +408,145 @@
         <span>✈️</span> Отправить отчет заказчику в Telegram
       </button>
       <div id="passport-status-indicator" style="font-size:11px; text-align:center; margin-top:8px; margin-bottom:16px; font-weight:700;"></div>
+      </div> <!-- /#situation-view-on-site -->
+
+      <!-- ====================================================================
+           СИТУАЦИЯ 2: ГОЛОСОВОЕ СОЗДАНИЕ ОБЪЕКТА (БЕЗ ЧЕРТЕЖЕЙ ЗА 15 СЕК)
+           ==================================================================== -->
+      <div id="situation-view-voice-create" class="situation-view" style="display:none;">
+        <div class="glass-card situation-voice-hero">
+          <div class="voice-hero-icon-pulse" onclick="window.app.startVoiceInput()">
+            <span class="voice-big-mic">🎙️</span>
+          </div>
+          <h2 class="voice-hero-title">Что нужно сделать?</h2>
+          <p class="voice-hero-desc">Просто назовите заказчика и помещения. Программа поймёт сама.</p>
+          
+          <div class="voice-sample-box">
+            <div class="voice-sample-label">Сказано мастером (пример):</div>
+            <p class="voice-sample-text">«Заказчик Самир, Чиланзар. Делаем тёплый пол на кухне и вешаем двухконтурный котёл на балконе.»</p>
+          </div>
+
+          <div class="voice-parsed-zones">
+            <div class="voice-zones-label">✓ Распознано без ручной писанины:</div>
+            <div class="voice-zone-pill">
+              <div class="zone-badge">К</div>
+              <div class="zone-details">
+                <div class="zone-title">Кухня</div>
+                <div class="zone-work">Тёплый пол (водяной)</div>
+              </div>
+              <span class="zone-action-tag">В план</span>
+            </div>
+            <div class="voice-zone-pill">
+              <div class="zone-badge zone-badge-blue">Б</div>
+              <div class="zone-details">
+                <div class="zone-title">Балкон</div>
+                <div class="zone-work">Монтаж котла отопления</div>
+              </div>
+              <span class="zone-action-tag">В план</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-big-action-blue" onclick="window.app.startVoiceInput()">
+            🎙️ Нажмите, чтобы продиктовать свой объект голосом
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           СИТУАЦИЯ 3: НЕЛИНЕЙНАЯ РАБОТА (СДЕЛАЛ РАНЬШЕ СРОКА БЕЗ ОШИБОК)
+           ==================================================================== -->
+      <div id="situation-view-ahead-work" class="situation-view" style="display:none;">
+        <div class="glass-card">
+          <div class="card-header-flex">
+            <div class="card-label">🚿 Фиксация монтажа</div>
+            <span class="badge badge-gold">Работа заранее</span>
+          </div>
+          
+          <div class="ahead-card-preview">
+            <div class="ahead-icon">🚿</div>
+            <div class="ahead-title">Смеситель скрытого монтажа</div>
+            <div class="ahead-sub">Мастер-ванная комната</div>
+            <span class="ahead-time">14:32</span>
+          </div>
+
+          <div class="ahead-status-box">
+            <div class="ahead-status-row">
+              <span>Текущий статус объекта:</span>
+              <strong style="color:var(--neon-cyan);">Этап 3 (Опрессовка 16 бар)</strong>
+            </div>
+            <div class="ahead-status-row">
+              <span>Относится к этапу:</span>
+              <strong style="color:var(--neon-emerald);">Этап 4 (Чистовая)</strong>
+            </div>
+            <div class="ahead-status-row" style="border-top:1px solid var(--glass-border-subtle); padding-top:6px; margin-top:6px;">
+              <span>Действие системы:</span>
+              <strong style="color:var(--gold-primary);">✓ Зачтено заранее (без ошибок)</strong>
+            </div>
+          </div>
+
+          <p style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-bottom:14px;">
+            Никаких предупреждений об ошибке. Объект продолжает стоять на опрессовке 16 бар, а факт уже сохранён в истории.
+          </p>
+
+          <button type="button" class="btn-big-action-emerald" onclick="window.app.openQuickFactModal()">
+            ✓ Зафиксировать фото смесителя (1 клик)
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           СИТУАЦИЯ 4: ОБЪЕКТ С ДИЗАЙН-ПРОЕКТОМ
+           ==================================================================== -->
+      <div id="situation-view-designer-project" class="situation-view" style="display:none;">
+        <div class="glass-card">
+          <div class="card-header-flex">
+            <div class="card-label">📐 Проект от дизайнера</div>
+            <span class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc;">PDF / Чертежи</span>
+          </div>
+
+          <div class="project-dropzone">
+            <div class="project-dropzone-icon">📑</div>
+            <div class="project-dropzone-title">Дизайн-проект_Mirabad_142м.pdf</div>
+            <div class="project-dropzone-desc">Распознано 8 листов чертежей водоснабжения и ОВ</div>
+          </div>
+
+          <div class="voice-zones-label" style="display:flex; justify-content:space-between;">
+            <span>Автоматически созданные зоны:</span>
+            <span style="color:var(--neon-cyan); font-size:10px;">Мастер не вбивал руками</span>
+          </div>
+
+          <div class="voice-parsed-zones">
+            <div class="voice-zone-pill">
+              <div class="zone-badge">1</div>
+              <div class="zone-details">
+                <div class="zone-title">Мастер-санузел</div>
+                <div class="zone-work">Коллектор 6 вых., трап, ванна, гиг. душ</div>
+              </div>
+              <span class="zone-action-tag">5 точек</span>
+            </div>
+            <div class="voice-zone-pill">
+              <div class="zone-badge">2</div>
+              <div class="zone-details">
+                <div class="zone-title">Гостевой санузел</div>
+                <div class="zone-work">Инсталляция, раковина, смеситель</div>
+              </div>
+              <span class="zone-action-tag">3 точки</span>
+            </div>
+            <div class="voice-zone-pill">
+              <div class="zone-badge">3</div>
+              <div class="zone-details">
+                <div class="zone-title">Котельная</div>
+                <div class="zone-work">Бойлер 200л, узел ввода FAR, защита от протечек</div>
+              </div>
+              <span class="zone-action-tag">1 узел</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-big-action-blue" onclick="window.app.switchScreen('estimate')">
+            ✓ Перейти к смете и расчету точек
+          </button>
+        </div>
+      </div>
 
     </main>
 
@@ -1807,10 +1969,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.10: Голосовая навигация своими словами, базарный карман, офлайн-шаблоны) -->
-  <script src="./js/image_processor.js?v=2.0.10"></script>
-  <script src="./js/db.js?v=2.0.10"></script>
-  <script src="./js/pdf_engine.js?v=2.0.10"></script>
-  <script src="./js/app.js?v=2.0.10"></script>
+  <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
+  <script src="./js/image_processor.js?v=2.1.0"></script>
+  <script src="./js/db.js?v=2.1.0"></script>
+  <script src="./js/pdf_engine.js?v=2.1.0"></script>
+  <script src="./js/app.js?v=2.1.0"></script>
 </body>
 </html>

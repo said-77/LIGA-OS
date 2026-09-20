@@ -3041,4 +3041,426 @@ body.client-mode .btn-floating-voice {
   color: var(--text-muted);
 }
 
+/* ==========================================================================
+   КОРОЛЕВСКИЙ ШВЕЙЦАРСКИЙ ИНТЕРФЕЙС: 4 СИТУАЦИИ МАСТЕРА (v2.1.0)
+   ========================================================================== */
+
+/* 1. Горизонтальная статусная панель ситуаций мастера */
+.master-situations-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 8px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.master-situations-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.situation-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--glass-bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 9999px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.situation-pill:hover {
+  border-color: var(--gold-primary);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.situation-pill.active {
+  background: var(--gold-gradient);
+  color: var(--btn-gold-text);
+  border-color: var(--gold-primary);
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35);
+  transform: scale(1.02);
+}
+
+[data-theme="light"] .situation-pill.active {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  border-color: #b45309;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.25);
+}
+
+.situation-pill-icon {
+  font-size: 14px;
+}
+
+/* 2. Контейнеры ситуаций с плавной анимацией появления */
+.situation-view {
+  animation: fadeInSituation 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInSituation {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 3. ГИГАНТСКАЯ КОРОЛЕВСКАЯ КНОПКА ФАКТА (HERO FACT BUTTON) */
+.hero-fact-wrapper {
+  margin: 16px 0 18px 0;
+  text-align: center;
+}
+
+.btn-hero-fact {
+  width: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  border-radius: 20px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px -6px rgba(29, 78, 216, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.btn-hero-fact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -6px rgba(29, 78, 216, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  filter: brightness(1.06);
+}
+
+.btn-hero-fact:active {
+  transform: scale(0.98);
+}
+
+.hero-fact-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+.hero-fact-info {
+  text-align: left;
+}
+
+.hero-fact-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  margin-bottom: 2px;
+}
+
+.hero-fact-sub {
+  font-size: 11px;
+  color: #bfdbfe;
+  font-weight: 500;
+}
+
+.hero-fact-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* 4. Карточки сценария 2: Голосовое создание объекта */
+.situation-voice-hero {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.voice-hero-icon-pulse {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.2);
+  border: 2px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.4);
+  animation: heroMicPulse 2.5s infinite ease-in-out;
+  transition: transform 0.2s ease;
+}
+
+.voice-hero-icon-pulse:hover {
+  transform: scale(1.08);
+}
+
+@keyframes heroMicPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+  }
+}
+
+.voice-big-mic {
+  font-size: 34px;
+}
+
+.voice-hero-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.voice-hero-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 320px;
+  margin: 0 auto 16px auto;
+  line-height: 1.4;
+}
+
+.voice-sample-box {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border);
+  border-left: 4px solid #3b82f6;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.voice-sample-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.voice-sample-text {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-main);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.voice-parsed-zones {
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+.voice-zones-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.voice-zone-pill {
+  background: var(--glass-bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.zone-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
+.zone-badge-blue {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.zone-details {
+  flex: 1;
+}
+
+.zone-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.zone-work {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.zone-action-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.btn-big-action-blue {
+  width: 100%;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-big-action-blue:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-big-action-blue:active {
+  transform: scale(0.98);
+}
+
+/* 5. Карточки сценария 3: Сделал заранее */
+.ahead-card-preview {
+  height: 120px;
+  border-radius: 12px;
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.ahead-card-preview .ahead-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.ahead-card-preview .ahead-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.ahead-card-preview .ahead-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.ahead-card-preview .ahead-time {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--neon-emerald);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.ahead-status-box {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
+.ahead-status-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+}
+
+.ahead-status-row strong {
+  color: var(--text-main);
+}
+
+.btn-big-action-emerald {
+  width: 100%;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-big-action-emerald:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* 6. Карточки сценария 4: Дизайн-проект */
+.project-dropzone {
+  border: 2px dashed var(--glass-border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  background: var(--box-bg);
+  margin-bottom: 14px;
+}
+
+.project-dropzone-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.project-dropzone-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.project-dropzone-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+
 
