@@ -131,6 +131,20 @@
          ==================================================================== -->
     <main id="screen-dashboard" class="app-screen active">
       
+      <!-- ПОДСКАЗКА ДЛЯ НОВИЧКА: 3 ПРОСТЫХ ШАГА (ZERO-ROUTINE v2.0.10) -->
+      <div id="quick-onboarding-hint" class="quick-onboarding-card master-only">
+        <button type="button" id="btn-dismiss-onboarding" onclick="window.app.dismissOnboardingHint()" class="btn-dismiss-onboarding" title="Скрыть подсказку">✕</button>
+        <div class="onboarding-header">
+          <span class="onboarding-icon">💡</span>
+          <span class="onboarding-title">Как работать с LIGA OS за 3 шага:</span>
+        </div>
+        <div class="onboarding-steps">
+          <div class="onboarding-step"><b>1.</b> Нажмите 🎙️ <b>«Голос»</b> и скажите: <i>«Купил коллектор FAR за 1.8 млн»</i> или <i>«Покажи деньги»</i>.</div>
+          <div class="onboarding-step"><b>2.</b> Нажмите 📸 <b>«Зафиксировать факт»</b>, чтобы сохранить фото скрытого узла до стяжки.</div>
+          <div class="onboarding-step"><b>3.</b> Нажмите 🖨️ <b>«Печать / Экспорт в PDF»</b> для выдачи швейцарского паспорта клиенту.</div>
+        </div>
+      </div>
+
       <!-- Селектор переключения объектов с кнопкой добавления -->
       <div class="form-group" style="margin-bottom: 12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -290,6 +304,15 @@
           <div id="fin-debt-val" class="debt-amount">6 500 000 сум</div>
         </div>
 
+        <!-- ОСТАТОК ДЕНЕГ НА ЗАКУПКУ НА РУКАХ (БАЗАРНЫЙ КАРМАН МАСТЕРА) -->
+        <div class="bazaar-pocket-banner master-only" id="fin-bazaar-pocket-banner">
+          <div class="bazaar-pocket-left">
+            <div class="bazaar-pocket-title">🛒 На руках на закупку (Базар):</div>
+            <div class="bazaar-pocket-desc">Аванс клиента минус закупленные материалы</div>
+          </div>
+          <div id="fin-bazaar-pocket-val" class="bazaar-pocket-amount">0 сум</div>
+        </div>
+
         <!-- Внутренние обязательства мастера (скрыты в клиентском режиме) -->
         <div class="sub-finances-row master-only">
           <div class="sub-fin-item">Бригаде к выдаче: <span id="fin-brigade-val">800 000 сум</span></div>
@@ -391,6 +414,14 @@
             <div class="item-desc">К окончательному расчету при сдаче</div>
           </div>
           <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">0 сум</div>
+        </div>
+
+        <div class="item-row master-only" style="border-color: rgba(14, 165, 233, 0.35); background: rgba(14, 165, 233, 0.05);">
+          <div class="item-left">
+            <div class="item-name" style="color:var(--neon-cyan);">🛒 Деньги на закупку на руках</div>
+            <div class="item-desc">Свободный остаток подотчетных средств (Урикзор)</div>
+          </div>
+          <div id="page-fin-bazaar-pocket" class="item-right" style="color:var(--neon-cyan); font-weight:800;">0 сум</div>
         </div>
 
         <div class="item-row master-only">
@@ -1176,6 +1207,32 @@
           </div>
         </div>
 
+        <!-- БЫСТРЫЕ ШАБЛОНЫ ДЛЯ ПОДВАЛА / ШУМА (100% ОФФЛАЙН В 1 ТАП) -->
+        <div class="voice-offline-templates">
+          <div class="voice-templates-header">
+            <span>⚡ Быстрые шаблоны в 1 тап (без интернета и в шуме):</span>
+            <span class="voice-templates-badge">Офлайн</span>
+          </div>
+          <div class="voice-templates-grid">
+            <button type="button" id="btn-tmpl-far" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Купил коллектор FAR 1800000 сум')">
+              <div class="tmpl-title">📦 Коллектор FAR</div>
+              <div class="tmpl-desc">Расход: 1.8 млн сум</div>
+            </button>
+            <button type="button" id="btn-tmpl-payout" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Выдал аванс Алишеру 400000 сум')">
+              <div class="tmpl-title" style="color:var(--neon-emerald);">👥 Аванс помощнику</div>
+              <div class="tmpl-desc">Алишеру: 400 тыс сум</div>
+            </button>
+            <button type="button" id="btn-tmpl-press" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Опрессовка 16 бар 24 часа завершена')">
+              <div class="tmpl-title" style="color:var(--neon-cyan);">🛡️ Опрессовка 16 бар</div>
+              <div class="tmpl-desc">Протокол испытания</div>
+            </button>
+            <button type="button" id="btn-tmpl-advance" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Получил аванс от заказчика 5000000 сум')">
+              <div class="tmpl-title">💵 Аванс клиента</div>
+              <div class="tmpl-desc">Приход: 5 млн сум</div>
+            </button>
+          </div>
+        </div>
+
         <!-- Текстовое поле ввода для просмотра и ручной правки распознанного текста -->
         <div class="form-group">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -1733,10 +1790,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.9: Нулевая рутина мастера, меню «⋯ Ещё», 3-секундная фиксация) -->
-  <script src="./js/image_processor.js?v=2.0.9"></script>
-  <script src="./js/db.js?v=2.0.9"></script>
-  <script src="./js/pdf_engine.js?v=2.0.9"></script>
-  <script src="./js/app.js?v=2.0.9"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.10: Голосовая навигация своими словами, базарный карман, офлайн-шаблоны) -->
+  <script src="./js/image_processor.js?v=2.0.10"></script>
+  <script src="./js/db.js?v=2.0.10"></script>
+  <script src="./js/pdf_engine.js?v=2.0.10"></script>
+  <script src="./js/app.js?v=2.0.10"></script>
 </body>
 </html>

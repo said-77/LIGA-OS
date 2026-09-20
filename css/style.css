@@ -2773,3 +2773,220 @@ body.client-mode .btn-floating-voice {
   transform: scale(0.96);
 }
 
+/* ==========================================================================
+   ОБНОВЛЕНИЯ v2.0.10: ОНБОРДИНГ, БАЗАРНЫЙ КАРМАН И ОФЛАЙН-ШАБЛОНЫ
+   ========================================================================== */
+
+/* 1. Карточка онбординга новичка за 3 шага */
+.quick-onboarding-card {
+  background: linear-gradient(135deg, rgba(255, 209, 117, 0.1) 0%, rgba(15, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(255, 209, 117, 0.35);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .quick-onboarding-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+.btn-dismiss-onboarding {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.btn-dismiss-onboarding:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.onboarding-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.onboarding-icon {
+  font-size: 16px;
+}
+
+.onboarding-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="light"] .onboarding-title {
+  color: #b45309;
+}
+
+.onboarding-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+.onboarding-step {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+/* 2. Баннер «Базарный карман мастера» (Деньги на закупку на руках) */
+.bazaar-pocket-banner {
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .bazaar-pocket-banner {
+  background: rgba(8, 145, 178, 0.08);
+  border-color: rgba(8, 145, 178, 0.35);
+}
+
+.bazaar-pocket-left {
+  flex: 1;
+}
+
+.bazaar-pocket-title {
+  font-size: 12px;
+  color: var(--neon-cyan);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="light"] .bazaar-pocket-title {
+  color: #0891b2;
+}
+
+.bazaar-pocket-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.bazaar-pocket-amount {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  letter-spacing: 0.3px;
+}
+
+[data-theme="light"] .bazaar-pocket-amount {
+  color: #0891b2;
+}
+
+/* 3. Офлайн-шаблоны для голосовой модалки */
+.voice-offline-templates {
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.voice-templates-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+[data-theme="light"] .voice-templates-header {
+  color: #b45309;
+}
+
+.voice-templates-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--neon-emerald);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  text-transform: uppercase;
+}
+
+.voice-templates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+@media (max-width: 380px) {
+  .voice-templates-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-voice-template {
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-voice-template:hover {
+  border-color: var(--gold-primary);
+  background: rgba(255, 209, 117, 0.08);
+  transform: translateY(-1px);
+}
+
+.btn-voice-template:active {
+  transform: scale(0.97);
+}
+
+.btn-voice-template .tmpl-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-primary);
+  margin-bottom: 2px;
+}
+
+[data-theme="light"] .btn-voice-template .tmpl-title {
+  color: #92400e;
+}
+
+.btn-voice-template .tmpl-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+

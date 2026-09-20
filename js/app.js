@@ -117,6 +117,7 @@ class LigaApp {
       this.render();
       this.calculateEstimate();
       await this.updateNavBadges();
+      this.checkOnboardingHint();
     } catch (renderErr) {
       console.error('[LIGA OS] Ошибка первичного рендеринга:', renderErr);
     }
@@ -361,6 +362,8 @@ class LigaApp {
 
     // Реактивно перерисовываем активный экран с учетом изоляции данных
     this.render();
+    this.checkOnboardingHint();
+    this.renderBazaarPocket();
     if (this.currentScreen === 'materials') {
       this.renderMaterials();
     } else if (this.currentScreen === 'finances') {
@@ -374,6 +377,88 @@ class LigaApp {
         this.showToast('🔒 Режим мастера активен (полный доступ)');
       }
     }
+  }
+
+  setClientModeTrue() {
+    this.setClientMode(true);
+  }
+
+  checkOnboardingHint() {
+    const hintEl = document.getElementById('quick-onboarding-hint');
+    if (!hintEl) return;
+    const isDismissed = localStorage.getItem('liga_onboarding_dismissed');
+    if (isDismissed === 'true' || this.isClientMode) {
+      hintEl.style.display = 'none';
+    } else {
+      hintEl.style.display = 'block';
+    }
+  }
+
+  dismissOnboardingHint() {
+    localStorage.setItem('liga_onboarding_dismissed', 'true');
+    const hintEl = document.getElementById('quick-onboarding-hint');
+    if (hintEl) {
+      hintEl.style.display = 'none';
+    }
+    this.showToast('Подсказка скрыта. Памятка мастера всегда доступна в меню «⋯ Ещё»');
+  }
+
+  async renderBazaarPocket() {
+    const elDash = document.getElementById('fin-bazaar-pocket-val');
+    const elPage = document.getElementById('page-fin-bazaar-pocket');
+    const bannerDash = document.getElementById('fin-bazaar-pocket-banner');
+
+    if (!elDash && !elPage) return;
+
+    if (this.isClientMode) {
+      if (elDash) elDash.innerText = '—';
+      if (elPage) elPage.innerText = '—';
+      if (bannerDash) bannerDash.style.display = 'none';
+      return;
+    }
+
+    if (bannerDash) bannerDash.style.display = 'flex';
+
+    const s = this.currentSite;
+    if (!s) {
+      if (elDash) elDash.innerText = '0 сум';
+      if (elPage) elPage.innerText = '0 сум';
+      return;
+    }
+
+    const advance = s.advanceSum || 0;
+    let purchasedSum = 0;
+
+    if (window.ligaDB && window.ligaDB.db) {
+      try {
+        const rawMaterials = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+        purchasedSum = rawMaterials.filter(m => m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
+      } catch (e) {
+        console.warn('Не удалось загрузить материалы для базарного кармана:', e);
+      }
+    }
+
+    const pocket = advance - purchasedSum;
+    const formatted = this.formatSum(pocket);
+
+    if (elDash) {
+      elDash.innerText = formatted;
+      elDash.style.color = pocket < 0 ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
+    }
+    if (elPage) {
+      elPage.innerText = formatted;
+      elPage.style.color = pocket < 0 ? 'var(--neon-ruby)' : 'var(--neon-cyan)';
+    }
+  }
+
+  applyVoiceTemplate(phrase) {
+    if (!phrase) return;
+    const input = document.getElementById('voice-recognized-input');
+    if (input) {
+      input.value = phrase;
+    }
+    this.handleVoiceInputText(phrase);
+    this.playSwissChime();
   }
 
   // Загрузка объектов из IndexedDB
@@ -1079,6 +1164,8 @@ class LigaApp {
     if (designerEl) {
       designerEl.innerText = this.isClientMode ? '—' : this.formatSum(s.designerBonus || 0);
     }
+
+    this.renderBazaarPocket();
 
     // Честный статус готовности инженерного паспорта
     const passportStatusEl = document.getElementById('passport-status-indicator');
@@ -2137,6 +2224,7 @@ ${itemsText}
       if (brigadeEl) {
         brigadeEl.innerText = this.isClientMode ? '—' : this.formatSum(s.brigadeOwed || 0);
       }
+      await this.renderBazaarPocket();
     }
 
     // В клиентском режиме полностью блокируем вывод портфеля других объектов
@@ -2869,6 +2957,11 @@ ${itemsText}
   }
 
   handleVoiceInputText(text) {
+    if (this.voiceNavTimeout) {
+      clearTimeout(this.voiceNavTimeout);
+      this.voiceNavTimeout = null;
+    }
+
     if (!text || text.trim().length < 2) {
       const preview = document.getElementById('voice-parse-preview');
       const btnConfirm = document.getElementById('btn-voice-confirm');
@@ -2888,8 +2981,18 @@ ${itemsText}
     if (preview && typeEl && detailsEl && btnConfirm) {
       preview.style.display = 'block';
       btnConfirm.style.display = 'block';
+      btnConfirm.innerText = '✓ Подтверждаю (Внести)';
 
-      if (parsed.type === 'material') {
+      if (parsed.type === 'nav_action' || parsed.type === 'modal_action' || parsed.type === 'direct_func') {
+        typeEl.innerText = parsed.title;
+        detailsEl.innerText = parsed.desc;
+        btnConfirm.innerText = '✓ Перейти сейчас';
+
+        // Автоматический переход «Свободные руки» через 700 мс
+        this.voiceNavTimeout = setTimeout(() => {
+          this.confirmVoiceAction();
+        }, 700);
+      } else if (parsed.type === 'material') {
         typeEl.innerText = `📦 Запись в Снабжение (${parsed.category})`;
         detailsEl.innerText = `${parsed.title} • ${this.formatSum(parsed.amount)}`;
       } else if (parsed.type === 'brigade_pay') {
@@ -2915,6 +3018,118 @@ ${itemsText}
 
   parseVoiceCommand(text) {
     const lower = text.toLowerCase();
+
+    // 0. Навигационные интенты естественного языка мастера («Своими словами • Нулевая рутина»)
+    // 0.1. Прямые функции системы
+    if (lower.includes('телеграм') || lower.includes('скинь в тг') || lower.includes('отчет заказчик')) {
+      return {
+        type: 'direct_func',
+        target: 'shareSiteProgressTelegram',
+        title: '✈️ Telegram: Отчет заказчику',
+        desc: 'Формирую отчет о ходе монтажа для отправки в Telegram...'
+      };
+    }
+    if ((lower.includes('сделай') || lower.includes('распечатай') || lower.includes('экспорт') || lower.includes('скачай')) && lower.includes('паспорт')) {
+      return {
+        type: 'direct_func',
+        target: 'generatePassport',
+        title: '🖨️ Экспорт: Паспорт объекта',
+        desc: 'Формирую официальный инженерный паспорт А4 для печати...'
+      };
+    }
+    if (lower.includes('покажи клиент') || lower.includes('режим клиент') || lower.includes('скрой финанс')) {
+      return {
+        type: 'direct_func',
+        target: 'setClientModeTrue',
+        title: '👁️ Защита: Режим показа клиенту',
+        desc: 'Скрываю служебные и финансовые данные мастера...'
+      };
+    }
+
+    // 0.2. Вызов специализированных модальных инструментов
+    if ((lower.includes('дизайнер') && (lower.includes('что сказать') || lower.includes('ответ') || lower.includes('памятк'))) || lower.includes('шпаргалк') || lower.includes('возражен')) {
+      return {
+        type: 'modal_action',
+        target: 'modal-master-guide',
+        title: '📖 Инструмент: Памятка мастера',
+        desc: 'Открываю шпаргалку диалогов с дизайнерами и заказчиками...'
+      };
+    }
+    if (lower.includes('фотк') || (lower.includes('фото') && (lower.includes('узел') || lower.includes('узлов') || lower.includes('скрыт') || lower.includes('покажи')))) {
+      return {
+        type: 'modal_action',
+        target: 'modal-passport-photos',
+        title: '📸 Инструмент: Фотофиксация узлов',
+        desc: 'Открываю галерею скрытых узлов для инженерного паспорта...'
+      };
+    }
+    if (lower.includes('протокол 16') || lower.includes('акт опрессовк') || lower.includes('манометр фото')) {
+      return {
+        type: 'modal_action',
+        target: 'modal-pressure-test',
+        title: '🛡️ Инструмент: Протокол 16 бар',
+        desc: 'Открываю протокол гидравлических испытаний 16 бар / 24ч...'
+      };
+    }
+    if (lower.includes('экспресс аудит') || lower.includes('аудит проекта') || lower.includes('проверь проект')) {
+      return {
+        type: 'modal_action',
+        target: 'modal-ai-audit',
+        title: '📐 Инструмент: Экспресс-аудит',
+        desc: 'Запускаю проверку по швейцарским стандартам надежности...'
+      };
+    }
+
+    // 0.3. Переключение экранов / разделов без точных названий
+    if (lower.includes('покажи деньг') || lower.includes('открой касс') || lower.includes('сколько должн') || lower.includes('баланс') || (lower.includes('деньги') && !lower.includes('купил') && !lower.includes('выдал') && !lower.includes('аванс'))) {
+      return {
+        type: 'nav_action',
+        target: 'finances',
+        title: '💰 Навигация: Финансы объекта',
+        desc: 'Перехожу в финансовый пульс и кассу объекта...'
+      };
+    }
+    if (lower.includes('где базар') || lower.includes('открой базар') || lower.includes('список покупок') || (lower.includes('базар') && !lower.includes('купил')) || (lower.includes('склад') && !lower.includes('купил')) || (lower.includes('материал') && !lower.includes('купил') && !lower.includes('сум') && !lower.includes('тыс') && !lower.includes('млн'))) {
+      return {
+        type: 'nav_action',
+        target: 'materials',
+        title: '📦 Навигация: Склад и снабжение',
+        desc: 'Открываю склад материалов и список на базар Урикзор...'
+      };
+    }
+    if (lower.includes('перед стяжкой') || lower.includes('до стяжки') || lower.includes('до заливки') || lower.includes('чек лист') || lower.includes('чек-лист') || (lower.includes('контроль') && !lower.includes('купил'))) {
+      return {
+        type: 'nav_action',
+        target: 'checklist',
+        title: '📋 Навигация: Чек-лист контроля',
+        desc: 'Открываю чек-лист 10 критических пунктов перед заливкой стяжки...'
+      };
+    }
+    if (lower.includes('открой смет') || lower.includes('посчитай квартир') || lower.includes('калькулятор смет') || (lower.includes('смета') && !lower.includes('купил'))) {
+      return {
+        type: 'nav_action',
+        target: 'estimate',
+        title: '⚡ Навигация: Экспресс-смета',
+        desc: 'Открываю калькулятор сметы и расценок на точки...'
+      };
+    }
+    if (lower.includes('открой истор') || lower.includes('хроник') || lower.includes('кто работал') || lower.includes('журнал работ')) {
+      return {
+        type: 'nav_action',
+        target: 'history',
+        title: '📜 Навигация: Хроника объекта',
+        desc: 'Открываю 10-летнюю историю и журнал вех объекта...'
+      };
+    }
+    if (lower.includes('на главн') || lower.includes('дашборд') || lower.includes('к объект') || lower.includes('домой')) {
+      return {
+        type: 'nav_action',
+        target: 'dashboard',
+        title: '🏢 Навигация: Главный экран',
+        desc: 'Возвращаюсь к карточке текущего объекта...'
+      };
+    }
+
     let amount = 0;
 
     // 1. Парсинг сумм на естественном языке мастера (миллионы, тысячи, доллары, узбекский)
@@ -3132,8 +3347,48 @@ ${itemsText}
       }
     } else if (action.type === 'press_test') {
       await this.togglePressureTest();
+    } else if (action.type === 'nav_action') {
+      if (this.voiceNavTimeout) {
+        clearTimeout(this.voiceNavTimeout);
+        this.voiceNavTimeout = null;
+      }
+      this.closeModal('modal-voice');
+      this.switchScreen(action.target);
+      this.playSwissChime();
+      this.showToast(action.desc || '✓ Переход выполнен');
+      this.parsedVoiceAction = null;
+      return;
+    } else if (action.type === 'modal_action') {
+      if (this.voiceNavTimeout) {
+        clearTimeout(this.voiceNavTimeout);
+        this.voiceNavTimeout = null;
+      }
+      this.closeModal('modal-voice');
+      this.openModal(action.target);
+      this.playSwissChime();
+      this.showToast(action.desc || '✓ Инструмент открыт');
+      this.parsedVoiceAction = null;
+      return;
+    } else if (action.type === 'direct_func') {
+      if (this.voiceNavTimeout) {
+        clearTimeout(this.voiceNavTimeout);
+        this.voiceNavTimeout = null;
+      }
+      this.closeModal('modal-voice');
+      this.playSwissChime();
+      if (action.target === 'setClientModeTrue') {
+        this.setClientMode(true);
+      } else if (typeof this[action.target] === 'function') {
+        this[action.target]();
+      }
+      this.parsedVoiceAction = null;
+      return;
     }
 
+    if (this.voiceNavTimeout) {
+      clearTimeout(this.voiceNavTimeout);
+      this.voiceNavTimeout = null;
+    }
     this.closeModal('modal-voice');
     this.parsedVoiceAction = null;
   }
@@ -3937,6 +4192,10 @@ ${itemsText}
   }
 
   closeModal(modalId) {
+    if (modalId === 'modal-voice' && this.voiceNavTimeout) {
+      clearTimeout(this.voiceNavTimeout);
+      this.voiceNavTimeout = null;
+    }
     const m = document.getElementById(modalId);
     if (m) m.classList.remove('open');
   }
