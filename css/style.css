@@ -2309,4 +2309,132 @@ body.client-mode .client-view-placeholder,
   transform: translateY(0);
 }
 
+/* ==========================================================================
+   19. ХРОНИКА ОБЪЕКТА НА ДАШБОРДЕ (Dashboard Timeline Preview v2.0.7)
+   ========================================================================== */
+.dash-timeline-card {
+  margin-top: 14px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .dash-timeline-card {
+  background: rgba(248, 250, 252, 0.85);
+  border-color: rgba(212, 163, 89, 0.3);
+}
+
+.dash-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dash-timeline-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dash-timeline-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: var(--box-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.dash-timeline-item:hover {
+  border-color: rgba(212, 163, 89, 0.4);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dash-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold-gradient);
+  margin-top: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(255, 209, 117, 0.4);
+}
+
+.dash-timeline-item-content {
+  flex: 1;
+}
+
+.dash-timeline-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.dash-timeline-date {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.dash-timeline-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.dash-timeline-item-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.dash-timeline-item-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.btn-dash-timeline-more {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--gold-secondary);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--gold-primary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.btn-dash-timeline-more:hover {
+  background: rgba(212, 163, 89, 0.1);
+  box-shadow: 0 0 12px rgba(212, 163, 89, 0.25);
+}
+
+
 

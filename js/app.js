@@ -589,6 +589,15 @@ class LigaApp {
       });
     }
 
+    // 10.3 Кнопка перехода к полной истории объекта с дашборда
+    const btnFullHistory = document.getElementById('btn-view-full-history');
+    if (btnFullHistory) {
+      btnFullHistory.addEventListener('click', () => {
+        this.switchScreen('history');
+        this.switchHistorySubtab('timeline');
+      });
+    }
+
     // 11. Экспресс-калькулятор
     document.querySelectorAll('.btn-counter').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1082,6 +1091,7 @@ class LigaApp {
     this.calculateEstimate();
     this.updateNavBadges();
     this.renderChronoRadarAndNextAction();
+    this.renderDashboardTimeline();
   }
 
   // Рендеринг швейцарского 3D-хронометра готовности и карточки «Следующий шаг мастера» (v2.0.7)
@@ -1281,6 +1291,68 @@ class LigaApp {
       if (nextDesc) nextDesc.innerText = nextAction.desc;
       if (nextBtn) nextBtn.innerText = nextAction.btnText;
     }
+  }
+
+  // Рендеринг мини-хроники объекта на главном дашборде
+  async renderDashboardTimeline() {
+    const listEl = document.getElementById('dash-timeline-list');
+    const badgeEl = document.getElementById('dash-timeline-badge');
+    if (!listEl) return;
+
+    let events = [];
+    if (window.ligaDB && window.ligaDB.db && window.ligaDB.db.objectStoreNames.contains('site_timeline_events')) {
+      try {
+        events = await window.ligaDB.getBySiteId('site_timeline_events', this.currentSiteId);
+      } catch (e) {
+        console.warn('Не удалось загрузить хронику для дашборда:', e);
+      }
+    }
+
+    events.sort((a, b) => (b.date || '').localeCompare(a.date || '')); // самые свежие сверху
+
+    if (badgeEl) {
+      badgeEl.innerText = `${events.length} вех`;
+    }
+
+    if (events.length === 0) {
+      listEl.innerHTML = `
+        <div style="color:var(--text-dim); padding:10px 6px; text-align:center; font-size:11px;">
+          Пока нет зафиксированных вех по объекту.<br>Перейдите в «Историю» для внесения первого этапа.
+        </div>`;
+      return;
+    }
+
+    const typeBadges = {
+      audit: { label: '📐 Аудит', color: 'var(--gold-primary)' },
+      rough: { label: '🔧 Черновой', color: 'var(--neon-cyan)' },
+      pressure: { label: '🛡️ 16 бар', color: 'var(--neon-emerald)' },
+      screed: { label: '🏗️ Стяжка', color: '#f59e0b' },
+      trim: { label: '✨ Чистовая', color: '#a855f7' },
+      service: { label: '🛠️ Сервис', color: 'var(--text-muted)' }
+    };
+
+    // Показываем последние 3 ключевые вехи на дашборде
+    const topEvents = events.slice(0, 3);
+    listEl.innerHTML = topEvents.map(ev => {
+      const tb = typeBadges[ev.eventType] || { label: 'Этап', color: 'var(--gold-primary)' };
+      const dateFormatted = ev.date 
+        ? new Date(ev.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
+        : '';
+
+      return `
+        <div class="dash-timeline-item">
+          <div class="dash-timeline-dot"></div>
+          <div class="dash-timeline-item-content">
+            <div class="dash-timeline-meta">
+              <span class="dash-timeline-date">${dateFormatted}</span>
+              <span class="dash-timeline-badge" style="color:${tb.color}; background:rgba(255,255,255,0.06);">${tb.label}</span>
+            </div>
+            <div class="dash-timeline-item-title">${ev.title}</div>
+            <div class="dash-timeline-item-desc">${ev.description.length > 90 ? ev.description.slice(0, 90) + '...' : ev.description}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   // Обработка нажатия на этап степпера (Инженерный рубеж допуска Quality Gate v2.0.6)

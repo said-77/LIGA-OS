@@ -1,0 +1,87 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Admin\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: H:\PROEKTY\МОЁ_GPT_ПРОСТРАНСТВО\LIGA-M_OSIM\LIGA-OSIM\LIGA_OSIM
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 23 items
+
+tests/test_backup_restore.py::test_backup_and_restore_full_workflow PASSED [  4%]
+tests/test_buttons_responsiveness.py::test_all_header_and_nav_buttons_responsive PASSED [  8%]
+tests/test_client_mode.py::test_client_view_mode_full_isolation PASSED   [ 13%]
+tests/test_contacts_and_navigation.py::test_screen_navigation_back_buttons PASSED [ 17%]
+tests/test_contacts_and_navigation.py::test_contacts_registry_and_crud PASSED [ 21%]
+tests/test_contacts_and_navigation.py::test_sound_toggle_and_ai_traces_clean PASSED [ 26%]
+tests/test_contacts_and_navigation.py::test_phase_stepper_milestones_and_timeline PASSED [ 30%]
+tests/test_contacts_and_navigation.py::test_quality_gate_action_navigation PASSED [ 34%]
+tests/test_dashboard_timeline_and_demo.py::test_dashboard_timeline_and_infinity_demo PASSED [ 39%]
+tests/test_engineering_history_10years.py::test_engineering_history_and_elite_ui_workflow PASSED [ 43%]
+tests/test_estimate_math.py::test_estimate_math_with_bathrooms PASSED    [ 47%]
+tests/test_honesty_network_and_audit.py::test_offline_header_indicator PASSED [ 52%]
+tests/test_honesty_network_and_audit.py::test_engineering_audit_honesty PASSED [ 56%]
+tests/test_honesty_network_and_audit.py::test_voice_input_network_disclaimer PASSED [ 60%]
+tests/test_honesty_network_and_audit.py::test_finances_online_offline_badges PASSED [ 65%]
+tests/test_honesty_network_and_audit.py::test_digital_receipt_network_notice PASSED [ 69%]
+tests/test_light_theme.py::test_light_theme_contrast_and_screenshot PASSED [ 73%]
+tests/test_master_real_lifecycle_simulation.py::test_master_real_lifecycle_simulation_full PASSED [ 78%]
+tests/test_official_pressure_act.py::test_official_pressure_act_workflow PASSED [ 82%]
+tests/test_offline_pwa.py::test_pwa_offline_resilience PASSED            [ 86%]
+tests/test_passport_honesty.py::test_passport_honesty_full_workflow PASSED [ 91%]
+tests/test_reactivity_and_crud.py::test_reactivity_and_crud_workflow PASSED [ 95%]
+tests/test_voice_continuous_experience.py::test_voice_continuous_experience_and_smart_parser PASSED [100%]
+
+============================== slowest durations ==============================
+8.68s call     tests/test_master_real_lifecycle_simulation.py::test_master_real_lifecycle_simulation_full
+5.71s call     tests/test_backup_restore.py::test_backup_and_restore_full_workflow
+5.42s call     tests/test_buttons_responsiveness.py::test_all_header_and_nav_buttons_responsive
+4.92s call     tests/test_reactivity_and_crud.py::test_reactivity_and_crud_workflow
+4.35s call     tests/test_estimate_math.py::test_estimate_math_with_bathrooms
+3.73s call     tests/test_contacts_and_navigation.py::test_phase_stepper_milestones_and_timeline
+3.56s call     tests/test_passport_honesty.py::test_passport_honesty_full_workflow
+3.46s call     tests/test_contacts_and_navigation.py::test_screen_navigation_back_buttons
+3.33s call     tests/test_dashboard_timeline_and_demo.py::test_dashboard_timeline_and_infinity_demo
+3.11s call     tests/test_contacts_and_navigation.py::test_contacts_registry_and_crud
+2.75s call     tests/test_offline_pwa.py::test_pwa_offline_resilience
+2.20s call     tests/test_contacts_and_navigation.py::test_quality_gate_action_navigation
+2.05s call     tests/test_client_mode.py::test_client_view_mode_full_isolation
+1.88s call     tests/test_official_pressure_act.py::test_official_pressure_act_workflow
+1.74s call     tests/test_voice_continuous_experience.py::test_voice_continuous_experience_and_smart_parser
+1.70s call     tests/test_engineering_history_10years.py::test_engineering_history_and_elite_ui_workflow
+1.68s call     tests/test_honesty_network_and_audit.py::test_engineering_audit_honesty
+1.41s call     tests/test_honesty_network_and_audit.py::test_digital_receipt_network_notice
+1.36s call     tests/test_contacts_and_navigation.py::test_sound_toggle_and_ai_traces_clean
+0.99s call     tests/test_light_theme.py::test_light_theme_contrast_and_screenshot
+0.71s call     tests/test_honesty_network_and_audit.py::test_voice_input_network_disclaimer
+0.69s call     tests/test_honesty_network_and_audit.py::test_finances_online_offline_badges
+0.59s call     tests/test_honesty_network_and_audit.py::test_offline_header_indicator
+0.51s setup    tests/test_backup_restore.py::test_backup_and_restore_full_workflow
+0.50s setup    tests/test_passport_honesty.py::test_passport_honesty_full_workflow
+0.50s setup    tests/test_voice_continuous_experience.py::test_voice_continuous_experience_and_smart_parser
+0.50s setup    tests/test_reactivity_and_crud.py::test_reactivity_and_crud_workflow
+0.50s setup    tests/test_estimate_math.py::test_estimate_math_with_bathrooms
+0.50s setup    tests/test_master_real_lifecycle_simulation.py::test_master_real_lifecycle_simulation_full
+0.50s setup    tests/test_client_mode.py::test_client_view_mode_full_isolation
+0.50s setup    tests/test_buttons_responsiveness.py::test_all_header_and_nav_buttons_responsive
+0.50s setup    tests/test_offline_pwa.py::test_pwa_offline_resilience
+0.50s setup    tests/test_light_theme.py::test_light_theme_contrast_and_screenshot
+0.50s setup    tests/test_dashboard_timeline_and_demo.py::test_dashboard_timeline_and_infinity_demo
+0.50s setup    tests/test_contacts_and_navigation.py::test_screen_navigation_back_buttons
+0.50s setup    tests/test_honesty_network_and_audit.py::test_offline_header_indicator
+0.50s setup    tests/test_engineering_history_10years.py::test_engineering_history_and_elite_ui_workflow
+0.50s setup    tests/test_official_pressure_act.py::test_official_pressure_act_workflow
+0.50s teardown tests/test_backup_restore.py::test_backup_and_restore_full_workflow
+0.37s teardown tests/test_contacts_and_navigation.py::test_quality_gate_action_navigation
+0.35s teardown tests/test_engineering_history_10years.py::test_engineering_history_and_elite_ui_workflow
+0.33s teardown tests/test_offline_pwa.py::test_pwa_offline_resilience
+0.29s teardown tests/test_voice_continuous_experience.py::test_voice_continuous_experience_and_smart_parser
+0.27s teardown tests/test_reactivity_and_crud.py::test_reactivity_and_crud_workflow
+0.24s teardown tests/test_dashboard_timeline_and_demo.py::test_dashboard_timeline_and_infinity_demo
+0.21s teardown tests/test_buttons_responsiveness.py::test_all_header_and_nav_buttons_responsive
+0.19s teardown tests/test_official_pressure_act.py::test_official_pressure_act_workflow
+0.15s teardown tests/test_honesty_network_and_audit.py::test_digital_receipt_network_notice
+0.05s teardown tests/test_light_theme.py::test_light_theme_contrast_and_screenshot
+0.03s teardown tests/test_client_mode.py::test_client_view_mode_full_isolation
+0.02s teardown tests/test_passport_honesty.py::test_passport_honesty_full_workflow
+
+(18 durations < 0.005s hidden.  Use -vv to show these durations.)
+======================== 23 passed in 76.65s (0:01:16) ========================

@@ -105,6 +105,7 @@ class LigaDatabase {
 
         try {
           await this.seedInitialDataIfEmpty();
+          await this.ensureInfinityDemoSite();
         } catch (seedErr) {
           console.warn('[LIGA OS DB] Ошибка автозаполнения демо-данных:', seedErr);
         }
@@ -298,6 +299,174 @@ class LigaDatabase {
           }
         }
       }
+    }
+  }
+
+  // Гарантированное наличие эталонного объекта «ЖК Infinity, Блок C» с полной инженерной историей
+  async ensureInfinityDemoSite() {
+    try {
+      const sites = await this.getAll('sites');
+      const hasInfinity = sites.some(s => s.name && s.name.includes('Infinity'));
+      if (hasInfinity) return;
+
+      console.log('[LIGA OS DB] Добавление эталонного объекта «ЖК Infinity, Блок C» с полной историей прохождения...');
+
+      const svgManometerPhoto = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><rect width='400' height='400' fill='%230f172a'/><circle cx='200' cy='200' r='160' fill='%231e293b' stroke='%23d4af37' stroke-width='6'/><text x='200' y='140' fill='%2394a3b8' font-size='16' text-anchor='middle' font-family='sans-serif'>МАНОМЕТР LIGA OS</text><text x='200' y='210' fill='%2322c55e' font-size='44' font-weight='bold' text-anchor='middle' font-family='sans-serif'>16.0 BAR</text><text x='200' y='260' fill='%2338bdf8' font-size='16' text-anchor='middle' font-family='sans-serif'>24 ЧАСА • БЕЗ ПАДЕНИЯ</text><line x1='200' y1='200' x2='290' y2='150' stroke='%23ef4444' stroke-width='4' stroke-linecap='round'/></svg>";
+
+      const infinitySiteId = await this.add('sites', {
+        name: 'ЖК Infinity, Блок C',
+        unit: 'кв. 142 (VIP-Пентхаус, 3 с/у)',
+        client: 'Шовкат-ака (VIP)',
+        phone: '+998909876543',
+        designer: 'Камила (Studio 7)',
+        designerPhone: '+998939876543',
+        status: 4, // 4. Чистовая сантехника / Готов к сдаче
+        contractSum: 24000000,
+        advanceSum: 24000000,
+        brigadeOwed: 0,
+        designerBonus: 2400000,
+        durationDays: 25,
+        dateCreated: '2026-09-08',
+        createdAt: '2026-09-08T09:00:00.000Z',
+        pressTestPassed: true,
+        pressureTest: {
+          pressure: 16.0,
+          duration: 24,
+          startDate: '2026-09-14',
+          endDate: '2026-09-15',
+          startPressure: 16.0,
+          endPressure: 16.0,
+          notes: 'Испытание 16.0 бар выдержано 24 часа без падения давления. Лучевые трассы Rehau Pink и гребенка FAR герметичны.',
+          photo: svgManometerPhoto
+        },
+        photos: {
+          manifold: svgManometerPhoto,
+          pressure: svgManometerPhoto,
+          wall: null,
+          floor: svgManometerPhoto
+        }
+      });
+
+      // 1. Полный закрытый чек-лист скрытых работ (10 из 10)
+      const defaultChecklist = [
+        { title: 'Уклоны канализации выверены по лазеру (2 см на метр)', done: true },
+        { title: 'Выводы заглушены металлическими опрессовочными пробками', done: true },
+        { title: 'Шумоизоляция стояка выполнена (Comfort Mat / K-Fonik)', done: true },
+        { title: 'Опрессовка 16 бар выдержана 24 часа без падения давления', done: true },
+        { title: 'Скрытые смесители (iBox) выставлены по уровню и глубине плитки', done: true },
+        { title: 'Трап с сухим затвором зафиксирован по проектной отметке пола', done: true },
+        { title: 'Защита от протечек (Gidrolock/Нептун) подключена и протестирована', done: true },
+        { title: 'Трубы отопления и ГВС/ХВС одеты в защитную теплоизоляцию', done: true },
+        { title: 'Фотофиксация скрытых трасс с лазерной рулеткой завершена', done: true },
+        { title: 'Мусор убран строительным пылесосом перед заливкой стяжки', done: true }
+      ];
+      for (let item of defaultChecklist) {
+        await this.add('checklists', { siteId: infinitySiteId, ...item });
+      }
+
+      // 2. Материалы со склада (все закуплено и оприходовано)
+      const infinityMaterials = [
+        { siteId: infinitySiteId, category: 'Трубы и фитинги', name: 'Труба Rehau Rautitan Pink 20x2.8 (бухта 100м)', qty: '1 бухта', price: 2850000, isPurchased: true, receiptPhoto: null },
+        { siteId: infinitySiteId, category: 'Трубы и фитинги', name: 'Надвижные гильзы Rehau 20 и фитинги латунь', qty: '28 шт', price: 1950000, isPurchased: true, receiptPhoto: null },
+        { siteId: infinitySiteId, category: 'Коллекторы', name: 'Коллекторы FAR хромированные 1" на 6 выходов', qty: '2 компл', price: 3800000, isPurchased: true, receiptPhoto: null },
+        { siteId: infinitySiteId, category: 'Инсталляции', name: 'Инсталляция Geberit Duofix Sigma 111.300.00.5', qty: '3 шт', price: 8400000, isPurchased: true, receiptPhoto: null },
+        { siteId: infinitySiteId, category: 'Защита от протечек', name: 'Система Нептун Smart+ (2 крана 3/4" + датчики)', qty: '1 компл', price: 4200000, isPurchased: true, receiptPhoto: null }
+      ];
+      for (let mat of infinityMaterials) {
+        await this.add('materials', mat);
+      }
+
+      // 3. Полная 6-шаговая хроника жизненного цикла (Append-Only история)
+      const infinityTimeline = [
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-08',
+          eventType: 'audit',
+          title: 'Инженерный аудит проекта и лазерные замеры',
+          description: 'Выверены высоты водорозеток и привязка к раскладке широкоформатной плитки. Согласовано с дизайнером Камилой (Studio 7).',
+          photo: null
+        },
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-10',
+          eventType: 'rough',
+          title: 'Черновой монтаж лучевых трасс Rehau Pink и узла FAR',
+          description: 'Смонтирован хромированный коллекторный узел FAR, проложены трассы к 14 точкам в теплоизоляции без единого тройника в полу.',
+          photo: null
+        },
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-12',
+          eventType: 'audit',
+          title: 'Закупка европейских материалов на рынке Урикзор',
+          description: 'Оприходованы трубы Rehau Rautitan Pink, надвижные гильзы, фильтры тонкой очистки и краны Bugatti на сумму 18 500 000 сум.',
+          photo: null
+        },
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-14',
+          eventType: 'pressure',
+          title: 'Гидравлические испытания 16.0 бар (24 часа)',
+          description: 'Система поставлена под испытательное давление 16.0 бар. За 24 часа падение стрелки манометра 0.0 бар. Металлические заглушки выдержали норматив. Сформирован Официальный Акт.',
+          photo: svgManometerPhoto
+        },
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-15',
+          eventType: 'screed',
+          title: 'Чек-лист технадзора перед стяжкой закрыт 10 из 10',
+          description: 'Проверены демпферные ленты, гильзы в монолите, уклоны канализации 2 см/м, фотофиксация трасс с лазерной рулеткой. Допуск к стяжке пола официально открыт.',
+          photo: null
+        },
+        {
+          siteId: infinitySiteId,
+          date: '2026-09-18',
+          eventType: 'trim',
+          title: 'Чистовой монтаж сантехники и подготовка сдачи',
+          description: 'Установлены подвесные унитазы, смесители скрытого монтажа iBox, опрессованы концевые фитинги. Объект готов к передаче Исполнительного Паспорта заказчику Шовкат-ака.',
+          photo: null
+        }
+      ];
+      for (let t of infinityTimeline) {
+        await this.add('site_timeline_events', t);
+      }
+
+      // 4. Паспорта оборудования с гарантией
+      const infinityEquipment = [
+        { siteId: infinitySiteId, brand: 'FAR Rubinetterie', model: 'FAR 1" Flat-Faced 6-way', category: 'Коллекторный узел', serialNumber: 'FAR-INF-2026-09', warrantyYears: 10, installDate: '2026-09-10', notes: 'Хромированные коллекторы с расходомерами и вентилями тонкой регулировки.' },
+        { siteId: infinitySiteId, brand: 'Rehau', model: 'Rautitan Pink 20x2.8', category: 'Трубы отопления и водоснабжения', serialNumber: 'RH-DE-BATCH-991', warrantyYears: 50, installDate: '2026-09-10', notes: 'Скрытый монолитный монтаж в стяжке пола. Заводская гарантия 50 лет.' },
+        { siteId: infinitySiteId, brand: 'Geberit', model: 'Duofix Sigma 112 см', category: 'Инсталляция подвесного унитаза', serialNumber: 'GEB-CH-5519', warrantyYears: 10, installDate: '2026-09-11', notes: 'Швейцарская инсталляция со звукоизоляцией. Установлена строго по проектному уровню.' }
+      ];
+      for (let eq of infinityEquipment) {
+        await this.add('installed_equipment', eq);
+      }
+
+      // 5. Выплаты бригаде
+      const infinityPayouts = [
+        { siteId: infinitySiteId, name: 'Алишер', role: 'Монтажник / Подмастерье', amountUZS: 600000, amountUSD: 46, usdRate: 12900, date: '2026-09-10', paymentType: 'cash', workDescription: 'Штробление монолита и укладка трасс Rehau Pink' },
+        { siteId: infinitySiteId, name: 'Сардор', role: 'Слесарь-монтажник', amountUZS: 400000, amountUSD: 31, usdRate: 12900, date: '2026-09-14', paymentType: 'card', workDescription: 'Помощь в гидравлической опрессовке 16.0 бар и фотофиксация узлов' }
+      ];
+      for (let p of infinityPayouts) {
+        await this.add('brigade_payouts', p);
+      }
+
+      // 6. Контакт заказчика
+      if (this.db.objectStoreNames.contains('contacts')) {
+        await this.add('contacts', {
+          contactId: 'LIGA-C-005',
+          name: 'Шовкат-ака',
+          role: 'Заказчик (VIP)',
+          phone: '+998909876543',
+          phoneHistory: ['+998909876543'],
+          addressHistory: ['ЖК Infinity, Блок C, кв. 142'],
+          notes: 'VIP-заказчик. Пентхаус 3 санузла. Требование: двойная опрессовка 16 бар и тихая канализация.',
+          siteIds: [infinitySiteId],
+          createdAt: '2026-09-08'
+        });
+      }
+
+    } catch (err) {
+      console.warn('[LIGA OS DB] Ошибка автосоздания эталонного объекта ЖК Infinity:', err);
     }
   }
 

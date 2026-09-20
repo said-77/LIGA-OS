@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.0.7-chrono-radar';
+const CACHE_NAME = 'liga-os-v2.0.8-dashboard-timeline';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

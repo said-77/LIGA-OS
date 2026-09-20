@@ -169,6 +169,22 @@
             Открыть →
           </button>
         </div>
+
+        <!-- БЛОК: ИНЖЕНЕРНАЯ ХРОНИКА ОБЪЕКТА (ПРОЙДЕННЫЕ ВЕХИ) -->
+        <div id="dashboard-timeline-preview-card" class="dash-timeline-card">
+          <div class="dash-timeline-header">
+            <div class="dash-timeline-title">
+              <span>📜</span> Хроника объекта (Пройденные вехи)
+            </div>
+            <span id="dash-timeline-badge" class="badge badge-gold">0 вех</span>
+          </div>
+          <div id="dash-timeline-list" class="dash-timeline-list">
+            <!-- Заполняется динамически через JS -->
+          </div>
+          <button id="btn-view-full-history" type="button" class="btn-dash-timeline-more">
+            Вся история объекта (Хроника • Бригада • Оборудование) →
+          </button>
+        </div>
       </section>
 
       <!-- ФИНАНСОВЫЙ ПУЛЬС ОБЪЕКТА (CASHFLOW) -->
@@ -1545,10 +1561,10 @@
 
   </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.0.7: 3D-хронометр готовности и темпа, Следующий шаг мастера, Quality Gate) -->
-  <script src="./js/image_processor.js?v=2.0.7"></script>
-  <script src="./js/db.js?v=2.0.7"></script>
-  <script src="./js/pdf_engine.js?v=2.0.7"></script>
-  <script src="./js/app.js?v=2.0.7"></script>
+  <!-- Скрипты LIGA OS (Версия 2.0.8: Хроника на дашборде, эталонный объект ЖК Infinity, 3D-хронометр) -->
+  <script src="./js/image_processor.js?v=2.0.8"></script>
+  <script src="./js/db.js?v=2.0.8"></script>
+  <script src="./js/pdf_engine.js?v=2.0.8"></script>
+  <script src="./js/app.js?v=2.0.8"></script>
 </body>
 </html>
