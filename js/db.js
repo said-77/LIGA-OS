@@ -314,73 +314,117 @@ class LigaDatabase {
       throw new Error('Некорректная структура файла: ожидается JSON-объект базы данных.');
     }
 
-    // Проверяем принадлежность к LIGA OS
-    const isLiga = data.appName === 'LIGA OS' || (data.sites && Array.isArray(data.sites));
-    if (!isLiga) {
-      throw new Error('Несовместимый файл: данный файл не является резервной копией LIGA OS.');
+    // 1. Проверяем сигнатуру принадлежности к LIGA OS
+    if (data.appName !== 'LIGA OS') {
+      throw new Error('Несовместимый файл: данный файл не является резервной копией LIGA OS (отсутствует appName="LIGA OS").');
     }
 
-    // Проверяем целостность таблицы sites
-    if (!Array.isArray(data.sites)) {
-      throw new Error('Ошибка структуры: раздел объектов (sites) отсутствует или поврежден.');
+    // 2. Проверяем версию схемы
+    if (typeof data.schemaVersion !== 'number' || data.schemaVersion < 1) {
+      throw new Error('Несовместимая версия схемы резервной копии: ожидается числовая schemaVersion >= 1.');
     }
 
-    for (let i = 0; i < data.sites.length; i++) {
-      const site = data.sites[i];
-      if (!site || typeof site !== 'object' || !site.name) {
-        throw new Error(`Ошибка структуры: объект #${i + 1} не содержит обязательного наименования.`);
+    // 3. Проверяем обязательные секции хранилищ
+    const requiredSections = ['sites', 'materials', 'checklists', 'finances', 'passports'];
+    for (const section of requiredSections) {
+      if (!Array.isArray(data[section])) {
+        throw new Error(`Ошибка структуры: обязательный раздел "${section}" отсутствует или не является списком.`);
       }
     }
 
-    // Проверяем остальные массивы (если они присутствуют)
-    if (data.materials && !Array.isArray(data.materials)) {
-      throw new Error('Ошибка структуры: раздел материалов поврежден (ожидался список).');
+    // 4. Проверяем корректность объектов sites
+    const siteIds = new Set();
+    for (let i = 0; i < data.sites.length; i++) {
+      const site = data.sites[i];
+      if (!site || typeof site !== 'object') {
+        throw new Error(`Ошибка структуры: объект #${i + 1} поврежден.`);
+      }
+      if (site.id === undefined || site.id === null) {
+        throw new Error(`Ошибка структуры: объект #${i + 1} не содержит обязательного идентификатора (id).`);
+      }
+      if (!site.name || typeof site.name !== 'string' || !site.name.trim()) {
+        throw new Error(`Ошибка структуры: объект #${i + 1} не содержит обязательного наименования.`);
+      }
+      siteIds.add(site.id);
     }
-    if (data.checklists && !Array.isArray(data.checklists)) {
-      throw new Error('Ошибка структуры: раздел чек-листов поврежден (ожидался список).');
-    }
+
+    // 5. Проверка целостности внешних ключей (Foreign Key Integrity) по siteId
+    const checkForeignKeyIntegrity = (items, sectionName) => {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item || typeof item !== 'object') continue;
+        if (item.siteId !== undefined && item.siteId !== null) {
+          if (!siteIds.has(item.siteId)) {
+            throw new Error(`Ошибка целостности связей: запись #${i + 1} в разделе "${sectionName}" ссылается на несуществующий объект (siteId: ${item.siteId}).`);
+          }
+        }
+      }
+    };
+
+    checkForeignKeyIntegrity(data.materials, 'materials');
+    checkForeignKeyIntegrity(data.checklists, 'checklists');
+    checkForeignKeyIntegrity(data.finances, 'finances');
+    checkForeignKeyIntegrity(data.passports, 'passports');
 
     return {
       valid: true,
-      appName: data.appName || 'LIGA OS',
-      schemaVersion: data.schemaVersion || 1,
+      appName: data.appName,
+      schemaVersion: data.schemaVersion,
       exportDate: data.exportDate || data.date || null,
       sitesCount: data.sites.length,
-      materialsCount: Array.isArray(data.materials) ? data.materials.length : 0,
-      checklistsCount: Array.isArray(data.checklists) ? data.checklists.length : 0,
+      materialsCount: data.materials.length,
+      checklistsCount: data.checklists.length,
+      financesCount: data.finances.length,
+      passportsCount: data.passports.length,
       hasTariffs: Boolean(data.tariffSettings && typeof data.tariffSettings === 'object'),
       raw: data
     };
   }
 
-  // Безопасное восстановление базы из резервной копии
+  // Безопасное восстановление базы из резервной копии с сохранением текущих данных при сбое
   async restoreFromBackup(jsonData) {
     const metadata = this.validateBackup(jsonData);
     const data = metadata.raw;
 
-    // Очищаем и восстанавливаем хранилища в IndexedDB с ожиданием реального завершения транзакций
+    // Делаем снимок текущей базы данных для гарантированного отката при сбое
+    const currentSnapshot = await this.createBackupPayload();
     const stores = ['sites', 'materials', 'checklists', 'finances', 'passports'];
-    
-    for (const s of stores) {
-      if (!this.db.objectStoreNames.contains(s)) continue;
-      const items = Array.isArray(data[s]) ? data[s] : [];
-      
-      await new Promise((resolve, reject) => {
-        const tx = this.db.transaction(s, 'readwrite');
-        const store = tx.objectStore(s);
-        const clearReq = store.clear();
+
+    const writeStores = async (sourceData) => {
+      for (const s of stores) {
+        if (!this.db.objectStoreNames.contains(s)) continue;
+        const items = Array.isArray(sourceData[s]) ? sourceData[s] : [];
         
-        clearReq.onsuccess = () => {
-          for (const item of items) {
-            store.add(item);
-          }
-        };
-        clearReq.onerror = () => reject(clearReq.error);
-        
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(new Error(`Транзакция ${s} прервана`));
-      });
+        await new Promise((resolve, reject) => {
+          const tx = this.db.transaction(s, 'readwrite');
+          const store = tx.objectStore(s);
+          const clearReq = store.clear();
+          
+          clearReq.onsuccess = () => {
+            for (const item of items) {
+              store.add(item);
+            }
+          };
+          clearReq.onerror = () => reject(clearReq.error);
+          
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(new Error(`Транзакция ${s} прервана`));
+        });
+      }
+    };
+
+    try {
+      // Пытаемся записать новые данные
+      await writeStores(data);
+    } catch (err) {
+      console.error('Ошибка импорта бэкапа, выполняем откат к исходному снимку базы:', err);
+      try {
+        await writeStores(currentSnapshot);
+      } catch (rollbackErr) {
+        console.error('Критическая ошибка при откате к снимку базы:', rollbackErr);
+      }
+      throw new Error(`Сбой восстановления: данные откатаны к исходному состоянию. Причина: ${err.message}`);
     }
 
     // Восстановление настроек тарифов (если есть в бэкапе)

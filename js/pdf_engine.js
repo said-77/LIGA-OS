@@ -13,7 +13,16 @@ class LigaPdfEngine {
   }
 
   isPressureVerified(site, photos = {}) {
-    return Boolean(site && site.pressTestPassed && photos && photos.pressure);
+    if (!site || !site.pressTestPassed) return false;
+    const hasPhoto = Boolean((photos && photos.pressure) || (site.pressureTest && site.pressureTest.photo));
+    if (!hasPhoto) return false;
+    const pt = site.pressureTest;
+    if (!pt || typeof pt !== 'object') return false;
+    if (!pt.startDate || !pt.startTime || !pt.endDate || !pt.endTime) return false;
+    const bar = parseFloat(pt.pressureBar);
+    if (isNaN(bar) || bar < 16.0) return false;
+    if (!pt.notes || typeof pt.notes !== 'string' || !pt.notes.trim()) return false;
+    return true;
   }
 
   // Генерация и открытие официального паспорта объекта с реальными фото
@@ -434,19 +443,19 @@ class LigaPdfEngine {
         <tr>
           <td>Испытательное гидростатическое давление</td>
           <td>1.5 x рабочее (~6 бар)</td>
-          <td><strong>16.0 АТМОСФЕР (BAR) • ТЕСТ x4</strong></td>
+          <td><strong>${((site.pressureTest && site.pressureTest.pressureBar) ? Number(site.pressureTest.pressureBar).toFixed(1) : '16.0')} АТМОСФЕР (BAR) • ТЕСТ x4</strong></td>
           <td class="highlight-cell">ВЫДЕРЖАНО</td>
         </tr>
         <tr>
           <td>Время экспозиции под давлением</td>
           <td>1 час</td>
-          <td><strong>24 ЧАСА ПОД ДАВЛЕНИЕМ</strong></td>
+          <td><strong>24 ЧАСА ПОД ДАВЛЕНИЕМ</strong>${site.pressureTest && site.pressureTest.startDate ? `<br><small style="color:#64748b; font-weight:normal;">Интервал: ${site.pressureTest.startDate} ${site.pressureTest.startTime} — ${site.pressureTest.endDate} ${site.pressureTest.endTime}</small>` : ''}</td>
           <td class="highlight-cell">БЕЗ ПАДЕНИЯ</td>
         </tr>
         <tr>
           <td>Визуальный осмотр соединений (Rehau/FAR)</td>
           <td>Отсутствие течи</td>
-          <td><strong>100% герметичность узлов</strong></td>
+          <td><strong>100% герметичность узлов</strong>${site.pressureTest && site.pressureTest.notes ? `<br><small style="color:#334155; font-weight:600;">Заключение инженера: ${site.pressureTest.notes}</small>` : ''}</td>
           <td class="highlight-cell">СООТВЕТСТВУЕТ</td>
         </tr>
       </table>

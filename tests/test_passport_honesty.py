@@ -93,11 +93,24 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         assert "ЧЕРНОВИК" in draft_facsimile.inner_text()
         draft_page.close()
 
-        # 4. Состояние 2: Прикрепляем реальное фото манометра (теперь pressTestPassed=true И есть фото)
+        # 4. Состояние 2: Прикрепляем реальное фото манометра
         page.set_input_files("#input-photo-pressure", sample_image_path)
-        page.wait_for_timeout(600)
+        page.wait_for_timeout(400)
 
-        # Индикатор на дашборде должен стать зеленым
+        # Без заполненного структурированного протокола паспорт по-прежнему должен оставаться черновиком!
+        assert "Паспорт в режиме черновика" in indicator.inner_text().strip(), "Без протокола испытания паспорт обязан оставаться черновиком!"
+
+        # Открываем структурированный протокол опрессовки
+        page.locator("#tile-quick-press").click()
+        page.wait_for_selector("#modal-pressure-test.open")
+
+        # Проверяем поля протокола
+        page.fill("#pt-pressure-bar", "16.0")
+        page.fill("#pt-notes", "Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.")
+        page.locator("#form-pressure-test .btn-submit-modal").click()
+        page.wait_for_timeout(500)
+
+        # Теперь индикатор на дашборде обязан стать зеленым
         indicator_text_verified = indicator.inner_text().strip()
         assert "Паспорт готов к сдаче (16 бар подтверждено)" in indicator_text_verified, f"Ожидалась готовность, получено: {indicator_text_verified}"
 
@@ -115,11 +128,12 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         # Штамп черновика обязан отсутствовать
         assert not verified_page.locator(".stamp-badge.stamp-badge-draft").is_visible(), "Штамп черновика не должен отображаться!"
 
-        # Проверяем подтвержденную таблицу протокола
+        # Проверяем подтвержденную таблицу протокола и комментарий инженера
         v_content = verified_page.content()
         assert "16.0 АТМОСФЕР (BAR) • ТЕСТ x4" in v_content
         assert "24 ЧАСА ПОД ДАВЛЕНИЕМ" in v_content
         assert "ВЫДЕРЖАНО" in v_content
+        assert "Заключение инженера" in v_content
 
         # Проверяем наличие реального фото манометра
         real_photos = verified_page.locator("img.passport-real-photo")
@@ -132,8 +146,10 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         assert "ЛИГА" in facsimile.inner_text()
         verified_page.close()
 
-        # 5. Состояние 3: Сбрасываем опрессовку (pressTestPassed=false), хотя фото в базе есть!
+        # 5. Состояние 3: Сбрасываем опрессовку через модальное окно протокола
         page.locator("#tile-quick-press").click()
+        page.wait_for_selector("#modal-pressure-test.open")
+        page.locator("#btn-reset-pressure-test").click()
         page.wait_for_timeout(300)
 
         # Проверяем, что индикатор мгновенно вернулся в режим черновика

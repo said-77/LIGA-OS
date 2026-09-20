@@ -141,7 +141,7 @@ class LigaApp {
   }
 
   // ==========================================================================
-  // КЛИЕНТСКИЙ РЕЖИМ (CLIENT VIEW) — P0-3
+  // РЕЖИМ ПОКАЗА КЛИЕНТУ (CLIENT VIEW) — P0-3
   // ==========================================================================
   initClientMode() {
     this.applyClientMode(this.isClientMode, false);
@@ -153,6 +153,61 @@ class LigaApp {
     if (btnExit) {
       btnExit.addEventListener('click', () => this.setClientMode(false));
     }
+  }
+
+  // Изолированная модель представления для клиента (Client ViewModel / DTO)
+  getClientViewModel(site, materials = [], finances = []) {
+    if (!site) return { site: null, materials: [], finances: [] };
+
+    // 1. Очищенный объект объекта (DTO)
+    const clientSite = {
+      id: site.id,
+      name: site.name,
+      unit: site.unit,
+      client: site.client,
+      phone: site.phone,
+      designer: site.designer,
+      contractSum: site.contractSum || 0,
+      advanceSum: site.advanceSum || 0,
+      status: site.status || 1,
+      pressTestPassed: Boolean(site.pressTestPassed),
+      pressureTest: site.pressureTest ? { ...site.pressureTest } : null,
+      photos: site.photos ? { ...site.photos } : null,
+      // Внутренние финансовые поля мастера полностью исключены из модели:
+      brigadeOwed: undefined,
+      designerBonus: undefined
+    };
+
+    // 2. Очищенный список материалов
+    const clientMaterials = materials.map(m => ({
+      id: m.id,
+      siteId: m.siteId,
+      name: m.name,
+      category: m.category || 'Трубы и фитинги',
+      qty: m.qty || 1,
+      isPurchased: Boolean(m.isPurchased),
+      // Оптовые цены и фотографии чеков полностью исключены:
+      price: undefined,
+      receiptPhoto: undefined
+    }));
+
+    // 3. Очищенные финансовые операции
+    const clientFinances = finances
+      .filter(f => f.type === 'client_advance' || f.type === 'client_payment' || f.type === 'contract_total')
+      .map(f => ({
+        id: f.id,
+        siteId: f.siteId,
+        type: f.type,
+        amount: f.amount,
+        date: f.date,
+        method: f.method
+      }));
+
+    return {
+      site: clientSite,
+      materials: clientMaterials,
+      finances: clientFinances
+    };
   }
 
   toggleClientMode() {
@@ -182,7 +237,7 @@ class LigaApp {
     const btnToggle = document.getElementById('btn-client-mode-toggle');
     if (btnToggle) {
       btnToggle.innerText = isActive ? '🔒' : '👁️';
-      btnToggle.title = isActive ? 'Выйти в режим мастера (полный доступ)' : 'Клиентский режим (демонстрация заказчику)';
+      btnToggle.title = isActive ? 'Выйти в режим мастера (полный доступ)' : 'Режим показа клиенту (демонстрация на экране мастера)';
       if (isActive) {
         btnToggle.style.color = '#93c5fd';
         btnToggle.style.borderColor = '#3b82f6';
@@ -202,7 +257,7 @@ class LigaApp {
 
     if (showToastNotification) {
       if (isActive) {
-        this.showToast('👁️ Режим заказчика: внутренние финансы скрыты');
+        this.showToast('👁️ Режим показа клиенту: служебные и финансовые данные мастера скрыты');
       } else {
         this.showToast('🔒 Режим мастера активен (полный доступ)');
       }
@@ -306,7 +361,24 @@ class LigaApp {
 
     const tilePress = document.getElementById('tile-quick-press');
     if (tilePress) {
-      tilePress.addEventListener('click', () => this.togglePressureTest());
+      tilePress.addEventListener('click', () => this.openPressureTestModal());
+    }
+
+    // Обработчик сохранения структурированного протокола опрессовки (P0-2)
+    const formPressure = document.getElementById('form-pressure-test');
+    if (formPressure) {
+      formPressure.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleSavePressureTest();
+      });
+    }
+
+    // Сброс опрессовки обратно в статус Черновика
+    const btnResetPressure = document.getElementById('btn-reset-pressure-test');
+    if (btnResetPressure) {
+      btnResetPressure.addEventListener('click', async () => {
+        await this.resetPressureTest();
+      });
     }
 
     const tileEstimate = document.getElementById('tile-quick-estimate');
@@ -502,6 +574,9 @@ class LigaApp {
               // Сохраняем в объект в IndexedDB
               if (this.currentSite) {
                 this.currentSite.photos = this.currentPhotos;
+                if (slot === 'pressure' && this.currentSite.pressureTest) {
+                  this.currentSite.pressureTest.photo = compressedBase64;
+                }
                 await window.ligaDB.put('sites', this.currentSite);
               }
 
@@ -516,6 +591,34 @@ class LigaApp {
         });
       }
     });
+
+    // Дополнительный прямой инпут в модальном окне опрессовки (P0-2)
+    const ptInput = document.getElementById('pt-input-photo-pressure');
+    if (ptInput) {
+      ptInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.showToast(`Сжатие фото манометра (${file.name})...`);
+          try {
+            const compressedBase64 = await window.ligaImageProcessor.compressImage(file, 1600, 0.82);
+            this.currentPhotos['pressure'] = compressedBase64;
+            if (this.currentSite) {
+              this.currentSite.photos = this.currentPhotos;
+              if (this.currentSite.pressureTest) {
+                this.currentSite.pressureTest.photo = compressedBase64;
+              }
+              await window.ligaDB.put('sites', this.currentSite);
+            }
+            this.updatePhotoBadges();
+            this.render();
+            this.showToast('✓ Фото манометра 16 бар прикреплено!');
+          } catch (err) {
+            console.error('Ошибка сжатия фото манометра:', err);
+            alert('Не удалось обработать фото: ' + err.message);
+          }
+        }
+      });
+    }
   }
 
   // Обновление бейджей фото в модалке
@@ -531,6 +634,15 @@ class LigaApp {
         }
       }
     });
+
+    const ptPhotoStatus = document.getElementById('pt-photo-status');
+    if (ptPhotoStatus) {
+      if (this.currentPhotos && this.currentPhotos.pressure) {
+        ptPhotoStatus.innerHTML = '<span style="color:var(--neon-emerald); font-weight:700;">✓ Фото манометра прикреплено</span>';
+      } else {
+        ptPhotoStatus.innerHTML = '<span style="color:var(--text-dim);">Фото манометра не прикреплено</span>';
+      }
+    }
   }
 
   // Создание нового объекта
@@ -745,16 +857,135 @@ class LigaApp {
     this.render();
   }
 
-  // Опрессовка 16 бар в 1 клик
-  async togglePressureTest() {
+  // Открытие модального окна структурированного протокола опрессовки 16 бар (P0-2)
+  openPressureTestModal() {
     if (!this.currentSite) return;
-    this.currentSite.pressTestPassed = !this.currentSite.pressTestPassed;
-    if (this.currentSite.pressTestPassed && this.currentSite.status < 3) {
+    const pt = this.currentSite.pressureTest || {};
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrowDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const startDateEl = document.getElementById('pt-start-date');
+    const startTimeEl = document.getElementById('pt-start-time');
+    const endDateEl = document.getElementById('pt-end-date');
+    const endTimeEl = document.getElementById('pt-end-time');
+    const barEl = document.getElementById('pt-pressure-bar');
+    const notesEl = document.getElementById('pt-notes');
+    const photoStatusEl = document.getElementById('pt-photo-status');
+    const errEl = document.getElementById('pressure-test-error-msg');
+
+    if (errEl) {
+      errEl.style.display = 'none';
+      errEl.innerText = '';
+    }
+
+    if (startDateEl) startDateEl.value = pt.startDate || today;
+    if (startTimeEl) startTimeEl.value = pt.startTime || '09:00';
+    if (endDateEl) endDateEl.value = pt.endDate || tomorrowDate;
+    if (endTimeEl) endTimeEl.value = pt.endTime || '09:00';
+    if (barEl) barEl.value = pt.pressureBar ? pt.pressureBar : '16.0';
+    if (notesEl) {
+      notesEl.value = pt.notes || 'Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.';
+    }
+
+    const hasPhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
+    if (photoStatusEl) {
+      if (hasPhoto) {
+        photoStatusEl.innerHTML = '<span style="color:var(--neon-emerald); font-weight:700;">✓ Фото манометра прикреплено</span>';
+      } else {
+        photoStatusEl.innerHTML = '<span style="color:var(--text-dim);">Фото манометра не прикреплено</span>';
+      }
+    }
+
+    this.openModal('modal-pressure-test');
+  }
+
+  // Фиксация структурированного протокола опрессовки (P0-2)
+  async handleSavePressureTest() {
+    if (!this.currentSite) return;
+    const startDate = (document.getElementById('pt-start-date')?.value || '').trim();
+    const startTime = (document.getElementById('pt-start-time')?.value || '').trim();
+    const endDate = (document.getElementById('pt-end-date')?.value || '').trim();
+    const endTime = (document.getElementById('pt-end-time')?.value || '').trim();
+    const barVal = parseFloat(document.getElementById('pt-pressure-bar')?.value || '0');
+    const notes = (document.getElementById('pt-notes')?.value || '').trim();
+    const hasPhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
+
+    const errEl = document.getElementById('pressure-test-error-msg');
+    const showError = (msg) => {
+      if (errEl) {
+        errEl.innerText = msg;
+        errEl.style.display = 'block';
+      } else {
+        alert(msg);
+      }
+    };
+
+    if (!startDate || !startTime) {
+      showError('Укажите дату и время начала испытания.');
+      return;
+    }
+    if (!endDate || !endTime) {
+      showError('Укажите дату и время окончания испытания.');
+      return;
+    }
+    if (isNaN(barVal) || barVal < 16.0) {
+      showError('Испытательное давление должно быть не менее 16.0 бар согласно нормативам.');
+      return;
+    }
+    if (!hasPhoto) {
+      showError('Обязательно прикрепите фото манометра под давлением (16 бар).');
+      return;
+    }
+    if (!notes) {
+      showError('Укажите заключение / комментарий инженера по результатам испытания.');
+      return;
+    }
+
+    if (errEl) {
+      errEl.style.display = 'none';
+    }
+
+    this.currentSite.pressureTest = {
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      pressureBar: barVal,
+      notes,
+      photo: this.currentPhotos.pressure,
+      passed: true,
+      timestamp: new Date().toISOString()
+    };
+    this.currentSite.pressTestPassed = true;
+    if (this.currentSite.status < 3) {
       this.currentSite.status = 3;
     }
+
     await window.ligaDB.put('sites', this.currentSite);
-    this.showToast(this.currentSite.pressTestPassed ? '✓ Акт опрессовки 16 бар: УСПЕШНО ЗАФИКСИРОВАН!' : 'Тест 16 бар сброшен');
+    this.closeModal('modal-pressure-test');
+    this.showToast('✓ Акт опрессовки 16 бар: УСПЕШНО ЗАФИКСИРОВАН!');
     this.render();
+  }
+
+  // Сброс опрессовки обратно в статус Черновика
+  async resetPressureTest() {
+    if (!this.currentSite) return;
+    this.currentSite.pressTestPassed = false;
+    this.currentSite.pressureTest = null;
+    await window.ligaDB.put('sites', this.currentSite);
+    this.closeModal('modal-pressure-test');
+    this.showToast('Тест 16 бар сброшен. Паспорт переведен в статус Черновика.');
+    this.render();
+  }
+
+  // Переключатель опрессовки (обратная совместимость)
+  async togglePressureTest() {
+    if (!this.currentSite) return;
+    if (this.currentSite.pressTestPassed) {
+      await this.resetPressureTest();
+    } else {
+      this.openPressureTestModal();
+    }
   }
 
   // Рендеринг чек-листа технадзора и индикаторов готовности к стяжке
@@ -864,13 +1095,18 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
 
   // Рендеринг материалов и снабжения
   async renderMaterials() {
-    const list = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
+    const rawList = await window.ligaDB.getBySiteId('materials', this.currentSiteId);
     const container = document.getElementById('materials-list-container');
     if (!container) return;
 
+    // В клиентском режиме используем безопасную модель представления без закупочных цен и чеков
+    const list = this.isClientMode 
+      ? this.getClientViewModel(this.currentSite, rawList, []).materials
+      : rawList;
+
     // Подсчет сумм
-    const purchasedSum = list.filter(m => m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
-    const neededSum = list.filter(m => !m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
+    const purchasedSum = rawList.filter(m => m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
+    const neededSum = rawList.filter(m => !m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
 
     const purchasedEl = document.getElementById('mat-purchased-sum');
     if (purchasedEl) purchasedEl.innerText = this.isClientMode ? '—' : this.formatSum(purchasedSum);

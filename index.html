@@ -46,8 +46,8 @@
         <button id="btn-guide-top" class="btn-icon-top master-only" title="Памятка мастера: диалоги с дизайнерами и клиентами">📖</button>
         <!-- Кнопка Инженерного экспресс-аудита объекта -->
         <button id="btn-ai-audit-top" class="btn-icon-top master-only" title="Инженерный экспресс-аудит (экспертные правила)">📐</button>
-        <!-- Кнопка переключения в клиентский режим демонстрации -->
-        <button id="btn-client-mode-toggle" class="btn-icon-top" title="Клиентский режим (демонстрация заказчику)">👁️</button>
+        <!-- Кнопка переключения в режим показа клиенту -->
+        <button id="btn-client-mode-toggle" class="btn-icon-top" title="Режим показа клиенту (демонстрация на экране мастера)">👁️</button>
         <!-- Кнопка переключения Светлой и Тёмной темы -->
         <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
         <!-- Кнопка резервной копии базы данных -->
@@ -55,9 +55,9 @@
       </div>
     </header>
 
-    <!-- Плашка активного режима демонстрации заказчику -->
+    <!-- Плашка активного режима показа клиенту (демонстрация на экране мастера) -->
     <div id="client-mode-banner" class="client-mode-banner" style="display:none;">
-      <span>👁️ Режим демонстрации (конфиденциальные данные скрыты)</span>
+      <span>👁️ Режим показа клиенту (служебные и финансовые данные мастера скрыты)</span>
       <button id="btn-exit-client-mode" class="btn-exit-client">Выйти в режим мастера</button>
     </div>
 
@@ -631,6 +631,70 @@
             </select>
           </div>
           <button type="submit" class="btn-submit-modal">Зафиксировать в кассе объекта</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 2.5: СТРУКТУРИРОВАННЫЙ ПРОТОКОЛ ОПРЕССОВКИ 16 БАР (P0-2)
+         ==================================================================== -->
+    <div id="modal-pressure-test" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:85vh; overflow-y:auto;">
+        <div class="modal-title">
+          <span>🛡️ Протокол опрессовки 16 бар</span>
+          <button onclick="window.app.closeModal('modal-pressure-test')" class="btn-close-modal">&times;</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.4;">
+          Внесите параметры фактических гидравлических испытаний. Согласно нормативам DIN 1988 и стандартам Лиги Мастеров, опрессовка проводится давлением не менее 16 бар в течение 24 часов с обязательной фотофиксацией манометра. Без этих данных паспорт объекта сохраняет статус «ЧЕРНОВИК».
+        </div>
+        <form id="form-pressure-test" novalidate>
+          <div id="pressure-test-error-msg" style="display:none; color:var(--neon-ruby); font-size:11px; font-weight:700; margin-bottom:12px; padding:8px 12px; background:rgba(255,42,95,0.12); border:1px solid rgba(255,42,95,0.3); border-radius:8px; line-height:1.4;"></div>
+          
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group">
+              <label class="form-label">Дата начала:</label>
+              <input id="pt-start-date" type="date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Время начала:</label>
+              <input id="pt-start-time" type="time" class="form-input" required>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group">
+              <label class="form-label">Дата окончания (24ч):</label>
+              <input id="pt-end-date" type="date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Время окончания:</label>
+              <input id="pt-end-time" type="time" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Испытательное давление (бар, мин. 16.0):</label>
+            <input id="pt-pressure-bar" type="number" step="0.1" min="1" class="form-input" placeholder="16.0" value="16.0" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Фото манометра под давлением (16 бар):</label>
+            <label class="btn-contact" style="width:100%; height:44px; cursor:pointer; color:var(--neon-cyan); border-color:var(--neon-cyan-border); display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>📸 Сфотографировать манометр</span>
+              <input type="file" id="pt-input-photo-pressure" accept="image/*" capture="environment" style="display:none;">
+            </label>
+            <div id="pt-photo-status" style="font-size:11px; color:var(--text-dim); margin-top:4px; text-align:center;">Фото манометра не прикреплено</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Заключение / комментарий инженера:</label>
+            <textarea id="pt-notes" class="form-input" rows="3" placeholder="Напр: Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки." required style="resize:vertical; min-height:60px; font-family:inherit;"></textarea>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="submit" class="btn-submit-modal" style="flex:1;">✓ Зафиксировать опрессовку</button>
+            <button type="button" id="btn-reset-pressure-test" class="btn-subtle" style="padding:0 14px; background:rgba(255,42,95,0.12); border:1px solid rgba(255,42,95,0.3); border-radius:12px; color:var(--neon-ruby); cursor:pointer;">Сбросить</button>
+          </div>
         </form>
       </div>
     </div>
