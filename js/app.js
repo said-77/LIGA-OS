@@ -61,6 +61,9 @@ class LigaApp {
       statusLabel: 'Базовый ориентир (требует утверждения Улугбеком)'
     };
     this.tariffSettings = this.loadTariffSettings();
+
+    // Клиентский режим демонстрации заказчику (Client View)
+    this.isClientMode = localStorage.getItem('liga_client_mode') === 'true';
   }
 
   async init() {
@@ -68,6 +71,9 @@ class LigaApp {
     
     // 1. Инициализация светлой/тёмной темы
     this.initTheme();
+
+    // 1.1. Инициализация клиентского режима демонстрации
+    this.initClientMode();
 
     // 2. Инициализация локальной базы данных IndexedDB
     await window.ligaDB.init();
@@ -128,6 +134,75 @@ class LigaApp {
     if (showToastNotification) {
       const label = theme === 'dark' ? '🌙 Тёмный титан активен' : '☀️ Светлая керамика активна';
       this.showToast(label);
+    }
+  }
+
+  // ==========================================================================
+  // КЛИЕНТСКИЙ РЕЖИМ (CLIENT VIEW) — P0-3
+  // ==========================================================================
+  initClientMode() {
+    this.applyClientMode(this.isClientMode, false);
+    const btnToggle = document.getElementById('btn-client-mode-toggle');
+    if (btnToggle) {
+      btnToggle.addEventListener('click', () => this.toggleClientMode());
+    }
+    const btnExit = document.getElementById('btn-exit-client-mode');
+    if (btnExit) {
+      btnExit.addEventListener('click', () => this.setClientMode(false));
+    }
+  }
+
+  toggleClientMode() {
+    this.setClientMode(!this.isClientMode);
+  }
+
+  setClientMode(isActive) {
+    this.isClientMode = Boolean(isActive);
+    localStorage.setItem('liga_client_mode', this.isClientMode ? 'true' : 'false');
+    this.applyClientMode(this.isClientMode, true);
+  }
+
+  applyClientMode(isActive, showToastNotification = false) {
+    if (isActive) {
+      document.documentElement.setAttribute('data-client-mode', 'true');
+      document.body.classList.add('client-mode');
+    } else {
+      document.documentElement.removeAttribute('data-client-mode');
+      document.body.classList.remove('client-mode');
+    }
+
+    const banner = document.getElementById('client-mode-banner');
+    if (banner) {
+      banner.style.display = isActive ? 'flex' : 'none';
+    }
+
+    const btnToggle = document.getElementById('btn-client-mode-toggle');
+    if (btnToggle) {
+      btnToggle.innerText = isActive ? '🔒' : '👁️';
+      btnToggle.title = isActive ? 'Выйти в режим мастера (полный доступ)' : 'Клиентский режим (демонстрация заказчику)';
+      if (isActive) {
+        btnToggle.style.color = '#93c5fd';
+        btnToggle.style.borderColor = '#3b82f6';
+      } else {
+        btnToggle.style.color = '';
+        btnToggle.style.borderColor = '';
+      }
+    }
+
+    // Реактивно перерисовываем активный экран с учетом изоляции данных
+    this.render();
+    if (this.currentScreen === 'materials') {
+      this.renderMaterials();
+    } else if (this.currentScreen === 'finances') {
+      this.renderFinances();
+    }
+
+    if (showToastNotification) {
+      if (isActive) {
+        this.showToast('👁️ Режим заказчика: внутренние финансы скрыты');
+      } else {
+        this.showToast('🔒 Режим мастера активен (полный доступ)');
+      }
     }
   }
 
@@ -613,9 +688,14 @@ class LigaApp {
 
     document.getElementById('fin-contract-val').innerText = this.formatSum(contract);
     document.getElementById('fin-advance-val').innerText = this.formatSum(advance);
-    document.getElementById('fin-debt-val').innerText = this.formatSum(debt);
-    document.getElementById('fin-brigade-val').innerText = this.formatSum(s.brigadeOwed || 0);
-    document.getElementById('fin-designer-val').innerText = this.formatSum(s.designerBonus || 0);
+    const brigadeEl = document.getElementById('fin-brigade-val');
+    if (brigadeEl) {
+      brigadeEl.innerText = this.isClientMode ? '—' : this.formatSum(s.brigadeOwed || 0);
+    }
+    const designerEl = document.getElementById('fin-designer-val');
+    if (designerEl) {
+      designerEl.innerText = this.isClientMode ? '—' : this.formatSum(s.designerBonus || 0);
+    }
 
     // Честный статус готовности инженерного паспорта
     const passportStatusEl = document.getElementById('passport-status-indicator');
@@ -771,10 +851,10 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
     const neededSum = list.filter(m => !m.isPurchased).reduce((acc, m) => acc + (m.price || 0), 0);
 
     const purchasedEl = document.getElementById('mat-purchased-sum');
-    if (purchasedEl) purchasedEl.innerText = this.formatSum(purchasedSum);
+    if (purchasedEl) purchasedEl.innerText = this.isClientMode ? '—' : this.formatSum(purchasedSum);
 
     const neededEl = document.getElementById('mat-needed-sum');
-    if (neededEl) neededEl.innerText = this.formatSum(neededSum);
+    if (neededEl) neededEl.innerText = this.isClientMode ? '—' : this.formatSum(neededSum);
 
     // Фильтрация
     let filtered = list;
@@ -804,18 +884,22 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
               <span>🏷️ ${m.category}</span>
               <span>📦 ${m.qty}</span>
               <span style="color:${m.isPurchased ? 'var(--neon-emerald)' : 'var(--neon-ruby)'}; font-weight:800;">
-                ${m.isPurchased ? '• Куплено' : '• Требуется закупка'}
+                ${m.isPurchased ? '• Доставлено на объект' : '• В плане закупки'}
               </span>
             </div>
           </div>
         </div>
         <div class="mat-item-right">
-          <div class="mat-price">${this.formatSum(m.price)}</div>
-          ${m.receiptPhoto ? `
-            <button class="btn-receipt-view" onclick="window.app.viewReceiptById(${m.id})">
-              <span>🧾 Чек (фото)</span>
-            </button>
-          ` : ''}
+          ${this.isClientMode ? `
+            <div class="mat-badge-spec">В спецификации</div>
+          ` : `
+            <div class="mat-price">${this.formatSum(m.price)}</div>
+            ${m.receiptPhoto ? `
+              <button class="btn-receipt-view" onclick="window.app.viewReceiptById(${m.id})">
+                <span>🧾 Чек (фото)</span>
+              </button>
+            ` : ''}
+          `}
         </div>
       </div>
     `).join('');
@@ -891,7 +975,15 @@ ${itemsText}
       document.getElementById('page-fin-contract').innerText = this.formatSum(contract);
       document.getElementById('page-fin-advance').innerText = this.formatSum(advance);
       document.getElementById('page-fin-debt').innerText = this.formatSum(debt);
-      document.getElementById('page-fin-brigade').innerText = this.formatSum(s.brigadeOwed || 0);
+      const brigadeEl = document.getElementById('page-fin-brigade');
+      if (brigadeEl) {
+        brigadeEl.innerText = this.isClientMode ? '—' : this.formatSum(s.brigadeOwed || 0);
+      }
+    }
+
+    // В клиентском режиме полностью блокируем вывод портфеля других объектов
+    if (this.isClientMode) {
+      return;
     }
 
     // Сводные агрегированные показатели по всему портфелю
@@ -1703,6 +1795,10 @@ ${itemsText}
   }
 
   openModal(modalId) {
+    if (this.isClientMode && ['modal-master-guide', 'modal-tariffs', 'modal-payment', 'modal-receipt', 'modal-ai-audit'].includes(modalId)) {
+      this.showToast('⚠️ Функция недоступна в режиме демонстрации');
+      return;
+    }
     const m = document.getElementById(modalId);
     if (m) m.classList.add('open');
   }

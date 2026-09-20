@@ -41,17 +41,25 @@
       </div>
       <div class="header-actions">
         <!-- Кнопка голосовой диктовки («Свободные руки») -->
-        <button id="btn-voice-input" class="btn-icon-top" title="Голосовая диктовка (Свободные руки)">🎙️</button>
+        <button id="btn-voice-input" class="btn-icon-top master-only" title="Голосовая диктовка (Свободные руки)">🎙️</button>
         <!-- Кнопка Шпаргалки мастера (Скрипты диалогов) -->
-        <button id="btn-guide-top" class="btn-icon-top" title="Памятка мастера: диалоги с дизайнерами и клиентами">📖</button>
+        <button id="btn-guide-top" class="btn-icon-top master-only" title="Памятка мастера: диалоги с дизайнерами и клиентами">📖</button>
         <!-- Кнопка ИИ-Аналитика объекта -->
-        <button id="btn-ai-audit-top" class="btn-icon-top" title="ИИ-Аналитик объекта и рисков">🧠</button>
+        <button id="btn-ai-audit-top" class="btn-icon-top master-only" title="ИИ-Аналитик объекта и рисков">🧠</button>
+        <!-- Кнопка переключения в клиентский режим демонстрации -->
+        <button id="btn-client-mode-toggle" class="btn-icon-top" title="Клиентский режим (демонстрация заказчику)">👁️</button>
         <!-- Кнопка переключения Светлой и Тёмной темы -->
         <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
         <!-- Кнопка резервной копии базы данных -->
-        <button id="btn-backup-top" class="btn-icon-top" title="Сохранить резервную копию базы">💾</button>
+        <button id="btn-backup-top" class="btn-icon-top master-only" title="Сохранить резервную копию базы">💾</button>
       </div>
     </header>
+
+    <!-- Плашка активного режима демонстрации заказчику -->
+    <div id="client-mode-banner" class="client-mode-banner" style="display:none;">
+      <span>👁️ Режим демонстрации (конфиденциальные данные скрыты)</span>
+      <button id="btn-exit-client-mode" class="btn-exit-client">Выйти в режим мастера</button>
+    </div>
 
     <!-- ====================================================================
          ЭКРАН 1: ГЛАВНЫЙ ДАШБОРД И АКТИВНЫЙ ОБЪЕКТ
@@ -124,7 +132,7 @@
       <section class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">💰 Финансовый пульс объекта</div>
-          <button id="btn-open-payment" class="btn-contact" style="height:28px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
+          <button id="btn-open-payment" class="btn-contact master-only" style="height:28px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
             + Платеж
           </button>
         </div>
@@ -146,15 +154,21 @@
           <div id="fin-debt-val" class="debt-amount">6 500 000 сум</div>
         </div>
 
-        <div class="sub-finances-row">
+        <!-- Внутренние обязательства мастера (скрыты в клиентском режиме) -->
+        <div class="sub-finances-row master-only">
           <div class="sub-fin-item">Бригаде к выдаче: <span id="fin-brigade-val">800 000 сум</span></div>
           <div class="sub-fin-item">Дизайнеру (10%): <span id="fin-designer-val">1 850 000 сум</span></div>
+        </div>
+
+        <!-- Представительский блок доверия для заказчика -->
+        <div class="client-view-placeholder client-view-trust-badge">
+          🛡️ Премиальный инженерный монтаж • Двойная опрессовка 16 бар • Официальный договор
         </div>
       </section>
 
       <!-- БЫСТРЫЕ ДЕЙСТВИЯ В 1 ТАП (60px) -->
       <div class="quick-actions-grid">
-        <div id="tile-quick-receipt" class="btn-action-tile">
+        <div id="tile-quick-receipt" class="btn-action-tile master-only">
           <div class="tile-icon-box" style="color:var(--gold-primary);">📸</div>
           <div class="tile-content">
             <div class="tile-title">Чек с базара</div>
@@ -200,7 +214,7 @@
       <div class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">💼 Финансы текущего объекта</div>
-          <button onclick="window.app.openModal('modal-payment')" class="btn-contact" style="height:32px; padding:2px 10px; font-size:12px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
+          <button onclick="window.app.openModal('modal-payment')" class="btn-contact master-only" style="height:32px; padding:2px 10px; font-size:12px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
             + Внести платеж
           </button>
         </div>
@@ -229,7 +243,7 @@
           <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">0 сум</div>
         </div>
 
-        <div class="item-row">
+        <div class="item-row master-only">
           <div class="item-left">
             <div class="item-name">Начислено помощникам бригады</div>
             <div class="item-desc">Алишер, Сардор (по опрессовке)</div>
@@ -239,7 +253,7 @@
       </div>
 
       <!-- 2. Сводный радар портфеля (Все объекты мастера) -->
-      <div class="glass-card">
+      <div id="portfolio-radar-card" class="glass-card master-only">
         <div class="card-header-flex">
           <div class="card-label">📊 Сводный радар портфеля</div>
           <span id="portfolio-sites-badge" class="badge badge-gold">0 объектов</span>
@@ -299,7 +313,7 @@
             <div class="item-right" style="font-size:12px;">Открыть ↗</div>
           </a>
 
-          <button id="btn-backup-finances" onclick="window.ligaDB.exportFullBackup()" class="item-row" style="width:100%; border:none; background:var(--box-bg); cursor:pointer; text-align:left;">
+          <button id="btn-backup-finances" onclick="window.ligaDB.exportFullBackup()" class="item-row master-only" style="width:100%; border:none; background:var(--box-bg); cursor:pointer; text-align:left;">
             <div class="item-left">
               <div class="item-name" style="display:flex; align-items:center; gap:6px; color:var(--neon-emerald);">
                 <span>💾</span> Резервная копия базы в JSON
@@ -319,13 +333,13 @@
       <div class="glass-card">
         <div class="card-header-flex">
           <div class="card-label">📦 Снабжение и материалы</div>
-          <button onclick="window.app.openModal('modal-receipt')" class="btn-contact" style="height:32px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary);">
+          <button id="btn-open-receipt-modal" onclick="window.app.openModal('modal-receipt')" class="btn-contact master-only" style="height:32px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary);">
             + Сфоткать чек
           </button>
         </div>
         
-        <!-- Сводка расходов на материалы -->
-        <div class="finance-grid" style="margin-bottom:12px;">
+        <!-- Сводка расходов на материалы (только для мастера) -->
+        <div id="mat-finance-summary" class="finance-grid master-only" style="margin-bottom:12px;">
           <div class="finance-box">
             <div class="finance-box-label">Закуплено материалов:</div>
             <div id="mat-purchased-sum" class="finance-box-val" style="color:var(--neon-emerald); font-size:15px;">0 сум</div>
@@ -336,6 +350,11 @@
           </div>
         </div>
 
+        <!-- Плашка спецификации для клиентского режима -->
+        <div class="client-view-placeholder" style="margin-bottom:12px; padding:10px 14px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.25); border-radius:12px; font-size:11px; color:var(--neon-cyan); font-weight:700; text-align:center;">
+          📦 Спецификация сертифицированных европейских материалов Rehau / FAR / Geberit
+        </div>
+
         <!-- Фильтры категорий и статуса -->
         <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
           <button class="btn-contact mat-filter active" data-filter="all" style="height:32px; padding:2px 12px; font-size:11px; flex-shrink:0;">Все</button>
@@ -344,7 +363,7 @@
         </div>
 
         <!-- Кнопка выгрузки списка в Telegram для базара -->
-        <button id="btn-export-bazaar" class="btn-contact" style="width:100%; height:40px; margin-bottom:14px; font-size:12px; color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
+        <button id="btn-export-bazaar" class="btn-contact master-only" style="width:100%; height:40px; margin-bottom:14px; font-size:12px; color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
           <span>🛒</span> Отправить список покупок для базара в Telegram
         </button>
 
@@ -468,7 +487,7 @@
           <div style="font-size:10px; color:var(--text-muted); margin-top:4px; line-height:1.4;">
             Все расценки прозрачны и калибруются под стандарты мастера Улугбека
           </div>
-          <div style="margin-top:8px;">
+          <div class="master-only" style="margin-top:8px;">
             <button id="btn-open-tariffs" type="button" class="btn-subtle" style="font-size:11px; padding:6px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:var(--text-main); cursor:pointer;">
               ⚙️ Настроить тарифные коэффициенты
             </button>

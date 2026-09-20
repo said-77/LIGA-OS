@@ -1159,3 +1159,81 @@ body {
   transform: scale(0.97);
 }
 
+/* ==========================================================================
+   КЛИЕНТСКИЙ РЕЖИМ (CLIENT VIEW) — ИЗОЛИРОВАННАЯ ДЕМОНСТРАЦИЯ ЗАКАЗЧИКУ
+   Скрытие внутренних финансов, долгов бригаде, бонусов и служебных инструментов
+   ========================================================================== */
+body.client-mode .master-only,
+[data-client-mode="true"] .master-only {
+  display: none !important;
+}
+
+.client-mode-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+  color: #bfdbfe;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.3);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  position: sticky;
+  top: 56px;
+  z-index: 90;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.btn-exit-client {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-exit-client:hover,
+.btn-exit-client:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.client-view-placeholder {
+  display: none;
+}
+
+body.client-mode .client-view-placeholder,
+[data-client-mode="true"] .client-view-placeholder {
+  display: block;
+}
+
+.client-view-trust-badge {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 168, 107, 0.08);
+  border: 1px solid rgba(0, 168, 107, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--neon-emerald);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.mat-badge-spec {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid var(--neon-cyan-border);
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+
