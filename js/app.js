@@ -442,6 +442,8 @@ class LigaApp {
         this.currentSiteId = parseInt(e.target.value);
         await this.loadSites();
         this.render();
+        await this.renderScreenContent(this.currentScreen);
+        await this.updateNavBadges();
       });
     }
 
@@ -1234,7 +1236,10 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
           ${this.isClientMode ? `
             <div class="mat-badge-spec">В спецификации</div>
           ` : `
-            <div class="mat-price">${this.formatSum(m.price)}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="mat-price">${this.formatSum(m.price)}</div>
+              <button class="btn-item-delete" onclick="window.app.deleteMaterial(${m.id})" title="Удалить позицию" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px 4px; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🗑️</button>
+            </div>
             ${m.receiptPhoto ? `
               <button class="btn-receipt-view" onclick="window.app.viewReceiptById(${m.id})">
                 <span>🧾 Чек (фото)</span>
@@ -1252,8 +1257,17 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
       item.isPurchased = !item.isPurchased;
       await window.ligaDB.put('materials', item);
       await this.renderMaterials();
+      await this.updateNavBadges();
       this.showToast(item.isPurchased ? '✓ Отмечено как куплено!' : 'Статус: Требуется докупить');
     }
+  }
+
+  async deleteMaterial(id) {
+    if (!confirm('Удалить эту позицию из списка материалов?')) return;
+    await window.ligaDB.delete('materials', id);
+    await this.renderMaterials();
+    await this.updateNavBadges();
+    this.showToast('✓ Позиция удалена из склада');
   }
 
   async viewReceiptById(id) {
@@ -1507,8 +1521,19 @@ ${itemsText}
     try {
       const stats = await window.ligaDB.getStats();
       const statsEl = document.getElementById('backup-current-stats');
+      let storageInfo = '';
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const est = await navigator.storage.estimate();
+          const usedMB = ((est.usage || 0) / (1024 * 1024)).toFixed(1);
+          const quotaMB = ((est.quota || 0) / (1024 * 1024)).toFixed(0);
+          storageInfo = `<br><span style="font-size:11px; color:var(--text-dim); display:inline-block; margin-top:4px;">💾 Память устройства: занято <b>${usedMB} МБ</b> из квоты <b>${quotaMB} МБ</b></span>`;
+        } catch (storageErr) {
+          console.warn('Не удалось получить оценку хранилища:', storageErr);
+        }
+      }
       if (statsEl) {
-        statsEl.innerHTML = `В локальной базе сохранено: <b>${stats.sitesCount}</b> объекта(ов), <b>${stats.materialsCount}</b> позиций материалов и чеков, <b>${stats.checklistsCount}</b> пунктов технадзора.`;
+        statsEl.innerHTML = `В локальной базе сохранено: <b>${stats.sitesCount}</b> объекта(ов), <b>${stats.materialsCount}</b> позиций материалов и чеков, <b>${stats.checklistsCount}</b> пунктов технадзора.${storageInfo}`;
       }
     } catch (e) {
       console.warn('Не удалось получить статистику базы:', e);
@@ -2590,7 +2615,10 @@ ${itemsText}
           <div class="timeline-card">
             <div class="timeline-header">
               <span class="timeline-date">${dateFormatted}</span>
-              <span class="timeline-badge ${tb.class}">${tb.label}</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="timeline-badge ${tb.class}">${tb.label}</span>
+                <button class="btn-item-delete" onclick="window.app.deleteTimelineEvent(${ev.id})" title="Удалить запись" style="background:none; border:none; color:var(--text-dim); font-size:12px; cursor:pointer; padding:2px 4px; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🗑️</button>
+              </div>
             </div>
             <div class="timeline-title">${ev.title}</div>
             <div class="timeline-desc">${ev.description}</div>
@@ -2643,9 +2671,12 @@ ${itemsText}
               <span>📅 ${dateStr}</span> • <span>${methodLabel}</span>
             </div>
           </div>
-          <div class="payout-amounts">
-            <div class="payout-uzs">${this.formatSum(p.amountUZS)}</div>
-            ${p.amountUSD ? `<div class="payout-usd">≈ $${p.amountUSD}</div>` : ''}
+          <div class="payout-amounts" style="display:flex; align-items:center; gap:8px;">
+            <div>
+              <div class="payout-uzs">${this.formatSum(p.amountUZS)}</div>
+              ${p.amountUSD ? `<div class="payout-usd">≈ $${p.amountUSD}</div>` : ''}
+            </div>
+            <button class="btn-item-delete" onclick="window.app.deleteBrigadePayout(${p.id})" title="Удалить запись о выплате" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px 4px; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🗑️</button>
           </div>
         </div>
       `;
@@ -2672,7 +2703,10 @@ ${itemsText}
 
     container.innerHTML = equipment.map(eq => `
       <div class="equipment-card">
-        <div class="equipment-warranty-badge">Гарантия ${eq.warrantyYears || 10} лет</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div class="equipment-warranty-badge">Гарантия ${eq.warrantyYears || 10} лет</div>
+          <button class="btn-item-delete" onclick="window.app.deleteEquipment(${eq.id})" title="Удалить паспорт оборудования" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px 4px; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">🗑️</button>
+        </div>
         <div class="equipment-brand">${eq.brand}</div>
         <div class="equipment-title">${eq.model}</div>
         <div class="equipment-details">
@@ -2818,6 +2852,35 @@ ${itemsText}
     this.closeModal('modal-add-equipment');
     this.showToast(`✓ Паспорт «${brand} ${model}» сохранен!`);
     await this.renderEquipment();
+  }
+
+  async deleteTimelineEvent(id) {
+    if (!confirm('Удалить эту запись из хроники объекта?')) return;
+    await window.ligaDB.delete('site_timeline_events', id);
+    await this.renderTimeline();
+    this.showToast('✓ Запись удалена из хроники');
+  }
+
+  async deleteBrigadePayout(id) {
+    if (!confirm('Удалить эту запись о выплате? Сумма будет возвращена в долг перед бригадой.')) return;
+    const payout = await window.ligaDB.get('brigade_payouts', id);
+    if (payout) {
+      if (this.currentSite) {
+        this.currentSite.brigadeOwed = (this.currentSite.brigadeOwed || 0) + (payout.amountUZS || 0);
+        await window.ligaDB.put('sites', this.currentSite);
+      }
+      await window.ligaDB.delete('brigade_payouts', id);
+      await this.renderBrigadePayouts();
+      this.render();
+      this.showToast('✓ Выплата удалена, долг бригаде пересчитан');
+    }
+  }
+
+  async deleteEquipment(id) {
+    if (!confirm('Удалить паспорт этого оборудования?')) return;
+    await window.ligaDB.delete('installed_equipment', id);
+    await this.renderEquipment();
+    this.showToast('✓ Оборудование удалено из паспорта объекта');
   }
 
   // Обновление бейджей уведомлений на нижней навигации
