@@ -917,8 +917,35 @@ ${itemsText}
     return { ...this.defaultTariffSettings };
   }
 
+  validateTariffField(valueStr, fieldName, minVal = 0, isRequiredPositive = false) {
+    const trimmed = String(valueStr === undefined || valueStr === null ? '' : valueStr).trim();
+    if (trimmed === '') {
+      throw new Error(`Поле «${fieldName}» не может быть пустым.`);
+    }
+    if (!/^-?\d+$/.test(trimmed)) {
+      throw new Error(`Поле «${fieldName}» должно содержать только корректное целое число.`);
+    }
+    const num = Number(trimmed);
+    if (!Number.isFinite(num) || !Number.isSafeInteger(num)) {
+      throw new Error(`Недопустимое числовое значение в поле «${fieldName}».`);
+    }
+    if (isRequiredPositive && num <= 0) {
+      throw new Error(`Значение поля «${fieldName}» обязано быть строго больше нуля (не может быть нулём или отрицательным).`);
+    }
+    if (num < minVal) {
+      throw new Error(`Значение поля «${fieldName}» не может быть отрицательным (минимум: ${minVal}).`);
+    }
+    return num;
+  }
+
   openTariffSettingsModal() {
     const t = this.tariffSettings || this.defaultTariffSettings;
+    const errEl = document.getElementById('tariff-error-msg');
+    if (errEl) {
+      errEl.style.display = 'none';
+      errEl.innerText = '';
+    }
+
     const fields = [
       'costPerBathroom', 'costPerPoint', 'costPerGeberit',
       'costPerIbox', 'costPerDrain', 'costPerSqMFloor',
@@ -934,31 +961,79 @@ ${itemsText}
   }
 
   handleSaveTariffs() {
-    const newTariffs = {
-      costPerBathroom: parseInt(document.getElementById('tariff-costPerBathroom').value) || 0,
-      costPerPoint: parseInt(document.getElementById('tariff-costPerPoint').value) || 0,
-      costPerGeberit: parseInt(document.getElementById('tariff-costPerGeberit').value) || 0,
-      costPerIbox: parseInt(document.getElementById('tariff-costPerIbox').value) || 0,
-      costPerDrain: parseInt(document.getElementById('tariff-costPerDrain').value) || 0,
-      costPerSqMFloor: parseInt(document.getElementById('tariff-costPerSqMFloor').value) || 0,
-      baseAuditWork: parseInt(document.getElementById('tariff-baseAuditWork').value) || 0,
-      usdRate: parseInt(document.getElementById('tariff-usdRate').value) || 12900,
-      statusLabel: 'Пользовательские тарифы мастера Улугбека'
-    };
-
-    this.tariffSettings = { ...this.tariffSettings, ...newTariffs };
-    try {
-      localStorage.setItem('liga_tariff_settings_v1', JSON.stringify(this.tariffSettings));
-    } catch (e) {
-      console.warn('Не удалось сохранить тарифы:', e);
+    const errEl = document.getElementById('tariff-error-msg');
+    if (errEl) {
+      errEl.style.display = 'none';
+      errEl.innerText = '';
     }
 
-    const badge = document.getElementById('est-tariff-status');
-    if (badge) badge.innerText = this.tariffSettings.statusLabel;
+    try {
+      const costPerBathroom = this.validateTariffField(
+        document.getElementById('tariff-costPerBathroom').value,
+        'Обвязка санузла', 0
+      );
+      const costPerPoint = this.validateTariffField(
+        document.getElementById('tariff-costPerPoint').value,
+        'Водорозетка / точка', 0
+      );
+      const costPerGeberit = this.validateTariffField(
+        document.getElementById('tariff-costPerGeberit').value,
+        'Монтаж инсталляции', 0
+      );
+      const costPerIbox = this.validateTariffField(
+        document.getElementById('tariff-costPerIbox').value,
+        'Встраиваемый смеситель iBox', 0
+      );
+      const costPerDrain = this.validateTariffField(
+        document.getElementById('tariff-costPerDrain').value,
+        'Душевой трап в пол', 0
+      );
+      const costPerSqMFloor = this.validateTariffField(
+        document.getElementById('tariff-costPerSqMFloor').value,
+        'Теплый пол (кв.м)', 0
+      );
+      const baseAuditWork = this.validateTariffField(
+        document.getElementById('tariff-baseAuditWork').value,
+        'Шеф-монтаж, проект и опрессовка', 0
+      );
+      const usdRate = this.validateTariffField(
+        document.getElementById('tariff-usdRate').value,
+        'Курс доллара USD', 1000, true
+      );
 
-    this.closeModal('modal-tariffs');
-    this.calculateEstimate();
-    this.showToast('✓ Тарифы мастера сохранены и применены!');
+      const newTariffs = {
+        costPerBathroom,
+        costPerPoint,
+        costPerGeberit,
+        costPerIbox,
+        costPerDrain,
+        costPerSqMFloor,
+        baseAuditWork,
+        usdRate,
+        statusLabel: 'Пользовательские тарифы мастера Улугбека'
+      };
+
+      this.tariffSettings = { ...this.tariffSettings, ...newTariffs };
+      try {
+        localStorage.setItem('liga_tariff_settings_v1', JSON.stringify(this.tariffSettings));
+      } catch (e) {
+        console.warn('Не удалось сохранить тарифы:', e);
+      }
+
+      const badge = document.getElementById('est-tariff-status');
+      if (badge) badge.innerText = this.tariffSettings.statusLabel;
+
+      this.closeModal('modal-tariffs');
+      this.calculateEstimate();
+      this.showToast('✓ Тарифы мастера сохранены и применены!');
+    } catch (err) {
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.innerText = `⚠️ ${err.message}`;
+      }
+      alert(`⚠️ Ошибка в расценках:\n${err.message}`);
+      return;
+    }
   }
 
   resetTariffSettings() {
