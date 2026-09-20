@@ -214,47 +214,185 @@ class LigaDatabase {
     });
   }
 
-  // Полный экспорт базы данных в JSON (Резервная копия в Telegram)
-  async exportFullBackup() {
-    const backup = {
-      version: DB_VERSION,
-      date: new Date().toISOString(),
-      appName: 'LIGA OS',
-      sites: await this.getAll('sites'),
-      finances: await this.getAll('finances'),
-      materials: await this.getAll('materials'),
-      checklists: await this.getAll('checklists'),
-      passports: await this.getAll('passports')
+  // Статистика базы данных для карточки резервного копирования
+  async getStats() {
+    const sites = await this.getAll('sites');
+    const materials = await this.getAll('materials');
+    const checklists = await this.getAll('checklists');
+    return {
+      sitesCount: sites.length,
+      materialsCount: materials.length,
+      checklistsCount: checklists.length
     };
+  }
 
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  // Сбор полного снимка базы данных LIGA OS в объект
+  async createBackupPayload() {
+    let tariffSettings = null;
+    try {
+      const savedTariffs = localStorage.getItem('liga_tariff_settings_v1');
+      if (savedTariffs) {
+        tariffSettings = JSON.parse(savedTariffs);
+      }
+    } catch (e) {
+      console.warn('Не удалось прочитать тарифы для бэкапа:', e);
+    }
+
+    const sites = await this.getAll('sites');
+    const materials = await this.getAll('materials');
+    const checklists = await this.getAll('checklists');
+    const finances = await this.getAll('finances');
+    const passports = await this.getAll('passports');
+
+    return {
+      appName: 'LIGA OS',
+      schemaVersion: 1,
+      dbVersion: DB_VERSION,
+      exportDate: new Date().toISOString(),
+      appVersion: '1.4.4',
+      sites,
+      materials,
+      checklists,
+      finances,
+      passports,
+      tariffSettings
+    };
+  }
+
+  // Полный экспорт базы данных в JSON (Web Share API с фолбэком на скачивание)
+  async exportFullBackup() {
+    const payload = await this.createBackupPayload();
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `liga_backup_${dateStr}.json`;
+
+    // Проверяем возможность поделиться файлом через Web Share API (смартфон -> Telegram/WhatsApp/Диск)
+    if (typeof File !== 'undefined' && navigator.share && navigator.canShare) {
+      try {
+        const file = new File([jsonStr], fileName, { type: 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Резервная копия LIGA OS',
+            text: `Резервная копия базы LIGA OS от ${dateStr} (${payload.sites.length} объектов)`
+          });
+          return { success: true, method: 'share', fileName };
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return { success: false, aborted: true, method: 'share' };
+        }
+        console.warn('Web Share API не сработал, переключаемся на прямое скачивание:', err);
+      }
+    }
+
+    // Фолбэк на прямое скачивание через <a download>
+    const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `LIGA_OS_BACKUP_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = fileName;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
-    return true;
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return { success: true, method: 'download', fileName };
   }
 
-  // Импорт резервной копии
-  async importBackup(jsonData) {
-    const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-    if (!data.sites) throw new Error('Некорректный формат файла резервной копии');
-
-    // Очищаем и перезаписываем
-    const stores = ['sites', 'finances', 'materials', 'checklists', 'passports'];
-    for (let s of stores) {
-      if (data[s] && Array.isArray(data[s])) {
-        const tx = this.db.transaction(s, 'readwrite');
-        const store = tx.objectStore(s);
-        store.clear();
-        for (let item of data[s]) {
-          store.add(item);
-        }
+  // Строгий валидатор схемы резервной копии
+  validateBackup(jsonData) {
+    let data = jsonData;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        throw new Error('Файл поврежден: не является валидным JSON-документом.');
       }
     }
-    return true;
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('Некорректная структура файла: ожидается JSON-объект базы данных.');
+    }
+
+    // Проверяем принадлежность к LIGA OS
+    const isLiga = data.appName === 'LIGA OS' || (data.sites && Array.isArray(data.sites));
+    if (!isLiga) {
+      throw new Error('Несовместимый файл: данный файл не является резервной копией LIGA OS.');
+    }
+
+    // Проверяем целостность таблицы sites
+    if (!Array.isArray(data.sites)) {
+      throw new Error('Ошибка структуры: раздел объектов (sites) отсутствует или поврежден.');
+    }
+
+    for (let i = 0; i < data.sites.length; i++) {
+      const site = data.sites[i];
+      if (!site || typeof site !== 'object' || !site.name) {
+        throw new Error(`Ошибка структуры: объект #${i + 1} не содержит обязательного наименования.`);
+      }
+    }
+
+    // Проверяем остальные массивы (если они присутствуют)
+    if (data.materials && !Array.isArray(data.materials)) {
+      throw new Error('Ошибка структуры: раздел материалов поврежден (ожидался список).');
+    }
+    if (data.checklists && !Array.isArray(data.checklists)) {
+      throw new Error('Ошибка структуры: раздел чек-листов поврежден (ожидался список).');
+    }
+
+    return {
+      valid: true,
+      appName: data.appName || 'LIGA OS',
+      schemaVersion: data.schemaVersion || 1,
+      exportDate: data.exportDate || data.date || null,
+      sitesCount: data.sites.length,
+      materialsCount: Array.isArray(data.materials) ? data.materials.length : 0,
+      checklistsCount: Array.isArray(data.checklists) ? data.checklists.length : 0,
+      hasTariffs: Boolean(data.tariffSettings && typeof data.tariffSettings === 'object'),
+      raw: data
+    };
+  }
+
+  // Безопасное восстановление базы из резервной копии
+  async restoreFromBackup(jsonData) {
+    const metadata = this.validateBackup(jsonData);
+    const data = metadata.raw;
+
+    // Очищаем и восстанавливаем хранилища в IndexedDB с ожиданием реального завершения транзакций
+    const stores = ['sites', 'materials', 'checklists', 'finances', 'passports'];
+    
+    for (const s of stores) {
+      if (!this.db.objectStoreNames.contains(s)) continue;
+      const items = Array.isArray(data[s]) ? data[s] : [];
+      
+      await new Promise((resolve, reject) => {
+        const tx = this.db.transaction(s, 'readwrite');
+        const store = tx.objectStore(s);
+        const clearReq = store.clear();
+        
+        clearReq.onsuccess = () => {
+          for (const item of items) {
+            store.add(item);
+          }
+        };
+        clearReq.onerror = () => reject(clearReq.error);
+        
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(new Error(`Транзакция ${s} прервана`));
+      });
+    }
+
+    // Восстановление настроек тарифов (если есть в бэкапе)
+    if (metadata.hasTariffs) {
+      try {
+        localStorage.setItem('liga_tariff_settings_v1', JSON.stringify(data.tariffSettings));
+      } catch (e) {
+        console.warn('Не удалось восстановить тарифы в localStorage:', e);
+      }
+    }
+
+    return metadata;
   }
 }
 

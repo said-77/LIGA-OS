@@ -313,14 +313,14 @@
             <div class="item-right" style="font-size:12px;">Открыть ↗</div>
           </a>
 
-          <button id="btn-backup-finances" onclick="window.ligaDB.exportFullBackup()" class="item-row master-only" style="width:100%; border:none; background:var(--box-bg); cursor:pointer; text-align:left;">
+          <button id="btn-backup-finances" onclick="window.app.openModal('modal-backup-manager')" class="item-row master-only" style="width:100%; border:none; background:var(--box-bg); cursor:pointer; text-align:left;">
             <div class="item-left">
               <div class="item-name" style="display:flex; align-items:center; gap:6px; color:var(--neon-emerald);">
                 <span>💾</span> Резервная копия базы в JSON
               </div>
-              <div class="item-desc">Скачать полный бэкап всех объектов, чеков и фото на устройство</div>
+              <div class="item-desc">Сохранить копию или восстановить все объекты, чеки и фото</div>
             </div>
-            <div class="item-right" style="font-size:12px; color:var(--neon-emerald);">Скачать ↓</div>
+            <div class="item-right" style="font-size:12px; color:var(--neon-emerald);">Управление ↗</div>
           </button>
         </div>
       </div>
@@ -922,6 +922,79 @@
             ✓ Зафиксировать рекомендации в журнал
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: РЕЗЕРВНОЕ КОПИРОВАНИЕ И ВОССТАНОВЛЕНИЕ (P0-4)
+         ==================================================================== -->
+    <div id="modal-backup-manager" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>💾 Резервная копия базы (JSON)</span>
+          <button onclick="window.app.closeModal('modal-backup-manager')" class="btn-close-modal">&times;</button>
+        </div>
+
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.5;">
+          Полный снимок базы LIGA OS (объекты, сметы, чеки, фото, персональные тарифы мастера). Хранится локально на вашем смартфоне.
+        </div>
+
+        <!-- 1. Блок экспорта -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px;">
+            📤 Экспорт данных
+          </div>
+          <div id="backup-current-stats" style="font-size:12px; color:var(--text-main); margin-bottom:10px; line-height:1.4;">
+            Текущая база: загрузка статистики...
+          </div>
+          <button id="btn-do-backup-export" type="button" class="btn-submit-modal" style="height:44px; font-size:13px;">
+            📤 Сохранить / Отправить копию (.json)
+          </button>
+          <div style="font-size:11px; color:var(--text-dim); margin-top:6px; text-align:center;">
+            На смартфоне откроется системное меню отправки (Telegram, WhatsApp, Файлы).
+          </div>
+        </div>
+
+        <!-- 2. Блок восстановления -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:14px;">
+          <div style="font-size:12px; font-weight:800; color:var(--neon-cyan); text-transform:uppercase; margin-bottom:8px;">
+            📥 Восстановление из файла
+          </div>
+          <div style="font-size:12px; color:var(--text-main); margin-bottom:10px; line-height:1.4;">
+            Перенесите базу на новый смартфон или восстановите архивные объекты из файла резервной копии.
+          </div>
+
+          <input type="file" id="input-backup-file" accept=".json,application/json" style="display:none;">
+          <button id="btn-trigger-backup-file" type="button" class="btn-contact" style="width:100%; height:44px; font-size:13px; color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
+            📁 Выбрать файл резервной копии (.json)
+          </button>
+
+          <!-- Блок предпросмотра метаданных перед подтверждением -->
+          <div id="backup-preview-card" style="display:none; margin-top:14px; padding:12px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--radius-sm);">
+            <div style="font-size:12px; font-weight:800; color:var(--neon-amber); margin-bottom:6px;">
+              ⚠️ Проверка файла резервной копии:
+            </div>
+            <div id="backup-preview-details" style="font-size:12px; color:var(--text-main); line-height:1.5; margin-bottom:10px;">
+              <!-- Заполняется динамически -->
+            </div>
+            <div style="font-size:11px; color:var(--neon-ruby); font-weight:700; margin-bottom:10px;">
+              Внимание: Восстановление заменит текущие данные приложения данными из файла!
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btn-confirm-restore" type="button" class="btn-submit-modal" style="flex:1; height:42px; font-size:12px; background:var(--neon-amber); color:#000;">
+                ✓ Подтверждаю, восстановить
+              </button>
+              <button id="btn-cancel-restore" type="button" class="btn-subtle" style="padding:0 14px; height:42px; font-size:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:var(--text-muted); cursor:pointer;">
+                Отмена
+              </button>
+            </div>
+          </div>
+
+          <!-- Блок сообщения об ошибке валидации -->
+          <div id="backup-error-msg" style="display:none; margin-top:10px; font-size:12px; color:var(--neon-ruby); font-weight:700;">
+          </div>
+        </div>
+
       </div>
     </div>
 

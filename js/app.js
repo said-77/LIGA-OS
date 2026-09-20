@@ -31,6 +31,9 @@ class LigaApp {
     // Защита от дубликатов
     this.pendingDuplicateSave = null;
 
+    // Резервное копирование и восстановление (P0-4)
+    this.pendingRestoreData = null;
+
     // Цифровые расписки и подтверждения
     this.currentReceiptToVerify = null;
 
@@ -248,13 +251,32 @@ class LigaApp {
       btnPdf.addEventListener('click', () => this.generatePassport());
     }
 
-    // 3. Кнопка быстрого бэкапа базы в шапке
+    // 3. Менеджер резервного копирования и переноса базы (P0-4)
     const btnBackup = document.getElementById('btn-backup-top');
     if (btnBackup) {
-      btnBackup.addEventListener('click', async () => {
-        await window.ligaDB.exportFullBackup();
-        this.showToast('✓ Резервная копия базы сохранена!');
-      });
+      btnBackup.addEventListener('click', () => this.openBackupManager());
+    }
+
+    const btnExport = document.getElementById('btn-do-backup-export');
+    if (btnExport) {
+      btnExport.addEventListener('click', () => this.handleBackupExport());
+    }
+
+    const btnTriggerFile = document.getElementById('btn-trigger-backup-file');
+    const inputBackupFile = document.getElementById('input-backup-file');
+    if (btnTriggerFile && inputBackupFile) {
+      btnTriggerFile.addEventListener('click', () => inputBackupFile.click());
+      inputBackupFile.addEventListener('change', (e) => this.handleBackupFileSelect(e));
+    }
+
+    const btnConfirmRestore = document.getElementById('btn-confirm-restore');
+    if (btnConfirmRestore) {
+      btnConfirmRestore.addEventListener('click', () => this.confirmRestore());
+    }
+
+    const btnCancelRestore = document.getElementById('btn-cancel-restore');
+    if (btnCancelRestore) {
+      btnCancelRestore.addEventListener('click', () => this.resetRestorePreview());
     }
 
     // 4. Кнопки открытия модальных окон
@@ -1159,6 +1181,141 @@ ${itemsText}
     this.showToast('✓ Тарифы сброшены к базовым ориентирам');
   }
 
+  // ==========================================================================
+  // МЕНЕДЖЕР РЕЗЕРВНОГО КОПИРОВАНИЯ И ПЕРЕНОСА ДАННЫХ (P0-4)
+  // ==========================================================================
+  async openBackupManager() {
+    try {
+      const stats = await window.ligaDB.getStats();
+      const statsEl = document.getElementById('backup-current-stats');
+      if (statsEl) {
+        statsEl.innerHTML = `В локальной базе сохранено: <b>${stats.sitesCount}</b> объекта(ов), <b>${stats.materialsCount}</b> позиций материалов и чеков, <b>${stats.checklistsCount}</b> пунктов технадзора.`;
+      }
+    } catch (e) {
+      console.warn('Не удалось получить статистику базы:', e);
+    }
+
+    this.resetRestorePreview();
+    this.openModal('modal-backup-manager');
+  }
+
+  resetRestorePreview() {
+    this.pendingRestoreData = null;
+    const input = document.getElementById('input-backup-file');
+    if (input) input.value = '';
+    const previewCard = document.getElementById('backup-preview-card');
+    if (previewCard) previewCard.style.display = 'none';
+    const errEl = document.getElementById('backup-error-msg');
+    if (errEl) {
+      errEl.style.display = 'none';
+      errEl.innerText = '';
+    }
+  }
+
+  async handleBackupExport() {
+    try {
+      this.showToast('Формирование полной резервной копии базы...');
+      const res = await window.ligaDB.exportFullBackup();
+      if (res && res.success) {
+        if (res.method === 'share') {
+          this.showToast('✓ Меню отправки бэкапа открыто!');
+        } else {
+          this.showToast(`✓ Резервная копия «${res.fileName}» скачана!`);
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка экспорта бэкапа:', err);
+      alert('Не удалось создать резервную копию: ' + err.message);
+    }
+  }
+
+  handleBackupFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const previewCard = document.getElementById('backup-preview-card');
+      const detailsEl = document.getElementById('backup-preview-details');
+      const errEl = document.getElementById('backup-error-msg');
+
+      try {
+        const meta = window.ligaDB.validateBackup(content);
+        this.pendingRestoreData = content;
+
+        if (errEl) {
+          errEl.style.display = 'none';
+          errEl.innerText = '';
+        }
+
+        if (detailsEl) {
+          const dateFormatted = meta.exportDate 
+            ? new Date(meta.exportDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : 'Дата не указана';
+
+          detailsEl.innerHTML = `
+            <div><b>Приложение:</b> ${meta.appName} (схема v${meta.schemaVersion})</div>
+            <div><b>Дата архива:</b> ${dateFormatted}</div>
+            <div><b>Объектов:</b> ${meta.sitesCount} | <b>Материалов и чеков:</b> ${meta.materialsCount}</div>
+            <div><b>Пунктов технадзора:</b> ${meta.checklistsCount}</div>
+            <div><b>Тарифы мастера:</b> ${meta.hasTariffs ? '✓ Сохранены в файле' : 'По умолчанию'}</div>
+          `;
+        }
+
+        if (previewCard) {
+          previewCard.style.display = 'block';
+        }
+      } catch (err) {
+        this.pendingRestoreData = null;
+        if (previewCard) previewCard.style.display = 'none';
+        if (errEl) {
+          errEl.style.display = 'block';
+          errEl.innerText = `⚠️ ${err.message}`;
+        }
+      }
+    };
+
+    reader.onerror = () => {
+      alert('Ошибка чтения выбранного файла');
+    };
+
+    reader.readAsText(file);
+  }
+
+  async confirmRestore() {
+    if (!this.pendingRestoreData) {
+      alert('Файл резервной копии не выбран или поврежден');
+      return;
+    }
+
+    try {
+      this.showToast('Восстановление базы данных...');
+      const meta = await window.ligaDB.restoreFromBackup(this.pendingRestoreData);
+
+      // Перезагружаем объекты из базы
+      await this.loadSites();
+
+      // Перезагружаем тарифы
+      this.tariffSettings = this.loadTariffSettings();
+      const badge = document.getElementById('est-tariff-status');
+      if (badge) badge.innerText = this.tariffSettings.statusLabel;
+
+      // Сбрасываем и закрываем
+      this.resetRestorePreview();
+      this.closeModal('modal-backup-manager');
+
+      // Перерисовываем интерфейс
+      this.render();
+      this.calculateEstimate();
+
+      this.showToast(`✓ Восстановлено: ${meta.sitesCount} объекта(ов)!`);
+    } catch (err) {
+      console.error('Ошибка восстановления базы:', err);
+      alert('Не удалось восстановить базу: ' + err.message);
+    }
+  }
+
   updateEstimate(field, delta) {
     if (this.estimate[field] !== undefined) {
       this.estimate[field] = Math.max(0, this.estimate[field] + delta);
@@ -1795,7 +1952,7 @@ ${itemsText}
   }
 
   openModal(modalId) {
-    if (this.isClientMode && ['modal-master-guide', 'modal-tariffs', 'modal-payment', 'modal-receipt', 'modal-ai-audit'].includes(modalId)) {
+    if (this.isClientMode && ['modal-master-guide', 'modal-tariffs', 'modal-payment', 'modal-receipt', 'modal-ai-audit', 'modal-backup-manager'].includes(modalId)) {
       this.showToast('⚠️ Функция недоступна в режиме демонстрации');
       return;
     }
