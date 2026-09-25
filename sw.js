@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.2.8-radiator-heating-calculator';
+const CACHE_NAME = 'liga-os-v2.2.9-boiler-expansion-tank-calculator';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

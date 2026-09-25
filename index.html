@@ -180,6 +180,13 @@
               <div class="more-menu-desc">Лучевая разводка, секции и узлы подключения</div>
             </div>
           </button>
+          <button id="menu-item-boiler-calc" class="more-menu-item" type="button" onclick="window.app.openBoilerCalculator()">
+            <span class="more-menu-icon">⚡</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Бойлер & Расширительный бак</div>
+              <div class="more-menu-desc">Литраж ГВС, бак Reflex и группа безопасности</div>
+            </div>
+          </button>
         </div>
       </div>
     </div>
@@ -1014,6 +1021,11 @@
         <!-- Кнопка перехода в инженерный калькулятор радиаторного отопления -->
         <button id="btn-open-radiator-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #f97316; color:var(--text-main);" onclick="window.app.openRadiatorCalculator()">
           <span>🔥</span> Расчет радиаторов и лучевой разводки Rehau
+        </button>
+
+        <!-- Кнопка перехода в инженерный калькулятор бойлера и расширительного бака ГВС -->
+        <button id="btn-open-boiler-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #06b6d4; color:var(--text-main);" onclick="window.app.openBoilerCalculator()">
+          <span>⚡</span> Подбор бойлера, бака ГВС Reflex и рециркуляции
         </button>
       </div>
     </section>
@@ -2132,6 +2144,123 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8.4: ИНЖЕНЕРНЫЙ КАЛЬКУЛЯТОР БОЙЛЕРА И БАКА ГВС (v2.2.9)
+         Швейцарский стандарт: защита эмали бойлера, Reflex Refix, Caleffi 6 бар, Grundfos PM
+         ==================================================================== -->
+    <div id="modal-boiler-calculator" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>⚡ Бойлер & Расширительный бак ГВС</span>
+          <button onclick="window.app.closeModal('modal-boiler-calculator')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
+          Швейцарский инженерный подбор ГВС: расчет объема бойлера (БКН / Электро), мембранного расширительного бака Reflex Refix (защита от разрыва эмали бака) и насоса рециркуляции Grundfos PM.
+        </p>
+
+        <!-- Параметры водопотребления и нагревателя -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px;">
+            1. Параметры водопотребления и тип нагревателя:
+          </div>
+
+          <!-- Счетчик проживающих -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:var(--text-main);">Количество проживающих:</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Число постоянных пользователей ГВС</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" onclick="window.app.adjustBoilerResidents(-1)" class="btn-contact" style="width:34px; height:34px; padding:0; font-size:16px; font-weight:900;">-</button>
+              <span id="boiler-calc-residents-val" style="font-size:15px; font-weight:900; color:var(--gold-primary); min-width:35px; text-align:center;">4</span>
+              <span style="font-size:12px; color:var(--text-muted); margin-left:-4px;">чел</span>
+              <button type="button" onclick="window.app.adjustBoilerResidents(1)" class="btn-contact" style="width:34px; height:34px; padding:0; font-size:16px; font-weight:900;">+</button>
+            </div>
+          </div>
+
+          <!-- Выбор типа бойлера -->
+          <div style="margin-bottom:10px;">
+            <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Тип водонагревателя:</label>
+            <select id="boiler-calc-type-select" class="form-control" onchange="window.app.recalculateBoiler()" style="font-size:11.5px; padding:6px 8px;">
+              <option value="bkn" selected>Бойлер косвенного нагрева (БКН от котла • Drazice OKC / ACV, змеевик 24–32 кВт, нагрев 20 мин)</option>
+              <option value="electric">Электрический накопительный водонагреватель (Drazice OKCE / Stiebel Eltron, ТЭН 2.2–3.0 кВт)</option>
+            </select>
+          </div>
+
+          <!-- Чекбоксы специальных потребителей -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="boiler-calc-rain-shower" onchange="window.app.recalculateBoiler()" checked style="width:16px; height:16px;">
+              <span>🌧️ Тропический душ (пиковый расход >15 л/мин, запас +50 л)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="boiler-calc-big-bath" onchange="window.app.recalculateBoiler()" style="width:16px; height:16px;">
+              <span>🛁 Большая ванна (объем 200–300 л, разовый залп +50 л)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="boiler-calc-recirc" onchange="window.app.recalculateBoiler()" checked style="width:16px; height:16px;">
+              <span>🔄 Линия рециркуляции ГВС (мгновенная подача горячей воды без слива остывшей)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Результаты инженерного расчета ГВС -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase;">
+              2. Результаты расчета и подбор оборудования:
+            </div>
+            <div id="res-boiler-volume-badge" style="font-size:12px; font-weight:900; background:rgba(6,182,212,0.15); border:1px solid #06b6d4; color:#06b6d4; padding:3px 8px; border-radius:6px;">
+              Объем: 200 л
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+              <span style="color:var(--text-muted);">Рекомендуемый бойлер:</span>
+              <span id="res-boiler-volume" style="font-weight:800; color:var(--text-main); text-align:right;">200 литров</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+              <span style="color:var(--text-muted);">Модель водонагревателя:</span>
+              <span id="res-boiler-model" style="font-weight:800; color:var(--gold-primary); text-align:right; max-width:60%;">Drazice OKC 200 NTR/BP</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+              <span style="color:var(--text-muted);">Расширительный бак ГВС:</span>
+              <span id="res-boiler-tank" style="font-weight:800; color:#38bdf8; text-align:right; max-width:60%;">Reflex Refix DE 24 л (10 бар)</span>
+            </div>
+            <div style="background:rgba(56,189,248,0.06); border:1px dashed rgba(56,189,248,0.3); border-radius:6px; padding:6px 8px; font-size:10.5px; color:#bae6fd; line-height:1.35;">
+              🛡️ <span id="res-boiler-tank-physics">Тепловое расширение воды ~3.8% (7.6 л). Без бака давление превысит 6 бар и сорвет клапан! Бак Reflex спасает эмаль от разрыва.</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+              <span style="color:var(--text-muted);">Группа безопасности бойлера:</span>
+              <span id="res-boiler-safety-group" style="font-weight:800; color:var(--text-main); text-align:right; max-width:60%;">Caleffi 5261 3/4" (6.0 бар)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+              <span style="color:var(--text-muted);">Насос рециркуляции ГВС:</span>
+              <span id="res-boiler-recirc-pump" style="font-weight:800; color:var(--text-main); text-align:right; max-width:60%;">Grundfos Comfort 15-14 BA PM</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Подключение и диаметры:</span>
+              <span id="res-boiler-pipe-dia" style="font-weight:800; color:var(--text-main); text-align:right; max-width:60%;">Rehau Stabil 25 (3/4") / Рециркуляция 16/20</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-boiler-calc" onclick="window.app.copyBoilerCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать спецификацию для Telegram / Базара
+          </button>
+          <button id="btn-add-boiler-to-materials" onclick="window.app.addCalculatedBoilerToMaterials()" class="btn-submit-modal" style="background:linear-gradient(135deg, #059669 0%, #047857 100%); color:#fff; height:46px;">
+            📦 Добавить комплект ГВС на склад материалов
+          </button>
+          <button onclick="window.app.closeModal('modal-boiler-calculator')" class="btn-submit-modal" style="background:rgba(255,255,255,0.08); color:var(--text-main); height:40px; margin-top:2px;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -2815,11 +2944,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.2.8: Калькулятор радиаторного отопления и лучевой разводки) -->
-  <script src="./js/image_processor.js?v=2.2.8"></script>
-  <script src="./js/db.js?v=2.2.8"></script>
-  <script src="./js/pdf_engine.js?v=2.2.8"></script>
-  <script src="./js/ai_concierge.js?v=2.2.8"></script>
-  <script src="./js/app.js?v=2.2.8"></script>
+  <!-- Скрипты LIGA OS (Версия 2.2.9: Инженерный калькулятор бойлера и мембранного бака ГВС Reflex) -->
+  <script src="./js/image_processor.js?v=2.2.9"></script>
+  <script src="./js/db.js?v=2.2.9"></script>
+  <script src="./js/pdf_engine.js?v=2.2.9"></script>
+  <script src="./js/ai_concierge.js?v=2.2.9"></script>
+  <script src="./js/app.js?v=2.2.9"></script>
 </body>
 </html>

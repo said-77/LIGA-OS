@@ -3613,6 +3613,331 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций радиаторного отопления в список закупки на склад!`);
   }
 
+  // ==========================================================================
+  // РАСЧЕТ БОЙЛЕРА И МЕМБРАННОГО РАСШИРИТЕЛЬНОГО БАКА ГВС REFLEX (v2.2.9)
+  // 100% надежность: компенсация 3.8% теплового расширения, Caleffi 6 бар, Grundfos PM
+  // ==========================================================================
+  openBoilerCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.boilerCalc) {
+      this.boilerCalc = {
+        residents: 4,
+        type: 'bkn',
+        rainShower: true,
+        bigBath: false,
+        recirc: true
+      };
+    }
+    const resEl = document.getElementById('boiler-calc-residents-val');
+    const typeEl = document.getElementById('boiler-calc-type-select');
+    const rainEl = document.getElementById('boiler-calc-rain-shower');
+    const bathEl = document.getElementById('boiler-calc-big-bath');
+    const recircEl = document.getElementById('boiler-calc-recirc');
+
+    if (resEl) resEl.innerText = this.boilerCalc.residents;
+    if (typeEl) typeEl.value = this.boilerCalc.type;
+    if (rainEl) rainEl.checked = this.boilerCalc.rainShower;
+    if (bathEl) bathEl.checked = this.boilerCalc.bigBath;
+    if (recircEl) recircEl.checked = this.boilerCalc.recirc;
+
+    this.recalculateBoiler();
+    this.openModal('modal-boiler-calculator');
+  }
+
+  adjustBoilerResidents(delta) {
+    if (!this.boilerCalc) {
+      this.boilerCalc = { residents: 4, type: 'bkn', rainShower: true, bigBath: false, recirc: true };
+    }
+    this.boilerCalc.residents = Math.max(1, Math.min(8, (this.boilerCalc.residents || 4) + delta));
+    const resEl = document.getElementById('boiler-calc-residents-val');
+    if (resEl) resEl.innerText = this.boilerCalc.residents;
+    this.recalculateBoiler();
+  }
+
+  recalculateBoiler() {
+    if (!this.boilerCalc) {
+      this.boilerCalc = { residents: 4, type: 'bkn', rainShower: true, bigBath: false, recirc: true };
+    }
+    const typeEl = document.getElementById('boiler-calc-type-select');
+    const rainEl = document.getElementById('boiler-calc-rain-shower');
+    const bathEl = document.getElementById('boiler-calc-big-bath');
+    const recircEl = document.getElementById('boiler-calc-recirc');
+
+    const residents = this.boilerCalc.residents || 4;
+    const type = typeEl ? typeEl.value : this.boilerCalc.type;
+    const rainShower = rainEl ? rainEl.checked : this.boilerCalc.rainShower;
+    const bigBath = bathEl ? bathEl.checked : this.boilerCalc.bigBath;
+    const recirc = recircEl ? recircEl.checked : this.boilerCalc.recirc;
+
+    this.boilerCalc.type = type;
+    this.boilerCalc.rainShower = rainShower;
+    this.boilerCalc.bigBath = bigBath;
+    this.boilerCalc.recirc = recirc;
+
+    // Базовый расчет объема по числу жителей:
+    // Норматив: ~35-40 л горячей воды (60°C) на человека в сутки
+    let baseVol = 0;
+    if (type === 'bkn') {
+      // БКН имеет высокую скорость нагрева (мощность 24-32 кВт от котла), нагревается за 15-20 мин
+      if (residents <= 2) baseVol = 100;
+      else if (residents === 3) baseVol = 140;
+      else if (residents === 4) baseVol = 160;
+      else if (residents <= 6) baseVol = 200;
+      else baseVol = 250;
+    } else {
+      // Электрический накопительный водонагреватель (ТЭН 2.0-2.5 кВт греет 2.5-4 часа) - запас воды больше
+      if (residents === 1) baseVol = 80;
+      else if (residents === 2) baseVol = 100;
+      else if (residents === 3) baseVol = 120;
+      else if (residents === 4) baseVol = 150;
+      else if (residents <= 6) baseVol = 200;
+      else baseVol = 250;
+    }
+
+    // Корректировки на сантехприборы
+    let extraVol = 0;
+    if (rainShower) extraVol += 50;
+    if (bigBath) extraVol += 50;
+
+    const rawTotalVol = baseVol + extraVol;
+
+    // Округление до стандартного коммерческого типоряда бойлеров (80, 100, 120, 160, 200, 250, 300 л)
+    let nominalVol = 100;
+    if (rawTotalVol <= 80) nominalVol = 80;
+    else if (rawTotalVol <= 100) nominalVol = 100;
+    else if (rawTotalVol <= 130) nominalVol = 120;
+    else if (rawTotalVol <= 170) nominalVol = 160;
+    else if (rawTotalVol <= 220) nominalVol = 200;
+    else if (rawTotalVol <= 270) nominalVol = 250;
+    else nominalVol = 300;
+
+    // Подбор конкретной модели
+    let boilerModel = '';
+    let boilerPrice = 0;
+    if (type === 'bkn') {
+      boilerModel = `Бойлер косвенного нагрева Drazice OKC ${nominalVol} NTR/BP (змеевик 24–32 кВт, напольный)`;
+      boilerPrice = nominalVol <= 120 ? 5800000 : (nominalVol <= 160 ? 6900000 : (nominalVol <= 200 ? 8400000 : 10800000));
+    } else {
+      boilerModel = `Электрический водонагреватель Drazice OKCE ${nominalVol} (сухой керамический ТЭН 2.2 кВт)`;
+      boilerPrice = nominalVol <= 100 ? 3600000 : (nominalVol <= 120 ? 4200000 : (nominalVol <= 160 ? 5100000 : 6400000));
+    }
+
+    // Расчет расширительного мембранного бака ГВС (Reflex Refix DE / Zilmet Hydro-Pro):
+    // Тепловое расширение воды 3.8%. Коэффициент полезного объема мембраны k ~ 0.38
+    // Минимальный объем бака: V_tank >= V_boiler * 0.10 (10% от объема бойлера)
+    const deltaWaterExpansion = Number((nominalVol * 0.038).toFixed(1));
+    let tankVolume = 12;
+    let tankPrice = 450000;
+    if (nominalVol <= 100) {
+      tankVolume = 12;
+      tankPrice = 450000;
+    } else if (nominalVol <= 160) {
+      tankVolume = 18;
+      tankPrice = 580000;
+    } else if (nominalVol <= 220) {
+      tankVolume = 24;
+      tankPrice = 720000;
+    } else {
+      tankVolume = 35;
+      tankPrice = 960000;
+    }
+
+    const tankModel = `Reflex Refix DE ${tankVolume} л (синий/белый, питьевая EPDM, PN10, преддавление 3.3 бар)`;
+    const physicsExplanation = `Тепловое расширение воды ~3.8% (${deltaWaterExpansion} л). Без бака давление превысит 6 бар и сорвет клапан! Бак Reflex спасает эмаль от разрыва.`;
+
+    // Группа безопасности
+    const safetyGroupModel = `Caleffi 5261 3/4" (сбросной клапан 6.0 бар, обратный клапан, воронка с разрывом струи)`;
+    const safetyGroupPrice = 680000;
+
+    // Насос рециркуляции
+    let recircPumpModel = '';
+    let recircPumpPrice = 0;
+    if (recirc) {
+      recircPumpModel = `Grundfos Comfort 15-14 BA PM (энергоэффективный с автоадаптацией, корпус бронза)`;
+      recircPumpPrice = 1650000;
+    } else {
+      recircPumpModel = `Не требуется (без рециркуляционного кольца)`;
+      recircPumpPrice = 0;
+    }
+
+    // Диаметры труб
+    const pipeDiaText = nominalVol >= 200
+      ? `Rehau Rautitan Stabil 25 (3/4") на ввод ХВС и подачу ГВС, рециркуляция 16/20`
+      : `Rehau Rautitan Stabil 20 (1/2") на ввод ХВС и подачу ГВС, рециркуляция 16`;
+
+    // Сохраняем расчет для экспорта
+    this.currentCalculatedBoiler = {
+      residents,
+      type,
+      rainShower,
+      bigBath,
+      recirc,
+      nominalVol,
+      boilerModel,
+      boilerPrice,
+      tankVolume,
+      tankModel,
+      tankPrice,
+      deltaWaterExpansion,
+      physicsExplanation,
+      safetyGroupModel,
+      safetyGroupPrice,
+      recircPumpModel,
+      recircPumpPrice,
+      pipeDiaText
+    };
+
+    // Обновляем DOM
+    const badgeEl = document.getElementById('res-boiler-volume-badge');
+    const volEl = document.getElementById('res-boiler-volume');
+    const modelEl = document.getElementById('res-boiler-model');
+    const tankEl = document.getElementById('res-boiler-tank');
+    const physEl = document.getElementById('res-boiler-tank-physics');
+    const safetyEl = document.getElementById('res-boiler-safety-group');
+    const pumpEl = document.getElementById('res-boiler-recirc-pump');
+    const pipeEl = document.getElementById('res-boiler-pipe-dia');
+
+    if (badgeEl) badgeEl.innerText = `Объем: ${nominalVol} л`;
+    if (volEl) {
+      let note = [];
+      if (rainShower) note.push('тропический душ');
+      if (bigBath) note.push('ванна');
+      volEl.innerText = `${nominalVol} литров ${note.length > 0 ? '(' + note.join(' + ') + ')' : ''}`;
+    }
+    if (modelEl) modelEl.innerText = boilerModel;
+    if (tankEl) tankEl.innerText = tankModel;
+    if (physEl) physEl.innerText = physicsExplanation;
+    if (safetyEl) safetyEl.innerText = safetyGroupModel;
+    if (pumpEl) pumpEl.innerText = recircPumpModel;
+    if (pipeEl) pipeEl.innerText = pipeDiaText;
+  }
+
+  async copyBoilerCalculation() {
+    const b = this.currentCalculatedBoiler;
+    if (!b) return;
+
+    const report = `⚡ ИНЖЕНЕРНЫЙ РАСЧЕТ БОЙЛЕРА И СИСТЕМЫ ГВС
+«Лига Опытных Мастеров» • Стандарт безаварийного водоснабжения (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+
+📍 Проживающих: ${b.residents} чел
+🚿 Потребители: ${b.rainShower ? '🌧️ Тропический душ (+50 л) | ' : ''}${b.bigBath ? '🛁 Большая ванна (+50 л) | ' : ''}${b.recirc ? '🔄 Рециркуляция включена' : 'Без рециркуляции'}
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Водонагреватель: ${b.boilerModel}
+2. Расширительный мембранный бак ГВС: ${b.tankModel}
+3. Физика компенсации: ${b.physicsExplanation}
+4. Группа безопасности бойлера: ${b.safetyGroupModel}
+5. Насос рециркуляции ГВС: ${b.recircPumpModel}
+6. Диаметры трубной обвязки: ${b.pipeDiaText}
+
+🛡️ 100% ЗАЩИТА ЭМАЛИ БОЙЛЕРА:
+Расширительный бак ГВС Reflex Refix объемом 10% от бойлера полностью гасит тепловое расширение воды при нагреве (3.8%), предотвращая постоянный срыв клапана и микротрещины эмали!
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет бойлера и бака ГВС скопирован для Telegram / Базара!');
+    } catch (e) {
+      this.showToast('✓ Расчет оборудования ГВС сформирован!');
+    }
+  }
+
+  async addCalculatedBoilerToMaterials() {
+    const b = this.currentCalculatedBoiler;
+    if (!b) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [];
+
+    // 1. Водонагреватель
+    itemsToAdd.push({
+      category: 'boilers',
+      name: b.boilerModel,
+      qty: '1 шт',
+      price: b.boilerPrice,
+      isPurchased: false
+    });
+
+    // 2. Расширительный бак Reflex
+    itemsToAdd.push({
+      category: 'tanks',
+      name: `Мембранный бак ГВС: ${b.tankModel}`,
+      qty: '1 шт',
+      price: b.tankPrice,
+      isPurchased: false
+    });
+
+    // 3. Кронштейн крепления бака
+    itemsToAdd.push({
+      category: 'fittings',
+      name: `Настенный кронштейн крепления мембранного бака Reflex с отсечным клапаном 3/4"`,
+      qty: '1 шт',
+      price: 180000,
+      isPurchased: false
+    });
+
+    // 4. Группа безопасности Caleffi / Watts
+    itemsToAdd.push({
+      category: 'valves',
+      name: `Группа безопасности бойлера: ${b.safetyGroupModel}`,
+      qty: '1 шт',
+      price: b.safetyGroupPrice,
+      isPurchased: false
+    });
+
+    // 5. Насос рециркуляции (если включен)
+    if (b.recirc && b.recircPumpPrice > 0) {
+      itemsToAdd.push({
+        category: 'pumps',
+        name: `Насос рециркуляции ГВС: ${b.recircPumpModel}`,
+        qty: '1 шт',
+        price: b.recircPumpPrice,
+        isPurchased: false
+      });
+      itemsToAdd.push({
+        category: 'valves',
+        name: `Обратный клапан ITAP Europa 1/2" (нерж тарелка) для линии рециркуляции ГВС`,
+        qty: '1 шт',
+        price: 95000,
+        isPurchased: false
+      });
+    }
+
+    // 6. Комплект трубной обвязки Rehau Stabil
+    itemsToAdd.push({
+      category: 'pipes',
+      name: `Труба Rehau Rautitan Stabil для обвязки бойлера ГВС (${b.nominalVol >= 200 ? '25×3.7' : '20×2.9'})`,
+      qty: '15 м',
+      price: b.nominalVol >= 200 ? 15 * 42000 : 15 * 31000,
+      isPurchased: false
+    });
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-boiler-calculator');
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций ГВС и оборудования бойлера в список закупки на склад!`);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -4079,6 +4404,14 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         target: 'openRadiatorCalculator',
         title: '🔥 Инструмент: Калькулятор радиаторного отопления',
         desc: 'Открываю расчет радиаторов, лучевой разводки Rehau и узлов нижнего подключения...'
+      };
+    }
+    if ((lower.includes('бойлер') || lower.includes('водонагревател') || lower.includes('расширительн') || lower.includes('рециркуляци') || lower.includes('бак гвс')) && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openBoilerCalculator',
+        title: '⚡ Инструмент: Калькулятор бойлера и бака ГВС',
+        desc: 'Открываю расчет объема бойлера, мембранного бака Reflex и рециркуляции ГВС...'
       };
     }
 
