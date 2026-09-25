@@ -3351,6 +3351,268 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций теплого пола в список закупки на склад!`);
   }
 
+  // ==========================================================================
+  // РАСЧЕТ РАДИАТОРНОГО ОТОПЛЕНИЯ И ЛУЧЕВОЙ РАЗВОДКИ REHAU (v2.2.8)
+  // 100% герметичность: без тройников в стяжке, коллекторная схема FAR
+  // ==========================================================================
+  openRadiatorCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.radiatorCalc) {
+      this.radiatorCalc = {
+        count: 5,
+        type: 'bimetal',
+        roomArea: '16',
+        connection: 'wall',
+        cornerBoost: true
+      };
+    }
+    const countEl = document.getElementById('rad-calc-count-val');
+    const typeEl = document.getElementById('rad-calc-type-select');
+    const areaEl = document.getElementById('rad-calc-room-area-select');
+    const connEl = document.getElementById('rad-calc-connection-select');
+    const boostEl = document.getElementById('rad-calc-corner-boost');
+
+    if (countEl) countEl.innerText = this.radiatorCalc.count;
+    if (typeEl) typeEl.value = this.radiatorCalc.type;
+    if (areaEl) areaEl.value = this.radiatorCalc.roomArea;
+    if (connEl) connEl.value = this.radiatorCalc.connection;
+    if (boostEl) boostEl.checked = this.radiatorCalc.cornerBoost;
+
+    this.recalculateRadiators();
+    this.openModal('modal-radiator-calculator');
+  }
+
+  adjustRadiatorCount(delta) {
+    if (!this.radiatorCalc) {
+      this.radiatorCalc = { count: 5, type: 'bimetal', roomArea: '16', connection: 'wall', cornerBoost: true };
+    }
+    this.radiatorCalc.count = Math.max(1, Math.min(16, (this.radiatorCalc.count || 5) + delta));
+    const countEl = document.getElementById('rad-calc-count-val');
+    if (countEl) countEl.innerText = this.radiatorCalc.count;
+    this.recalculateRadiators();
+  }
+
+  recalculateRadiators() {
+    if (!this.radiatorCalc) {
+      this.radiatorCalc = { count: 5, type: 'bimetal', roomArea: '16', connection: 'wall', cornerBoost: true };
+    }
+    const typeEl = document.getElementById('rad-calc-type-select');
+    const areaEl = document.getElementById('rad-calc-room-area-select');
+    const connEl = document.getElementById('rad-calc-connection-select');
+    const boostEl = document.getElementById('rad-calc-corner-boost');
+
+    const count = this.radiatorCalc.count;
+    const type = typeEl ? typeEl.value : this.radiatorCalc.type;
+    const roomArea = areaEl ? parseInt(areaEl.value) : parseInt(this.radiatorCalc.roomArea || '16');
+    const connection = connEl ? connEl.value : this.radiatorCalc.connection;
+    const cornerBoost = boostEl ? boostEl.checked : this.radiatorCalc.cornerBoost;
+
+    this.radiatorCalc.type = type;
+    this.radiatorCalc.roomArea = String(roomArea);
+    this.radiatorCalc.connection = connection;
+    this.radiatorCalc.cornerBoost = cornerBoost;
+
+    // Удельные теплопотери климата Ташкента
+    const q = cornerBoost ? 110 : 90; // Вт/м2
+    const powerPerRad = roomArea * q; // Вт
+    const totalPowerKw = Number(((powerPerRad * count) / 1000).toFixed(1));
+
+    // Подбор отопительных приборов
+    let unitsSummaryText = '';
+    let sectionsPerRad = 0;
+    let totalSections = 0;
+    let panelLenMm = 0;
+
+    if (type === 'bimetal') {
+      sectionsPerRad = Math.max(4, Math.ceil(powerPerRad / 150));
+      totalSections = sectionsPerRad * count;
+      unitsSummaryText = `${count} биметалл-радиаторов по ${sectionsPerRad} секций (всего ${totalSections} секций)`;
+    } else {
+      panelLenMm = Math.max(600, Math.min(1400, Math.ceil((powerPerRad / 1900) * 10) * 100));
+      unitsSummaryText = `${count} стальных панелей Kermi/Buderus тип 22 (высота 500 мм, длина ${panelLenMm} мм)`;
+    }
+
+    // Метраж трубы Rehau Rautitan Stabil 16х2.6 (в среднем 28 м на радиатор туда-обратно)
+    const pipeMeters = count * 28;
+
+    // Коллекторная группа FAR 1"
+    const manifoldText = `FAR 1" на ${count} выходов (подача + обратка, Евроконус 3/4")`;
+
+    // Узлы подключения (бинокли) и термоголовки
+    const valvesText = `${count} комплектов узлов нижнего подключения FAR / Danfoss 3/4"`;
+    const thermostatsText = `${count} шт Danfoss (с жидкостным датчиком)`;
+
+    // Трубки из стены
+    const tubesRehauText = connection === 'wall'
+      ? `${count * 2} шт (хромированные L-образные Rehau 16/250 мм)`
+      : 'Не требуются (прямое подключение из пола)';
+
+    // Сохраняем расчет для экспорта
+    this.currentCalculatedRadiators = {
+      count,
+      type,
+      roomArea,
+      connection,
+      cornerBoost,
+      totalPowerKw,
+      unitsSummaryText,
+      sectionsPerRad,
+      totalSections,
+      panelLenMm,
+      pipeMeters,
+      manifoldText,
+      valvesText,
+      tubesRehauText,
+      thermostatsText
+    };
+
+    // Обновляем DOM
+    const powerEl = document.getElementById('rad-calc-total-power');
+    const unitsEl = document.getElementById('res-rad-units-summary');
+    const manEl = document.getElementById('res-rad-manifold');
+    const pipeEl = document.getElementById('res-rad-pipe-meters');
+    const valvesEl = document.getElementById('res-rad-valves-count');
+    const tubesEl = document.getElementById('res-rad-tubes-rehau');
+    const thermEl = document.getElementById('res-rad-thermostats');
+
+    if (powerEl) powerEl.innerText = `~${totalPowerKw} кВт`;
+    if (unitsEl) unitsEl.innerText = unitsSummaryText;
+    if (manEl) manEl.innerText = manifoldText;
+    if (pipeEl) pipeEl.innerText = `~${pipeMeters} метров (в защитной гофре)`;
+    if (valvesEl) valvesEl.innerText = valvesText;
+    if (tubesEl) tubesEl.innerText = tubesRehauText;
+    if (thermEl) thermEl.innerText = thermostatsText;
+  }
+
+  async copyRadiatorCalculation() {
+    const r = this.currentCalculatedRadiators;
+    if (!r) return;
+
+    const report = `🔥 ИНЖЕНЕРНЫЙ РАСЧЕТ РАДИАТОРНОГО ОТОПЛЕНИЯ
+«Лига Опытных Мастеров» • Лучевая разводка Rehau Stabil (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+
+📍 Количество приборов: ${r.count} шт (ср. площадь: ${r.roomArea} м²)
+⚡ Суммарная расчетная мощность: ~${r.totalPowerKw} кВт ${r.cornerBoost ? '(запас на углы/витражи включен)' : ''}
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Отопительные приборы: ${r.unitsSummaryText}
+2. Коллектор отопления: ${r.manifoldText}
+3. Труба Rehau Rautitan Stabil 16×2.6: ~${r.pipeMeters} м (в красной/синей гофре)
+4. Узлы нижнего подключения: ${r.valvesText}
+5. Подключение из стены: ${r.tubesRehauText}
+6. Терморегулирование: ${r.thermostatsText}
+
+🛡️ 100% ЗАЩИТА ОТ ПРОТЕЧЕК В СТЯЖКЕ:
+Лучевая разводка Rehau без единого тройника под полом. Каждая ветка неразрывна от коллектора до радиатора!
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет радиаторов скопирован для Telegram / Базара!');
+    } catch (e) {
+      this.showToast('✓ Расчет радиаторов сформирован!');
+    }
+  }
+
+  async addCalculatedRadiatorsToMaterials() {
+    const r = this.currentCalculatedRadiators;
+    if (!r) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [];
+
+    // Приборы отопления
+    if (r.type === 'bimetal') {
+      itemsToAdd.push({
+        category: 'radiators',
+        name: `Радиатор биметаллический Global / Rifar Monolit 500 (${r.totalSections} секций, ${r.count} шт)`,
+        qty: `${r.totalSections} секций`,
+        price: r.totalSections * 165000,
+        isPurchased: false
+      });
+    } else {
+      itemsToAdd.push({
+        category: 'radiators',
+        name: `Стальные панельные радиаторы Kermi / Buderus Тип 22 (L=${r.panelLenMm} мм)`,
+        qty: `${r.count} шт`,
+        price: r.count * 1450000,
+        isPurchased: false
+      });
+    }
+
+    // Труба Rehau Stabil
+    itemsToAdd.push({
+      category: 'pipes',
+      name: `Труба Rehau Rautitan Stabil 16×2.6 (лучи радиаторов в гофре)`,
+      qty: `${r.pipeMeters} м`,
+      price: r.pipeMeters * 24000,
+      isPurchased: false
+    });
+
+    // Коллектор отопления
+    itemsToAdd.push({
+      category: 'collectors',
+      name: `Коллекторная группа радиаторов: ${r.manifoldText}`,
+      qty: '1 компл',
+      price: 850000 + (r.count * 95000),
+      isPurchased: false
+    });
+
+    // Узлы нижнего подключения (бинокли)
+    itemsToAdd.push({
+      category: 'fittings',
+      name: `Узлы нижнего подключения со встроенным байпасом (бинокли FAR / Danfoss)`,
+      qty: `${r.count} шт`,
+      price: r.count * 185000,
+      isPurchased: false
+    });
+
+    // Термоголовки Danfoss
+    itemsToAdd.push({
+      category: 'fittings',
+      name: `Термостатические головки Danfoss с жидкостным датчиком`,
+      qty: `${r.count} шт`,
+      price: r.count * 140000,
+      isPurchased: false
+    });
+
+    // Трубки Rehau из стены (если выбрано из стены)
+    if (r.connection === 'wall') {
+      itemsToAdd.push({
+        category: 'fittings',
+        name: `Г-образные хромированные трубки Rehau 16/250 мм (подключение из стены)`,
+        qty: `${r.count * 2} шт`,
+        price: r.count * 2 * 95000,
+        isPurchased: false
+      });
+    }
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-radiator-calculator');
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций радиаторного отопления в список закупки на склад!`);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -3809,6 +4071,14 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         target: 'openFloorCalculator',
         title: '♨️ Инструмент: Калькулятор теплого пола и НСУ',
         desc: 'Открываю расчет петель, бухт и смесительного узла (увязка петель <= 75-80 м)...'
+      };
+    }
+    if ((lower.includes('радиатор') && !lower.includes('купил')) || lower.includes('калькулятор радиатор') || lower.includes('расчет радиатор') || lower.includes('подбор радиатор') || lower.includes('посчитай радиатор') || lower.includes('лучевая разводка') || lower.includes('секции радиатор') || lower.includes('биметалл') || lower.includes('панельные радиатор')) {
+      return {
+        type: 'direct_func',
+        target: 'openRadiatorCalculator',
+        title: '🔥 Инструмент: Калькулятор радиаторного отопления',
+        desc: 'Открываю расчет радиаторов, лучевой разводки Rehau и узлов нижнего подключения...'
       };
     }
 

@@ -173,6 +173,13 @@
               <div class="more-menu-desc">Расчет петель, бухт и смесительного узла</div>
             </div>
           </button>
+          <button id="menu-item-radiator-calc" class="more-menu-item" type="button" onclick="window.app.openRadiatorCalculator()">
+            <span class="more-menu-icon">🔥</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Калькулятор радиаторов</div>
+              <div class="more-menu-desc">Лучевая разводка, секции и узлы подключения</div>
+            </div>
+          </button>
         </div>
       </div>
     </div>
@@ -1002,6 +1009,11 @@
         <!-- Кнопка перехода в инженерный калькулятор теплого пола и отопления -->
         <button id="btn-open-floor-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #ef4444; color:var(--text-main);" onclick="window.app.openFloorCalculator()">
           <span>♨️</span> Теплотехнический расчет теплого пола и НСУ
+        </button>
+
+        <!-- Кнопка перехода в инженерный калькулятор радиаторного отопления -->
+        <button id="btn-open-radiator-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #f97316; color:var(--text-main);" onclick="window.app.openRadiatorCalculator()">
+          <span>🔥</span> Расчет радиаторов и лучевой разводки Rehau
         </button>
       </div>
     </section>
@@ -1992,6 +2004,134 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8.3: РАСЧЕТ РАДИАТОРНОГО ОТОПЛЕНИЯ И ЛУЧЕВОЙ РАЗВОДКИ
+         Швейцарский стандарт: лучевая схема Rehau Stabil, без тройников в полу
+         ==================================================================== -->
+    <div id="modal-radiator-calculator" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>🔥 Радиаторы & Лучевая разводка</span>
+          <button onclick="window.app.closeModal('modal-radiator-calculator')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
+          Швейцарский расчет коллекторного радиаторного отопления: лучевая разводка трубой Rehau Rautitan Stabil без тройников в полу, подбор секций/панелей и узлов нижнего подключения.
+        </p>
+
+        <!-- Параметры радиаторов и помещений -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px;">
+            1. Количество радиаторов и параметры комнат:
+          </div>
+
+          <!-- Счетчик радиаторов -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:var(--text-main);">Количество радиаторов:</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Число отопительных приборов на объекте</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" onclick="window.app.adjustRadiatorCount(-1)" class="btn-contact" style="width:34px; height:34px; padding:0; font-size:16px; font-weight:900;">-</button>
+              <span id="rad-calc-count-val" style="font-size:15px; font-weight:900; color:var(--gold-primary); min-width:40px; text-align:center;">5</span>
+              <span style="font-size:12px; color:var(--text-muted); margin-left:-4px;">шт</span>
+              <button type="button" onclick="window.app.adjustRadiatorCount(1)" class="btn-contact" style="width:34px; height:34px; padding:0; font-size:16px; font-weight:900;">+</button>
+            </div>
+          </div>
+
+          <!-- Выбор типа радиаторов -->
+          <div style="margin-bottom:10px;">
+            <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Тип отопительных приборов:</label>
+            <select id="rad-calc-type-select" class="form-control" onchange="window.app.recalculateRadiators()" style="font-size:11.5px; padding:6px 8px;">
+              <option value="bimetal" selected>Биметалл секционный (Global Style Plus / Rifar Monolit 500) • 185 Вт/секция</option>
+              <option value="panel">Стальные панельные радиаторы (Kermi FKV / Buderus Тип 22) • нижнее подключение</option>
+            </select>
+          </div>
+
+          <!-- Средняя площадь на 1 радиатор и опция подключения -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;">
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Ср. площадь на радиатор:</label>
+              <select id="rad-calc-room-area-select" class="form-control" onchange="window.app.recalculateRadiators()" style="font-size:11.5px; padding:6px 8px;">
+                <option value="12">12 м² (Спальня)</option>
+                <option value="16" selected>16 м² (Стандарт)</option>
+                <option value="22">22 м² (Гостиная)</option>
+                <option value="30">30 м² (Большой зал)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Вывод подключения:</label>
+              <select id="rad-calc-connection-select" class="form-control" onchange="window.app.recalculateRadiators()" style="font-size:11.5px; padding:6px 8px;">
+                <option value="wall" selected>Из стены (хром Rehau Г-образные)</option>
+                <option value="floor">Из пола (прямой узел)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Чекбокс панорамных окон / угловых комнат -->
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="rad-calc-corner-boost" onchange="window.app.recalculateRadiators()" checked style="width:16px; height:16px;">
+              <span>🪟 Угловые комнаты / панорамное остекление (+20% запас мощности)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- РЕЗУЛЬТАТЫ РАСЧЕТА РАДИАТОРНОГО ОТОПЛЕНИЯ -->
+        <div style="background:rgba(212,163,89,0.08); border:1.5px solid var(--gold-primary); border-radius:var(--radius-md); padding:14px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:900; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>📐 Инженерная спецификация радиаторов:</span>
+            <span id="rad-calc-total-power" style="font-size:11px; color:var(--neon-emerald); font-weight:800;">~9.6 кВт</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Отопительные приборы:</span>
+              <span id="res-rad-units-summary" style="font-weight:900; color:var(--gold-primary);">5 радиаторов по 10 секций (всего 50 секций)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Коллектор радиаторов (FAR 1" Евроконус):</span>
+              <span id="res-rad-manifold" style="font-weight:800; color:var(--text-main);">FAR 1" на 5 выходов (подача + обратка)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Труба Rehau Rautitan Stabil 16×2.6:</span>
+              <span id="res-rad-pipe-meters" style="font-weight:800; color:var(--neon-cyan);">~140 метров (в защитной гофре)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Узлы подключения (бинокли FAR/Danfoss):</span>
+              <span id="res-rad-valves-count" style="font-weight:800; color:var(--text-main);">5 комплектов нижнего подключения</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Трубки Rehau из стены (хром):</span>
+              <span id="res-rad-tubes-rehau" style="font-weight:800; color:var(--neon-emerald);">10 шт (L-образные 16/250 мм)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Термостатические головки Danfoss:</span>
+              <span id="res-rad-thermostats" style="font-weight:800; color:var(--text-main);">5 шт (с жидкостным датчиком)</span>
+            </div>
+          </div>
+
+          <!-- Индикатор надежности лучевой схемы -->
+          <div style="margin-top:10px; padding:8px 10px; background:rgba(0,168,107,0.12); border:1px solid rgba(0,168,107,0.3); border-radius:6px; font-size:10.5px; color:#10b981; line-height:1.35;">
+            🛡️ <strong>100% защита от протечек в стяжке:</strong><br>
+            Лучевая схема Rehau исключает любые соединения и фитинги под полом. Каждая ветка цельная от коллектора до радиатора!
+          </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-rad-calc" onclick="window.app.copyRadiatorCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать спецификацию для Telegram / Базара
+          </button>
+          <button id="btn-add-rad-to-materials" onclick="window.app.addCalculatedRadiatorsToMaterials()" class="btn-submit-modal" style="background:linear-gradient(135deg, #059669 0%, #047857 100%); color:#fff; height:46px;">
+            📦 Добавить комплект радиаторов на склад материалов
+          </button>
+          <button onclick="window.app.closeModal('modal-radiator-calculator')" class="btn-submit-modal" style="background:rgba(255,255,255,0.08); color:var(--text-main); height:40px; margin-top:2px;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -2675,11 +2815,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.2.7: Калькулятор теплого пола и смесительного узла) -->
-  <script src="./js/image_processor.js?v=2.2.7"></script>
-  <script src="./js/db.js?v=2.2.7"></script>
-  <script src="./js/pdf_engine.js?v=2.2.7"></script>
-  <script src="./js/ai_concierge.js?v=2.2.7"></script>
-  <script src="./js/app.js?v=2.2.7"></script>
+  <!-- Скрипты LIGA OS (Версия 2.2.8: Калькулятор радиаторного отопления и лучевой разводки) -->
+  <script src="./js/image_processor.js?v=2.2.8"></script>
+  <script src="./js/db.js?v=2.2.8"></script>
+  <script src="./js/pdf_engine.js?v=2.2.8"></script>
+  <script src="./js/ai_concierge.js?v=2.2.8"></script>
+  <script src="./js/app.js?v=2.2.8"></script>
 </body>
 </html>
