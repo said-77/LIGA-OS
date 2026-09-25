@@ -766,6 +766,7 @@ class LigaApp {
     // 10.4 Меню «⋯ Ещё» и фиксация факта за 3 секунды (v2.0.9 «Нулевая рутина»)
     this.initMoreMenu();
     this.initSettingsModal();
+    this.initBlockCustomization();
     this.initQuickFactAction();
     // 10.5 Плавающий микрофон, голосовое заполнение объекта и Telegram-отчет
     this.initHandsFreeVoice();
@@ -4331,6 +4332,100 @@ ${itemsText}
   // ==========================================================================
   // НАСТРОЙКИ LIGA OS И ВОССТАНОВЛЕНИЕ ПОДСКАЗКИ (v2.2.1)
   // ==========================================================================
+  // ==========================================================================
+  // КАСТОМИЗАЦИЯ БЛОКОВ ДАШБОРДА (v2.2.2 «Свободный выбор мастера»)
+  // ==========================================================================
+  initBlockCustomization() {
+    const blocks = [
+      { id: 'radar', toggleId: 'toggle-block-radar', elementId: 'site-chrono-radar' },
+      { id: 'nextaction', toggleId: 'toggle-block-nextaction', elementId: 'site-next-action-card' },
+      { id: 'fact', toggleId: 'toggle-block-fact', elementId: 'quick-fact-action-box' },
+      { id: 'timeline', toggleId: 'toggle-block-timeline', elementId: 'dashboard-timeline-preview-card' },
+      { id: 'finances', toggleId: 'toggle-block-finances', elementId: 'dashboard-finances-card' },
+      { id: 'quickactions', toggleId: 'toggle-block-quickactions', elementId: 'dashboard-quick-actions-box' }
+    ];
+
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem('liga_blocks_visibility') || '{}');
+    } catch (e) {
+      saved = {};
+    }
+
+    blocks.forEach(({ id, toggleId, elementId }) => {
+      const toggle = document.getElementById(toggleId);
+      const el = document.getElementById(elementId);
+      const isVisible = saved[id] !== false; // По умолчанию все включены
+
+      if (toggle) {
+        toggle.checked = isVisible;
+        toggle.addEventListener('change', () => {
+          this.setBlockVisibility(id, toggle.checked, elementId);
+        });
+      }
+
+      if (el && !isVisible) {
+        el.style.display = 'none';
+      }
+    });
+
+    const btnMinimal = document.getElementById('btn-preset-minimal');
+    if (btnMinimal) {
+      btnMinimal.addEventListener('click', () => {
+        const minimalConfig = {
+          radar: false,
+          nextaction: false,
+          fact: true,
+          timeline: false,
+          finances: true,
+          quickactions: true
+        };
+        this.applyBlocksPreset(minimalConfig, blocks);
+        this.showToast('⚡ Включен экспресс-минимализм');
+      });
+    }
+
+    const btnFull = document.getElementById('btn-preset-full');
+    if (btnFull) {
+      btnFull.addEventListener('click', () => {
+        const fullConfig = {
+          radar: true,
+          nextaction: true,
+          fact: true,
+          timeline: true,
+          finances: true,
+          quickactions: true
+        };
+        this.applyBlocksPreset(fullConfig, blocks);
+        this.showToast('💎 Включены все блоки');
+      });
+    }
+  }
+
+  setBlockVisibility(blockId, isVisible, elementId) {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.style.display = isVisible ? '' : 'none';
+    }
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem('liga_blocks_visibility') || '{}');
+    } catch (_) {}
+    saved[blockId] = isVisible;
+    localStorage.setItem('liga_blocks_visibility', JSON.stringify(saved));
+  }
+
+  applyBlocksPreset(config, blocks) {
+    localStorage.setItem('liga_blocks_visibility', JSON.stringify(config));
+    blocks.forEach(({ id, toggleId, elementId }) => {
+      const toggle = document.getElementById(toggleId);
+      const el = document.getElementById(elementId);
+      const isVisible = config[id] !== false;
+      if (toggle) toggle.checked = isVisible;
+      if (el) el.style.display = isVisible ? '' : 'none';
+    });
+  }
+
   initSettingsModal() {
     const btnSettings = document.getElementById('btn-settings-top');
     if (btnSettings) {

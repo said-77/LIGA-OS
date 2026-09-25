@@ -38,7 +38,7 @@
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.2.0 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.2.1">
+  <link rel="stylesheet" href="./css/style.css?v=2.2.2">
 </head>
 <body>
   <div class="app-container">
@@ -242,9 +242,14 @@
       </div>
 
       <!-- КАРТОЧКА АКТИВНОГО ОБЪЕКТА -->
-      <section class="glass-card">
-        <div class="card-header-flex">
-          <div class="card-label">🏢 Текущий объект</div>
+      <!-- ДЕСКТОПНАЯ СЕТКА ДАШБОРДА (2 КОЛОНКИ НА ЭКРАНАХ >= 860px) -->
+      <div class="dashboard-desktop-layout">
+        
+        <!-- ЛЕВАЯ КОЛОНКА: ИНЖЕНЕРНЫЙ СТАТУС, ОБЪЕКТ, ФАКТЫ И ХРОНИКА -->
+        <div class="dashboard-col-left">
+          <section class="glass-card" id="dashboard-site-card">
+            <div class="card-header-flex">
+              <div class="card-label">🏢 Текущий объект</div>
           <div id="site-status-badge" class="site-badge-status">3. Опрессовка 16 бар</div>
         </div>
 
@@ -359,8 +364,12 @@
         </div>
       </section>
 
-      <!-- ФИНАНСОВЫЙ ПУЛЬС ОБЪЕКТА (CASHFLOW) -->
-      <section class="glass-card">
+        </div> <!-- /dashboard-col-left -->
+
+        <!-- ПРАВАЯ КОЛОНКА: ФИНАНСОВЫЙ ПУЛЬС, ДЕЙСТВИЯ И ДОКУМЕНТЫ -->
+        <div class="dashboard-col-right">
+          <!-- ФИНАНСОВЫЙ ПУЛЬС ОБЪЕКТА (CASHFLOW) -->
+          <section class="glass-card" id="dashboard-finances-card">
         <div class="card-header-flex">
           <div class="card-label">💰 Финансовый пульс объекта</div>
           <button id="btn-open-payment" class="btn-contact master-only" style="height:28px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
@@ -407,7 +416,7 @@
       </section>
 
       <!-- БЫСТРЫЕ ДЕЙСТВИЯ В 1 ТАП (60px) -->
-      <div class="quick-actions-grid">
+          <div class="quick-actions-grid" id="dashboard-quick-actions-box">
         <div id="tile-quick-receipt" class="btn-action-tile master-only">
           <div class="tile-icon-box" style="color:var(--gold-primary);">📸</div>
           <div class="tile-content">
@@ -449,6 +458,8 @@
         <span>✈️</span> Отправить отчет заказчику в Telegram
       </button>
       <div id="passport-status-indicator" style="font-size:11px; text-align:center; margin-top:8px; margin-bottom:16px; font-weight:700;"></div>
+        </div> <!-- /dashboard-col-right -->
+      </div> <!-- /dashboard-desktop-layout -->
       </div> <!-- /#situation-view-on-site -->
 
       <!-- ====================================================================
@@ -2047,6 +2058,85 @@
             </div>
           </div>
 
+          <!-- Секция: Видимость блоков дашборда (Кастомизация) -->
+          <div class="settings-section">
+            <div class="settings-section-title">Вид главного экрана (Блоки дашборда)</div>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+              <button id="btn-preset-minimal" type="button" class="btn-preset" style="flex:1; padding:8px; font-size:11px; font-weight:700; background:var(--glass-bg-card); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); cursor:pointer;">
+                ⚡ Экспресс-минимал
+              </button>
+              <button id="btn-preset-full" type="button" class="btn-preset" style="flex:1; padding:8px; font-size:11px; font-weight:700; background:var(--gold-gradient); border:none; border-radius:8px; color:var(--btn-gold-text); cursor:pointer;">
+                💎 Все блоки (Полный)
+              </button>
+            </div>
+            
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">⏱️ 3D-Радар готовности и темпа</div>
+                <div class="settings-toggle-desc">Швейцарский круговой хронометр сроков</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-radar" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">👉 Рекомендация: Следующий шаг</div>
+                <div class="settings-toggle-desc">Подсказка системы по текущему этапу</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-nextaction" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">📸 Королевская кнопка факта (3 сек)</div>
+                <div class="settings-toggle-desc">Быстрая фотофиксация скрытых узлов</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-fact" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">📜 Хроника объекта (Пройденные вехи)</div>
+                <div class="settings-toggle-desc">Лента ключевых событий монтажа</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-timeline" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">💰 Финансовый пульс и Базарный карман</div>
+                <div class="settings-toggle-desc">Договор, аванс, остаток и касса мастера</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-finances" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">⚡ Быстрые действия (4 плитки)</div>
+                <div class="settings-toggle-desc">Чек с базара, Акт 16 бар, Фото, Стяжка</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-quickactions" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
           <!-- Секция: Подсказки -->
           <div class="settings-section">
             <div class="settings-section-title">Подсказки и обучение</div>
@@ -2145,10 +2235,10 @@
     </div>
 
   <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
-  <script src="./js/image_processor.js?v=2.2.1"></script>
-  <script src="./js/db.js?v=2.2.1"></script>
-  <script src="./js/pdf_engine.js?v=2.2.1"></script>
-  <script src="./js/ai_concierge.js?v=2.2.1"></script>
-  <script src="./js/app.js?v=2.2.1"></script>
+  <script src="./js/image_processor.js?v=2.2.2"></script>
+  <script src="./js/db.js?v=2.2.2"></script>
+  <script src="./js/pdf_engine.js?v=2.2.2"></script>
+  <script src="./js/ai_concierge.js?v=2.2.2"></script>
+  <script src="./js/app.js?v=2.2.2"></script>
 </body>
 </html>
