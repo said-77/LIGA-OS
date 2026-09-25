@@ -457,6 +457,9 @@
       <button id="btn-share-telegram" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border:none; color:#ffffff; box-shadow:0 4px 14px rgba(2,132,199,0.35);">
         <span>✈️</span> Отправить отчет заказчику в Telegram
       </button>
+      <button id="btn-share-stage-acceptance" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #059669 0%, #047857 100%); border:none; color:#ffffff; box-shadow:0 4px 14px rgba(5,150,105,0.35);">
+        <span>📲</span> Акт приёмки этапа для заказчика (Ссылка в Telegram)
+      </button>
       <div id="passport-status-indicator" style="font-size:11px; text-align:center; margin-top:8px; margin-bottom:16px; font-weight:700;"></div>
         </div> <!-- /dashboard-col-right -->
       </div> <!-- /dashboard-desktop-layout -->
@@ -1587,6 +1590,133 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8B: ГЕНЕРАТОР ССЫЛКИ ПРИЁМКИ ЭТАПА ДЛЯ ЗАКАЗЧИКА
+         ==================================================================== -->
+    <div id="modal-generate-stage-link" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>📲 Акт приёмки этапа в Telegram</span>
+          <button onclick="window.app.closeModal('modal-generate-stage-link')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+          Сформируйте персональную ссылку для заказчика, чтобы он мог ознакомиться с параметрами опрессовки и подтвердить приёмку этапа прямо в Telegram.
+        </p>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Принимаемый этап монтажа:</label>
+          <select id="stage-select-preset" class="form-control" onchange="window.app.updateStageLinkPreview()" style="margin-top:4px;">
+            <option value="1">Этап 1: Черновой монтаж трасс под стяжку + опрессовка 16 бар</option>
+            <option value="2">Этап 2: Монтаж коллекторных узлов FAR и котельного оборудования</option>
+            <option value="3">Этап 3: Чистовая установка санфаянса, инсталляций и смесителей</option>
+          </select>
+        </div>
+
+        <div style="padding:12px; background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); margin-bottom:12px; text-align:left;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight:700;">Объект:</span>
+            <span id="stage-link-site-name" style="font-size:12px; font-weight:800; color:var(--text-main);">ЖК Mirabad Avenue</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight:700;">Заказчик:</span>
+            <span id="stage-link-client-name" style="font-size:12px; font-weight:800; color:var(--text-main);">Самир</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight:700;">Статус опрессовки:</span>
+            <span id="stage-link-pressure-status" style="font-size:12px; font-weight:800; color:var(--neon-emerald);">16.0 бар (24ч выдержано)</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Готовое сообщение для заказчика:</label>
+          <textarea id="stage-link-message-preview" class="form-control" rows="5" readonly style="font-size:11.5px; font-family:monospace; line-height:1.4; margin-top:4px;"></textarea>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-stage-link" onclick="window.app.copyStageAcceptanceLink()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать сообщение с ссылкой
+          </button>
+          <button id="btn-send-stage-telegram" onclick="window.app.sendStageAcceptanceTelegram()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:46px;">
+            ✈️ Отправить напрямую в Telegram
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8C: ИНТЕРАКТИВНЫЙ АКТ ПРИЁМКИ ЭТАПА ДЛЯ ЗАКАЗЧИКА
+         ==================================================================== -->
+    <div id="modal-verify-stage" class="modal-overlay">
+      <div class="modal-sheet" style="text-align:center;">
+        <div class="modal-title">
+          <span>🏛️ Акт приёмки этапа LIGA OS</span>
+          <button onclick="window.app.closeModal('modal-verify-stage')" class="btn-close-modal">&times;</button>
+        </div>
+
+        <!-- Шапка заказчика -->
+        <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:12px;">
+          <div style="width:40px; height:40px; background:#141c2e; border:1.5px solid var(--gold-primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px;">🛡️</div>
+          <div style="text-align:left;">
+            <div style="font-size:14px; font-weight:900; color:var(--text-main); text-transform:uppercase;">Лига Опытных Мастеров</div>
+            <div style="font-size:10.5px; color:var(--gold-primary); font-weight:700;">Инженерный центр сантехники • Ташкент</div>
+          </div>
+        </div>
+
+        <!-- Карточка объекта и параметров -->
+        <div style="padding:14px; background:var(--box-bg); border:1.5px solid var(--glass-border-subtle); border-radius:var(--radius-md); margin-bottom:14px; text-align:left;">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:800;">Официальное освидетельствование работ:</div>
+          <div id="verify-stage-site-name" style="font-size:16px; font-weight:900; color:var(--text-main); margin:4px 0 2px 0;">ЖК Mirabad Avenue</div>
+          <div id="verify-stage-client-name" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Заказчик: Самир</div>
+          <div style="padding:8px 10px; background:rgba(0,168,107,0.08); border:1px solid rgba(0,168,107,0.3); border-radius:6px; margin-bottom:8px;">
+            <div style="font-size:10px; font-weight:800; color:var(--neon-emerald); text-transform:uppercase;">Принимаемый этап:</div>
+            <div id="verify-stage-title" style="font-size:13px; font-weight:900; color:var(--text-main); margin-top:2px;">Черновой монтаж трасс под стяжку + опрессовка 16 бар</div>
+          </div>
+
+          <!-- Инженерный стандарт 16 бар -->
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border-subtle); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">🛡️ Гидравлические испытания:</span>
+              <span id="verify-stage-pressure-status" style="font-weight:900; color:var(--neon-emerald);">16.0 БАР / 24 ЧАСА (Пройдено)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border-subtle); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">📐 Точность водорозеток:</span>
+              <span style="font-weight:800; color:var(--text-main);">По лазеру до 1 мм</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border-subtle); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">🧱 Готовность к стяжке пола:</span>
+              <span style="font-weight:800; color:var(--neon-emerald);">РАЗРЕШЕНО</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:var(--text-muted);">👨‍🔧 Ведущий инженер:</span>
+              <span style="font-weight:800; color:var(--gold-primary);">Хакимов Улугбек</span>
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:14px; line-height:1.4; text-align:left;">
+          Нажатием кнопки ниже Заказчик подтверждает приёмку скрытых инженерных систем указанного этапа. Результат фиксируется в цифровом реестре объекта LIGA OS.
+        </p>
+
+        <!-- Кнопка подтверждения заказчиком -->
+        <button id="btn-confirm-stage-action" onclick="window.app.signStageConfirmation()" class="btn-submit-modal" style="background:var(--neon-emerald); color:#fff; height:50px; font-size:13.5px; font-weight:900;">
+          ✓ Подтверждаю приёмку этапа (Ознакомлен)
+        </button>
+
+        <!-- Блок после успешного подтверждения -->
+        <div id="verify-stage-success-box" style="display:none; margin-top:14px; padding:12px; background:rgba(0,168,107,0.12); border:1.5px solid var(--neon-emerald); border-radius:var(--radius-md); text-align:left;">
+          <div style="font-size:13px; font-weight:900; color:var(--neon-emerald); margin-bottom:4px;">
+            ✓ ЭТАП УСПЕШНО ПРИНЯТ ЗАКАЗЧИКОМ!
+          </div>
+          <div id="verify-stage-signed-date" style="font-size:11px; color:var(--text-main); margin-bottom:8px;">
+            Электронная отметка внесена: 25.09.2026
+          </div>
+          <button id="btn-notify-master-telegram" onclick="window.app.notifyMasterStageAccepted()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:42px; font-size:12px;">
+            ✈️ Отправить мастеру в Telegram: «Этап принят!»
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -2271,10 +2401,10 @@
     </div>
 
   <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
-  <script src="./js/image_processor.js?v=2.2.4"></script>
-  <script src="./js/db.js?v=2.2.4"></script>
-  <script src="./js/pdf_engine.js?v=2.2.4"></script>
-  <script src="./js/ai_concierge.js?v=2.2.4"></script>
-  <script src="./js/app.js?v=2.2.4"></script>
+  <script src="./js/image_processor.js?v=2.2.5"></script>
+  <script src="./js/db.js?v=2.2.5"></script>
+  <script src="./js/pdf_engine.js?v=2.2.5"></script>
+  <script src="./js/ai_concierge.js?v=2.2.5"></script>
+  <script src="./js/app.js?v=2.2.5"></script>
 </body>
 </html>

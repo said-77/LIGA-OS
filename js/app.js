@@ -3644,7 +3644,7 @@ ${itemsText}
   }
 
   // ==========================================================================
-  // ЦИФРОВЫЕ РАСПИСКИ И ПОДТВЕРЖДЕНИЯ (TELEGRAM CALLBACK)
+  // ЦИФРОВЫЕ РАСПИСКИ И АКТЫ ПРИЁМКИ ЭТАПА (TELEGRAM CALLBACK)
   // ==========================================================================
   checkUrlVerification() {
     const params = new URLSearchParams(window.location.search);
@@ -3665,6 +3665,180 @@ ${itemsText}
       if (elSite) elSite.innerText = `Объект: ${siteName}`;
 
       setTimeout(() => this.openModal('modal-verify-receipt'), 400);
+    }
+
+    // Проверка ссылки приёмки этапа для заказчика (?verify_stage=...)
+    const stageCode = params.get('verify_stage');
+    if (stageCode) {
+      const siteName = params.get('site') || 'Премиальный жилой фонд, Ташкент';
+      const clientName = params.get('client') || 'Уважаемый Заказчик';
+      const stageTitle = params.get('stage') || 'Черновой монтаж трасс под стяжку + опрессовка 16 бар';
+      const barVal = params.get('bar') || '16.0';
+
+      this.currentStageToVerify = { stageCode, siteName, clientName, stageTitle, barVal };
+
+      const elSite = document.getElementById('verify-stage-site-name');
+      const elClient = document.getElementById('verify-stage-client-name');
+      const elTitle = document.getElementById('verify-stage-title');
+      const elBar = document.getElementById('verify-stage-pressure-status');
+
+      if (elSite) elSite.innerText = siteName;
+      if (elClient) elClient.innerText = `Заказчик: ${clientName}`;
+      if (elTitle) elTitle.innerText = stageTitle;
+      if (elBar) elBar.innerText = `${barVal} БАР / 24 ЧАСА (Пройдено)`;
+
+      setTimeout(() => this.openModal('modal-verify-stage'), 400);
+    }
+  }
+
+  // Генератор ссылки приёмки этапа мастером
+  openStageLinkGenerator() {
+    const site = this.currentSite || { name: 'ЖК Mirabad Avenue', client: 'Самир', pressTestPassed: true, pressureTest: { pressureBar: '16.0' } };
+    
+    const elSite = document.getElementById('stage-link-site-name');
+    const elClient = document.getElementById('stage-link-client-name');
+    const elPress = document.getElementById('stage-link-pressure-status');
+
+    if (elSite) elSite.innerText = site.name || 'Объект LIGA OS';
+    if (elClient) elClient.innerText = site.client || 'Уважаемый заказчик';
+    if (elPress) {
+      const isPassed = site.pressTestPassed;
+      const bar = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
+      elPress.innerText = isPassed ? `${bar} бар (24ч выдержано)` : 'Ожидает опрессовки (черновик)';
+      elPress.style.color = isPassed ? 'var(--neon-emerald)' : 'var(--neon-gold)';
+    }
+
+    this.updateStageLinkPreview();
+    this.openModal('modal-generate-stage-link');
+  }
+
+  updateStageLinkPreview() {
+    const site = this.currentSite || { id: 1, name: 'ЖК Mirabad Avenue', client: 'Самир', pressTestPassed: true, pressureTest: { pressureBar: '16.0' } };
+    const sel = document.getElementById('stage-select-preset');
+    const stageId = sel ? sel.value : '1';
+    
+    const stageTitles = {
+      '1': 'Черновой монтаж трасс под стяжку + опрессовка 16 бар',
+      '2': 'Монтаж коллекторных узлов FAR и котельного оборудования',
+      '3': 'Чистовая установка санфаянса, инсталляций и смесителей'
+    };
+    const stageTitle = stageTitles[stageId] || 'Черновой монтаж инженерных систем';
+    const barVal = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
+    const stageCode = `STG-${site.id || '01'}-16B`;
+
+    const origin = (typeof window !== 'undefined' && window.location) ? (window.location.origin + window.location.pathname) : 'https://liga-os-beige.vercel.app/';
+    const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}&bar=${barVal}`;
+
+    const clientGreeting = site.client ? `Здравствуйте, ${site.client}!` : 'Здравствуйте!';
+    const message = `${clientGreeting}
+Инженерный этап монтажа по объекту «${site.name || 'Объект'}» успешно завершён.
+
+📋 Этап: ${stageTitle}
+🛡️ Опрессовка: ${barVal} бар выдержана 24 часа без падения давления (DIN 1988).
+📐 Точность водорозеток: по лазеру до 1 мм.
+
+Пожалуйста, ознакомьтесь с параметрами и подтвердите приёмку этапа в 1 клик по официальной ссылке LIGA OS:
+${shareUrl}
+
+С уважением,
+Мастер Улугбек Хакимов («Лига Опытных Мастеров», Ташкент)`;
+
+    this.currentGeneratedStageText = message;
+    this.currentGeneratedStageUrl = shareUrl;
+
+    const previewEl = document.getElementById('stage-link-message-preview');
+    if (previewEl) previewEl.value = message;
+  }
+
+  async copyStageAcceptanceLink() {
+    const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        this.copyToClipboard(text);
+      }
+      this.showToast('✓ Сообщение со ссылкой приёмки скопировано для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Ссылка сформирована!');
+    }
+  }
+
+  sendStageAcceptanceTelegram() {
+    const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
+    const url = this.currentGeneratedStageUrl || (window.location.origin + window.location.pathname);
+    try {
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+      window.open(shareUrl, '_blank');
+      this.showToast('✈️ Открывается Telegram для отправки заказчику...');
+    } catch (e) {
+      console.warn('Telegram open error:', e);
+    }
+  }
+
+  // Подтверждение приёмки заказчиком
+  async signStageConfirmation() {
+    const st = this.currentStageToVerify || {
+      siteName: 'ЖК Mirabad Avenue',
+      clientName: 'Самир',
+      stageTitle: 'Черновой монтаж трасс под стяжку + опрессовка 16 бар'
+    };
+    const dateStr = new Date().toLocaleString('ru-RU');
+
+    const btn = document.getElementById('btn-confirm-stage-action');
+    if (btn) {
+      btn.style.display = 'none';
+    }
+
+    const box = document.getElementById('verify-stage-success-box');
+    const signedEl = document.getElementById('verify-stage-signed-date');
+    if (signedEl) {
+      signedEl.innerText = `Электронная отметка внесена: ${dateStr}`;
+    }
+    if (box) {
+      box.style.display = 'block';
+    }
+
+    this.showToast(`✓ Этап успешно принят Заказчиком (${dateStr})!`);
+
+    // Если есть текущий объект, обновляем его статус и пишем в хронику
+    try {
+      if (this.currentSite && window.ligaDB) {
+        this.currentSite.stageAccepted = true;
+        this.currentSite.stageAcceptedDate = dateStr;
+        await window.ligaDB.put('sites', this.currentSite);
+      }
+      if (window.ligaDB) {
+        await window.ligaDB.add('finances', {
+          siteId: this.currentSiteId || 1,
+          type: 'stage_accepted_client',
+          stage: st.stageTitle,
+          client: st.clientName,
+          site: st.siteName,
+          date: new Date().toISOString().slice(0, 10),
+          verifiedAt: dateStr
+        });
+      }
+    } catch (dbErr) {
+      console.warn('Could not save stage acceptance into DB:', dbErr);
+    }
+    this.render();
+  }
+
+  // Уведомление мастера в Telegram об успешной приёмке
+  notifyMasterStageAccepted() {
+    const st = this.currentStageToVerify || {
+      siteName: 'ЖК Mirabad Avenue',
+      clientName: 'Самир',
+      stageTitle: 'Черновой монтаж'
+    };
+    const text = `Улугбек, здравствуйте! Я подтвердил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Давление 16 бар подтверждаю. Разрешаю заливку стяжки пола и дальнейшие работы!`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-os-beige.vercel.app/')}&text=${encodeURIComponent(text)}`;
+    try {
+      window.open(shareUrl, '_blank');
+    } catch (e) {
+      console.warn('Telegram notify error:', e);
     }
   }
 
@@ -4843,6 +5017,14 @@ ${itemsText}
     if (btnShareTelegram) {
       btnShareTelegram.addEventListener('click', () => {
         this.shareSiteProgressTelegram();
+      });
+    }
+
+    // 4. Ссылка приёмки этапа для заказчика в Telegram
+    const btnShareStage = document.getElementById('btn-share-stage-acceptance');
+    if (btnShareStage) {
+      btnShareStage.addEventListener('click', () => {
+        this.openStageLinkGenerator();
       });
     }
   }
