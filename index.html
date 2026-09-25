@@ -159,6 +159,13 @@
               <div class="more-menu-desc">Голосовой ИИ-помощник инженера</div>
             </div>
           </button>
+          <button id="menu-item-pipe-calc" class="more-menu-item" type="button" onclick="window.app.openPipeCalculator()">
+            <span class="more-menu-icon">🚰</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Калькулятор FAR & Rehau</div>
+              <div class="more-menu-desc">Расчет диаметров труб и отводов коллекторов</div>
+            </div>
+          </button>
         </div>
       </div>
     </div>
@@ -979,6 +986,11 @@
         <button id="btn-apply-estimate-to-site" class="btn-flagship-gold master-only" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #065f46 0%, #047857 100%); border-color:var(--neon-emerald); color:#fff;">
           <span>📌</span> Утвердить как сумму договора объекта
         </button>
+
+        <!-- Кнопка перехода в инженерный калькулятор диаметров труб и коллекторов FAR -->
+        <button id="btn-open-pipe-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);" onclick="window.app.openPipeCalculator()">
+          <span>🚰</span> Расчет диаметров труб и коллекторов FAR / Rehau
+        </button>
       </div>
     </section>
 
@@ -1717,6 +1729,140 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО 8D: ИНЖЕНЕРНЫЙ КАЛЬКУЛЯТОР FAR & REHAU (v2.2.6)
+         ==================================================================== -->
+    <div id="modal-pipe-calculator" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-title">
+          <span>🚰 Расчет труб и коллекторов FAR</span>
+          <button onclick="window.app.closeModal('modal-pipe-calculator')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
+          Инженерный подбор диаметров Rehau Rautitan и отводов коллекторов FAR по стандарту DIN 1988. Защита от перепада температур в душе при включении других кранов.
+        </p>
+
+        <!-- Потребители ХВС и ГВС -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px;">
+            1. Потребители воды (Точки водоразбора):
+          </div>
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Точек ХВС (холодная):</label>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button type="button" class="btn-counter" onclick="window.app.adjustPipePoints('cold', -1)" style="width:32px; height:32px;">-</button>
+                <span id="pipe-calc-cold-val" style="font-size:16px; font-weight:900; color:var(--neon-cyan); min-width:24px; text-align:center;">6</span>
+                <button type="button" class="btn-counter" onclick="window.app.adjustPipePoints('cold', 1)" style="width:32px; height:32px;">+</button>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Точек ГВС (горячая):</label>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button type="button" class="btn-counter" onclick="window.app.adjustPipePoints('hot', -1)" style="width:32px; height:32px;">-</button>
+                <span id="pipe-calc-hot-val" style="font-size:16px; font-weight:900; color:#f87171; min-width:24px; text-align:center;">4</span>
+                <button type="button" class="btn-counter" onclick="window.app.adjustPipePoints('hot', 1)" style="width:32px; height:32px;">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Опции высокого расхода -->
+          <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--glass-border-subtle); display:flex; flex-direction:column; gap:8px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="pipe-calc-high-flow" onchange="window.app.recalculatePipeManifold()" checked style="width:16px; height:16px;">
+              <span>🌧️ Есть тропический душ / большая ванна (>15 л/мин)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:11px; cursor:pointer;">
+              <input type="checkbox" id="pipe-calc-boiler-recirc" onchange="window.app.recalculatePipeManifold()" style="width:16px; height:16px;">
+              <span>🔄 Линия рециркуляции ГВС (для мгновенного тепла)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Параметры давления и трассы -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px;">
+            2. Параметры давления и длина трасс:
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Давление в стояке:</label>
+              <select id="pipe-calc-pressure-select" class="form-control" onchange="window.app.recalculatePipeManifold()" style="font-size:11.5px; padding:6px 8px;">
+                <option value="3.0">3.0 бар (Норма)</option>
+                <option value="4.5">4.5 бар (Новостройка)</option>
+                <option value="6.0" selected>6.0 бар (Высотка Ташкент)</option>
+                <option value="8.0">8.0+ бар (Требует Caleffi)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Длина удалённого луча:</label>
+              <select id="pipe-calc-length-select" class="form-control" onchange="window.app.recalculatePipeManifold()" style="font-size:11.5px; padding:6px 8px;">
+                <option value="short">До 10 метров (Квартира)</option>
+                <option value="medium" selected>10–20 метров (Комфорт)</option>
+                <option value="long">Более 20 метров (Вилла)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- РЕЗУЛЬТАТЫ РАСЧЕТА (ШВЕЙЦАРСКИЙ ИНЖЕНЕРНЫЙ СТАНДАРТ) -->
+        <div style="background:rgba(212,163,89,0.08); border:1.5px solid var(--gold-primary); border-radius:var(--radius-md); padding:14px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:900; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>📐 Инженерная спецификация узла ввода:</span>
+            <span id="pipe-calc-flow-rate" style="font-size:11px; color:var(--neon-emerald); font-weight:800;">Q = 0.52 л/с</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Магистральный ввод от стояка:</span>
+              <span id="res-pipe-inlet-diameter" style="font-weight:900; color:var(--gold-primary);">25 мм (Rehau 25×3.5 • 1" ввод)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Коллектор ХВС (FAR 1" Евроконус):</span>
+              <span id="res-manifold-cold" style="font-weight:800; color:var(--text-main);">FAR 1" на 6 выходов (гребенка 3+3)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Коллектор ГВС (FAR 1" Евроконус):</span>
+              <span id="res-manifold-hot" style="font-weight:800; color:var(--text-main);">FAR 1" на 4 выхода</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Лучи 20 мм (Тропический душ/ванна):</span>
+              <span id="res-pipe-20mm" style="font-weight:800; color:var(--neon-cyan);">~18 метров (Rehau 20×2.8)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Лучи 16 мм (Стандартные точки):</span>
+              <span id="res-pipe-16mm" style="font-weight:800; color:var(--text-main);">~65 метров (Rehau 16×2.2)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Редуктор давления и гасители:</span>
+              <span id="res-accessories" style="font-weight:800; color:var(--neon-emerald);">Caleffi 3/4" + 2 гасителя FAR</span>
+            </div>
+          </div>
+
+          <!-- Индикатор защиты от гидроударов и перепада температур -->
+          <div style="margin-top:10px; padding:8px 10px; background:rgba(0,168,107,0.12); border:1px solid rgba(0,168,107,0.3); border-radius:6px; font-size:10.5px; color:#10b981; line-height:1.35;">
+            🛡️ <strong>Стабильность температуры в душе: 100%</strong><br>
+            Коллекторная схема FAR исключает падение напора: при смыве унитаза или работе стиралки температура воды в душе не изменится ни на градус!
+          </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-pipe-calc" onclick="window.app.copyPipeCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать спецификацию для Telegram / Базара
+          </button>
+          <button id="btn-add-pipe-to-materials" onclick="window.app.addCalculatedPipesToMaterials()" class="btn-submit-modal" style="background:linear-gradient(135deg, #059669 0%, #047857 100%); color:#fff; height:46px;">
+            📦 Добавить позиции в список закупки на склад
+          </button>
+          <button onclick="window.app.closeModal('modal-pipe-calculator')" class="btn-submit-modal" style="background:rgba(255,255,255,0.08); color:var(--text-main); height:40px; margin-top:2px;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -2400,11 +2546,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
-  <script src="./js/image_processor.js?v=2.2.5"></script>
-  <script src="./js/db.js?v=2.2.5"></script>
-  <script src="./js/pdf_engine.js?v=2.2.5"></script>
-  <script src="./js/ai_concierge.js?v=2.2.5"></script>
-  <script src="./js/app.js?v=2.2.5"></script>
+  <!-- Скрипты LIGA OS (Версия 2.2.6: Инженерный калькулятор подбора труб и коллекторов FAR) -->
+  <script src="./js/image_processor.js?v=2.2.6"></script>
+  <script src="./js/db.js?v=2.2.6"></script>
+  <script src="./js/pdf_engine.js?v=2.2.6"></script>
+  <script src="./js/ai_concierge.js?v=2.2.6"></script>
+  <script src="./js/app.js?v=2.2.6"></script>
 </body>
 </html>

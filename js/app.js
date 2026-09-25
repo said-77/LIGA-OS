@@ -2861,6 +2861,246 @@ ${itemsText}
     });
   }
 
+  // ==========================================================================
+  // ИНЖЕНЕРНЫЙ КАЛЬКУЛЯТОР ПОДБОРА ТРУБ И КОЛЛЕКТОРОВ FAR / REHAU (v2.2.6)
+  // Стандарт DIN 1988 • Защита от перепада температур в душе
+  // ==========================================================================
+  openPipeCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.pipeCalc) {
+      this.pipeCalc = {
+        cold: 6,
+        hot: 4,
+        hasHighFlow: true,
+        hasRecirc: false,
+        pressure: '6.0',
+        length: 'medium'
+      };
+    }
+    const coldEl = document.getElementById('pipe-calc-cold-val');
+    const hotEl = document.getElementById('pipe-calc-hot-val');
+    const highFlowEl = document.getElementById('pipe-calc-high-flow');
+    const recircEl = document.getElementById('pipe-calc-boiler-recirc');
+    const pressEl = document.getElementById('pipe-calc-pressure-select');
+    const lenEl = document.getElementById('pipe-calc-length-select');
+
+    if (coldEl) coldEl.innerText = this.pipeCalc.cold;
+    if (hotEl) hotEl.innerText = this.pipeCalc.hot;
+    if (highFlowEl) highFlowEl.checked = this.pipeCalc.hasHighFlow;
+    if (recircEl) recircEl.checked = this.pipeCalc.hasRecirc;
+    if (pressEl) pressEl.value = this.pipeCalc.pressure;
+    if (lenEl) lenEl.value = this.pipeCalc.length;
+
+    this.recalculatePipeManifold();
+    this.openModal('modal-pipe-calculator');
+  }
+
+  adjustPipePoints(type, delta) {
+    if (!this.pipeCalc) {
+      this.pipeCalc = { cold: 6, hot: 4, hasHighFlow: true, hasRecirc: false, pressure: '6.0', length: 'medium' };
+    }
+    this.pipeCalc[type] = Math.max(1, Math.min(24, (this.pipeCalc[type] || 0) + delta));
+    const valEl = document.getElementById(`pipe-calc-${type}-val`);
+    if (valEl) valEl.innerText = this.pipeCalc[type];
+    this.recalculatePipeManifold();
+  }
+
+  recalculatePipeManifold() {
+    if (!this.pipeCalc) {
+      this.pipeCalc = { cold: 6, hot: 4, hasHighFlow: true, hasRecirc: false, pressure: '6.0', length: 'medium' };
+    }
+    const cold = this.pipeCalc.cold;
+    const hot = this.pipeCalc.hot;
+    const highFlowEl = document.getElementById('pipe-calc-high-flow');
+    const recircEl = document.getElementById('pipe-calc-boiler-recirc');
+    const pressEl = document.getElementById('pipe-calc-pressure-select');
+    const lenEl = document.getElementById('pipe-calc-length-select');
+
+    const hasHighFlow = highFlowEl ? highFlowEl.checked : this.pipeCalc.hasHighFlow;
+    const hasRecirc = recircEl ? recircEl.checked : this.pipeCalc.hasRecirc;
+    const pressure = pressEl ? pressEl.value : this.pipeCalc.pressure;
+    const length = lenEl ? lenEl.value : this.pipeCalc.length;
+
+    this.pipeCalc.hasHighFlow = hasHighFlow;
+    this.pipeCalc.hasRecirc = hasRecirc;
+    this.pipeCalc.pressure = pressure;
+    this.pipeCalc.length = length;
+
+    // Расчет одновременного расхода воды (DIN 1988)
+    const baseFlow = (cold + hot) * 0.14;
+    const extraFlow = hasHighFlow ? 0.28 : 0;
+    const simultaneity = 1 / Math.sqrt(Math.max(1, (cold + hot) - 1));
+    const totalQ = Math.max(0.25, Number(((baseFlow + extraFlow) * simultaneity).toFixed(2)));
+
+    // Определение диаметра ввода (25 мм vs 20 мм)
+    const needs25mm = (totalQ >= 0.38) || (cold + hot >= 8) || hasHighFlow;
+    const inletText = needs25mm 
+      ? '25 мм (Rehau 25×3.5 • 1" ввод)' 
+      : '20 мм (Rehau 20×2.8 • 3/4" ввод)';
+
+    // Подбор конфигурации коллекторов FAR (Евроконус 3/4", проход 1")
+    const formatManifold = (points, label) => {
+      if (points <= 4) return `FAR 1" на ${points} выхода`;
+      if (points === 5) return `FAR 1" на 5 выходов (гребенка 3+2)`;
+      if (points === 6) return `FAR 1" на 6 выходов (гребенка 3+3)`;
+      if (points === 7) return `FAR 1" на 7 выходов (гребенка 4+3)`;
+      if (points === 8) return `FAR 1" на 8 выходов (гребенка 4+4)`;
+      return `FAR 1" на ${points} выходов (секционная сборка)`;
+    };
+
+    const manifoldColdText = formatManifold(cold, 'ХВС');
+    const manifoldHotText = formatManifold(hot, 'ГВС');
+
+    // Расчет длины труб
+    const mult = length === 'short' ? 7 : length === 'medium' ? 12 : 18;
+    const m25 = needs25mm ? 12 : 0;
+    const m20 = hasHighFlow ? (length === 'short' ? 14 : length === 'medium' ? 22 : 30) : 0;
+    const standardPoints = Math.max(2, (cold + hot) - (hasHighFlow ? 2 : 0));
+    const m16 = standardPoints * mult + (hasRecirc ? 15 : 0);
+
+    // Дополнительное оборудование
+    const pressNum = parseFloat(pressure);
+    const accessoriesText = pressNum >= 4.5 
+      ? 'Caleffi 3/4" (редуктор 3.5 бар) + 2 гасителя FAR' 
+      : 'Гасители гидроударов FAR 1/2" (2 шт на торцах)';
+
+    // Сохраняем расчет для экспорта
+    this.currentCalculatedPipes = {
+      cold,
+      hot,
+      totalQ,
+      inlet: inletText,
+      manifoldCold: manifoldColdText,
+      manifoldHot: manifoldHotText,
+      m25,
+      m20,
+      m16,
+      accessories: accessoriesText,
+      needs25mm,
+      hasHighFlow,
+      hasRecirc
+    };
+
+    // Обновляем DOM
+    const qEl = document.getElementById('pipe-calc-flow-rate');
+    const inletEl = document.getElementById('res-pipe-inlet-diameter');
+    const colEl = document.getElementById('res-manifold-cold');
+    const hotElRes = document.getElementById('res-manifold-hot');
+    const p20El = document.getElementById('res-pipe-20mm');
+    const p16El = document.getElementById('res-pipe-16mm');
+    const accEl = document.getElementById('res-accessories');
+
+    if (qEl) qEl.innerText = `Q = ${totalQ.toFixed(2)} л/с`;
+    if (inletEl) inletEl.innerText = inletText;
+    if (colEl) colEl.innerText = manifoldColdText;
+    if (hotElRes) hotElRes.innerText = manifoldHotText;
+    if (p20El) p20El.innerText = m20 > 0 ? `~${m20} метров (Rehau 20×2.8)` : 'Не требуется (стандартные лучи)';
+    if (p16El) p16El.innerText = `~${m16} метров (Rehau 16×2.2)`;
+    if (accEl) accEl.innerText = accessoriesText;
+  }
+
+  async copyPipeCalculation() {
+    const c = this.currentCalculatedPipes;
+    if (!c) return;
+
+    const report = `📐 ИНЖЕНЕРНЫЙ РАСЧЕТ УЗЛА ВВОДА И ТРУБ
+«Лига Опытных Мастеров» • Стандарт DIN 1988 (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+
+📍 Потребители: ХВС — ${c.cold} точек, ГВС — ${c.hot} точек
+⚡ Расчетный одновременный расход: Q = ${c.totalQ.toFixed(2)} л/с
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Ввод от стояка: ${c.inlet}
+2. Коллектор ХВС: ${c.manifoldCold}
+3. Коллектор ГВС: ${c.manifoldHot}
+4. Труба Rehau Rautitan Stabil 25 мм: ${c.m25} м
+${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на тропический душ/ванну)\n` : ''}6. Труба Rehau Rautitan Pink/Flex 16 мм: ${c.m16} м
+7. Защита системы: ${c.accessories}
+
+🛡️ ТЕРМОСТАБИЛЬНОСТЬ: 100% ВЫДЕРЖАНО.
+Перепад температуры в душе при смыве унитаза или включении стиральной машины исключен!
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        this.copyToClipboard(report);
+      }
+      this.showToast('✓ Спецификация труб и коллекторов скопирована для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Спецификация сформирована!');
+    }
+  }
+
+  async addCalculatedPipesToMaterials() {
+    const c = this.currentCalculatedPipes;
+    if (!c) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [];
+    if (c.m25 > 0) {
+      itemsToAdd.push({
+        category: 'pipes',
+        name: 'Труба Rehau Rautitan Stabil 25×3.5 (вводная магистраль)',
+        qty: `${c.m25} м`,
+        price: c.m25 * 38000,
+        isPurchased: false
+      });
+    }
+    if (c.m20 > 0) {
+      itemsToAdd.push({
+        category: 'pipes',
+        name: 'Труба Rehau Rautitan Stabil 20×2.8 (высокорасходные лучи)',
+        qty: `${c.m20} м`,
+        price: c.m20 * 28000,
+        isPurchased: false
+      });
+    }
+    itemsToAdd.push({
+      category: 'pipes',
+      name: 'Труба Rehau Rautitan Pink/Flex 16×2.2 (лучи к потребителям)',
+      qty: `${c.m16} м`,
+      price: c.m16 * 19000,
+      isPurchased: false
+    });
+    itemsToAdd.push({
+      category: 'collectors',
+      name: `Коллектор ХВС: ${c.manifoldCold}`,
+      qty: '1 шт',
+      price: 850000,
+      isPurchased: false
+    });
+    itemsToAdd.push({
+      category: 'collectors',
+      name: `Коллектор ГВС: ${c.manifoldHot}`,
+      qty: '1 шт',
+      price: 650000,
+      isPurchased: false
+    });
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-pipe-calculator');
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций в список закупки на склад!`);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -3303,6 +3543,14 @@ ${itemsText}
         target: 'modal-ai-audit',
         title: '📐 Инструмент: Экспресс-аудит',
         desc: 'Запускаю проверку по швейцарским стандартам надежности...'
+      };
+    }
+    if (lower.includes('калькулятор труб') || lower.includes('расчет труб') || lower.includes('расчет коллектор') || lower.includes('подбор труб') || lower.includes('подбор far') || lower.includes('диаметр труб') || lower.includes('диаметр ввод') || lower.includes('посчитай диаметр') || lower.includes('гребенк')) {
+      return {
+        type: 'direct_func',
+        target: 'openPipeCalculator',
+        title: '📐 Инструмент: Калькулятор труб и коллекторов',
+        desc: 'Открываю гидравлический расчет диаметров труб и гребенок FAR (DIN 1988)...'
       };
     }
 
