@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.2.6-pipe-manifold-calculator';
+const CACHE_NAME = 'liga-os-v2.2.7-floor-heating-calculator';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

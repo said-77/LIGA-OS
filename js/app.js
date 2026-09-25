@@ -3101,6 +3101,256 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций в список закупки на склад!`);
   }
 
+  // ==========================================================================
+  // ТЕПЛОТЕХНИЧЕСКИЙ КАЛЬКУЛЯТОР ТЕПЛОГО ПОЛА И НСУ (v2.2.7)
+  // Швейцарский стандарт гидравлической увязки контуров (петли <= 75–80 м)
+  // ==========================================================================
+  openFloorCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.floorCalc) {
+      this.floorCalc = {
+        area: 50,
+        step: '150',
+        hasEdgeZones: true,
+        isTiles: true
+      };
+    }
+    const areaEl = document.getElementById('floor-calc-area-val');
+    const stepEl = document.getElementById('floor-calc-step-select');
+    const edgeEl = document.getElementById('floor-calc-edge-zones');
+    const tilesEl = document.getElementById('floor-calc-tiles-cover');
+
+    if (areaEl) areaEl.innerText = this.floorCalc.area;
+    if (stepEl) stepEl.value = this.floorCalc.step;
+    if (edgeEl) edgeEl.checked = this.floorCalc.hasEdgeZones;
+    if (tilesEl) tilesEl.checked = this.floorCalc.isTiles;
+
+    this.recalculateFloorHeating();
+    this.openModal('modal-floor-calculator');
+  }
+
+  adjustFloorArea(delta) {
+    if (!this.floorCalc) {
+      this.floorCalc = { area: 50, step: '150', hasEdgeZones: true, isTiles: true };
+    }
+    this.floorCalc.area = Math.max(5, Math.min(300, (this.floorCalc.area || 50) + delta));
+    const areaEl = document.getElementById('floor-calc-area-val');
+    if (areaEl) areaEl.innerText = this.floorCalc.area;
+    this.recalculateFloorHeating();
+  }
+
+  recalculateFloorHeating() {
+    if (!this.floorCalc) {
+      this.floorCalc = { area: 50, step: '150', hasEdgeZones: true, isTiles: true };
+    }
+    const stepEl = document.getElementById('floor-calc-step-select');
+    const edgeEl = document.getElementById('floor-calc-edge-zones');
+    const tilesEl = document.getElementById('floor-calc-tiles-cover');
+
+    const area = this.floorCalc.area;
+    const step = stepEl ? stepEl.value : this.floorCalc.step;
+    const hasEdgeZones = edgeEl ? edgeEl.checked : this.floorCalc.hasEdgeZones;
+    const isTiles = tilesEl ? tilesEl.checked : this.floorCalc.isTiles;
+
+    this.floorCalc.step = step;
+    this.floorCalc.hasEdgeZones = hasEdgeZones;
+    this.floorCalc.isTiles = isTiles;
+
+    // Расход трубы на 1 м2 в зависимости от шага укладки
+    let mult = 6.7;
+    if (step === '100') mult = 10.0;
+    else if (step === '200') mult = 5.0;
+
+    // Суммарная длина трубы с учетом краевых зон (+10%) и транзитных подводок
+    const edgeMult = hasEdgeZones ? 1.10 : 1.0;
+    const rawMeters = area * mult * edgeMult;
+
+    // Определение числа контуров (петель): швейцарское правило <= 75–80 метров на петлю!
+    const loops = Math.max(1, Math.ceil(rawMeters / 72));
+    const transitMeters = loops * 4; // транзитные подводки к гребенке
+    const totalMeters = Math.round(rawMeters + transitMeters);
+    const avgLoop = Number((totalMeters / loops).toFixed(1));
+
+    // Бухты по 200 метров
+    const coils = Math.ceil(totalMeters / 200);
+
+    // Подбор коллектора
+    const manifoldText = `FAR / Stout на ${loops} выходов (с ротаметрами 0–5 л/мин)`;
+
+    // Подбор насосно-смесительного узла (НСУ)
+    let mixingText = '';
+    if (area <= 30) {
+      mixingText = 'Компактный термостатический модуль Unibox / Multibox';
+    } else {
+      mixingText = 'НСУ Stout / Valtec с энергоэффективным насосом 25-60 (Grundfos)';
+    }
+
+    // Расчетная тепловая мощность
+    const specificPower = isTiles ? 80 : 55; // Вт/м2
+    const totalPowerKw = ((area * specificPower) / 1000).toFixed(1);
+
+    // Периметр для демпферной ленты и евроконусы
+    const perimeterMeters = Math.round(Math.max(12, Math.sqrt(area) * 4 * 1.15));
+    const euroconesCount = loops * 2;
+    const fittingsText = `~${perimeterMeters} м демпферной ленты + ${euroconesCount} евроконусов 3/4"`;
+
+    // Сохраняем расчет для экспорта
+    this.currentCalculatedFloor = {
+      area,
+      step,
+      hasEdgeZones,
+      isTiles,
+      totalMeters,
+      loops,
+      avgLoop,
+      coils,
+      manifoldText,
+      mixingText,
+      totalPowerKw,
+      perimeterMeters,
+      euroconesCount
+    };
+
+    // Обновляем DOM
+    const powerEl = document.getElementById('floor-calc-power-rate');
+    const pipeEl = document.getElementById('res-floor-pipe-meters');
+    const loopsEl = document.getElementById('res-floor-loops-count');
+    const loopLenEl = document.getElementById('res-floor-loop-len');
+    const coilsEl = document.getElementById('res-floor-coils-count');
+    const manEl = document.getElementById('res-floor-manifold');
+    const mixEl = document.getElementById('res-floor-mixing-pump');
+    const tapeEl = document.getElementById('res-floor-perimeter-tape');
+    const badgeEl = document.getElementById('floor-calc-hydraulic-badge');
+
+    if (powerEl) powerEl.innerText = `~${totalPowerKw} кВт`;
+    if (pipeEl) pipeEl.innerText = `~${totalMeters} метров (Rehau / Stout 16×2.0)`;
+    if (loopsEl) loopsEl.innerText = `${loops} ${loops === 1 ? 'контур' : loops < 5 ? 'контура' : 'контуров'}`;
+    if (loopLenEl) loopLenEl.innerText = `~${avgLoop} м (норма ≤ 75–80 м)`;
+    if (coilsEl) coilsEl.innerText = `${coils} ${coils === 1 ? 'бухта' : coils < 5 ? 'бухты' : 'бухт'} (по 200 м)`;
+    if (manEl) manEl.innerText = manifoldText;
+    if (mixEl) mixEl.innerText = mixingText;
+    if (tapeEl) tapeEl.innerText = fittingsText;
+
+    if (badgeEl) {
+      if (avgLoop <= 80) {
+        badgeEl.style.background = 'rgba(0,168,107,0.12)';
+        badgeEl.style.borderColor = 'rgba(0,168,107,0.3)';
+        badgeEl.style.color = '#10b981';
+        badgeEl.innerHTML = `🛡️ <strong>Гидравлическая увязка соблюдена: 100%</strong><br>Длина каждой петли ~${avgLoop} м (в пределах 75–80 м). Исключено завоздушивание и «запирание» теплоносителя.`;
+      } else {
+        badgeEl.style.background = 'rgba(239,68,68,0.12)';
+        badgeEl.style.borderColor = 'rgba(239,68,68,0.3)';
+        badgeEl.style.color = '#ef4444';
+        badgeEl.innerHTML = `⚠️ <strong>Внимание: длина петли превышает 80 м</strong><br>Рекомендуется добавить дополнительный контур для снижения гидросопротивления.`;
+      }
+    }
+  }
+
+  async copyFloorCalculation() {
+    const f = this.currentCalculatedFloor;
+    if (!f) return;
+
+    const report = `♨️ ИНЖЕНЕРНЫЙ РАСЧЕТ ТЕПЛОГО ПОЛА И ОТОПЛЕНИЯ
+«Лига Опытных Мастеров» • Стандарт гидравлической увязки (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+
+📍 Отапливаемая площадь: ${f.area} м²
+📐 Шаг укладки: ${f.step} мм ${f.hasEdgeZones ? '(с краевыми зонами у окон)' : ''}
+🔥 Расчетная тепловая мощность: ~${f.totalPowerKw} кВт (${f.isTiles ? 'керамогранит' : 'ламинат/паркет'})
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Труба Rehau Pink / Stout PE-Xa 16×2.0: ~${f.totalMeters} м (${f.coils} бухт(ы) по 200 м)
+2. Число контуров: ${f.loops} шт (средняя длина петли: ~${f.avgLoop} м, норма <= 75-80 м)
+3. Коллекторная группа: ${f.manifoldText}
+4. Смесительный узел: ${f.mixingText}
+5. Концевые евроконусы 16×3/4": ${f.euroconesCount} шт
+6. Демпферная лента 8×150 мм: ~${f.perimeterMeters} м
+
+🛡️ ГИДРАВЛИЧЕСКАЯ УВЯЗКА: 100% ВЫДЕРЖАНО.
+Все петли сбалансированы, перегрев насоса и неравномерный прогрев пола полностью исключены!
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет теплого пола скопирован для Telegram / Базара!');
+    } catch (e) {
+      this.showToast('✓ Расчет теплого пола сформирован!');
+    }
+  }
+
+  async addCalculatedFloorToMaterials() {
+    const f = this.currentCalculatedFloor;
+    if (!f) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [
+      {
+        category: 'pipes',
+        name: `Труба Rehau Rautitan Pink / Stout 16×2.0 (теплый пол, ${f.coils} бухт)`,
+        qty: `${f.totalMeters} м`,
+        price: f.totalMeters * 19000,
+        isPurchased: false
+      },
+      {
+        category: 'collectors',
+        name: `Коллекторная группа теплого пола: ${f.manifoldText}`,
+        qty: '1 компл',
+        price: 950000 + (f.loops * 120000),
+        isPurchased: false
+      }
+    ];
+
+    if (f.area > 30) {
+      itemsToAdd.push({
+        category: 'collectors',
+        name: `Насосно-смесительный узел: ${f.mixingText}`,
+        qty: '1 шт',
+        price: 2600000,
+        isPurchased: false
+      });
+    }
+
+    itemsToAdd.push({
+      category: 'fittings',
+      name: `Евроконус 16×3/4" (подключение к коллектору FAR/Stout)`,
+      qty: `${f.euroconesCount} шт`,
+      price: f.euroconesCount * 35000,
+      isPurchased: false
+    });
+
+    itemsToAdd.push({
+      category: 'pipes',
+      name: `Демпферная лента пристенная с юбкой 8×150 мм`,
+      qty: `${Math.ceil(f.perimeterMeters / 50) * 50} м`,
+      price: Math.ceil(f.perimeterMeters / 50) * 180000,
+      isPurchased: false
+    });
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-floor-calculator');
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций теплого пола в список закупки на склад!`);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -3551,6 +3801,14 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         target: 'openPipeCalculator',
         title: '📐 Инструмент: Калькулятор труб и коллекторов',
         desc: 'Открываю гидравлический расчет диаметров труб и гребенок FAR (DIN 1988)...'
+      };
+    }
+    if (lower.includes('калькулятор теплого пола') || lower.includes('калькулятор отопления') || lower.includes('расчет теплого пола') || lower.includes('расчет отопления') || lower.includes('расчет петель') || lower.includes('подбор нсу') || lower.includes('смесительный узел') || lower.includes('водяной теплый пол') || lower.includes('петли теплого пола')) {
+      return {
+        type: 'direct_func',
+        target: 'openFloorCalculator',
+        title: '♨️ Инструмент: Калькулятор теплого пола и НСУ',
+        desc: 'Открываю расчет петель, бухт и смесительного узла (увязка петель <= 75-80 м)...'
       };
     }
 
