@@ -765,6 +765,7 @@ class LigaApp {
 
     // 10.4 Меню «⋯ Ещё» и фиксация факта за 3 секунды (v2.0.9 «Нулевая рутина»)
     this.initMoreMenu();
+    this.initSettingsModal();
     this.initQuickFactAction();
     // 10.5 Плавающий микрофон, голосовое заполнение объекта и Telegram-отчет
     this.initHandsFreeVoice();
@@ -4327,7 +4328,69 @@ ${itemsText}
   // ==========================================================================
   // МЕНЮ ИНСТРУМЕНТОВ МАСТЕРА (МЕНЮ «⋯ ЕЩЁ») — v2.0.9 «Нулевая рутина»
   // ==========================================================================
-  initMoreMenu() {
+  // ==========================================================================
+  // НАСТРОЙКИ LIGA OS И ВОССТАНОВЛЕНИЕ ПОДСКАЗКИ (v2.2.1)
+  // ==========================================================================
+  initSettingsModal() {
+    const btnSettings = document.getElementById('btn-settings-top');
+    if (btnSettings) {
+      btnSettings.addEventListener('click', () => {
+        this.playSubtleClick();
+        this.openModal('modal-settings');
+      });
+    }
+
+    const btnCloseSettings = document.getElementById('btn-close-settings');
+    if (btnCloseSettings) {
+      btnCloseSettings.addEventListener('click', () => this.closeModal('modal-settings'));
+    }
+
+    const settingsOverlay = document.getElementById('modal-settings');
+    if (settingsOverlay) {
+      settingsOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) this.closeModal('modal-settings');
+      });
+    }
+
+    const btnAI = document.getElementById('btn-ai-concierge-open');
+    if (btnAI) {
+      btnAI.addEventListener('click', () => {
+        this.playSubtleClick();
+        this.openModal('modal-ai-concierge');
+      });
+    }
+
+    const btnCloseAI = document.getElementById('btn-close-ai-concierge');
+    if (btnCloseAI) {
+      btnCloseAI.addEventListener('click', () => this.closeModal('modal-ai-concierge'));
+    }
+
+    const aiOverlay = document.getElementById('modal-ai-concierge');
+    if (aiOverlay) {
+      aiOverlay.addEventListener('click', (e) => {
+        if (e.target === aiOverlay) this.closeModal('modal-ai-concierge');
+      });
+    }
+
+    const btnRestore = document.getElementById('btn-restore-onboarding');
+    if (btnRestore) {
+      btnRestore.addEventListener('click', () => this.restoreOnboardingHint());
+    }
+  }
+
+  restoreOnboardingHint() {
+    localStorage.removeItem('liga_onboarding_dismissed');
+    const hint = document.getElementById('quick-onboarding-hint');
+    if (hint) {
+      hint.style.display = '';
+      hint.style.animation = 'fadeInSituation 0.3s ease-out forwards';
+    }
+    this.showToast('💡 Подсказка «3 шага» возвращена!');
+    this.closeModal('modal-settings');
+    this.closeModal('modal-more-menu');
+  }
+
+    initMoreMenu() {
     const btnToggle = document.getElementById('btn-more-menu-toggle');
     if (btnToggle) {
       btnToggle.addEventListener('click', () => {
@@ -4349,8 +4412,18 @@ ${itemsText}
       { id: 'menu-item-audit', target: 'btn-ai-audit-top' },
       { id: 'menu-item-theme', target: 'btn-theme-toggle' },
       { id: 'menu-item-backup', target: 'btn-backup-top' },
-      { id: 'menu-item-sound', target: 'btn-sound-toggle' }
+      { id: 'menu-item-sound', target: 'btn-sound-toggle' },
+      { id: 'menu-item-settings', target: 'btn-settings-top' },
+      { id: 'menu-item-ai', target: 'btn-ai-concierge-open' }
     ];
+
+    const itemRestore = document.getElementById('menu-item-restore-hint');
+    if (itemRestore) {
+      itemRestore.addEventListener('click', () => {
+        this.closeModal('modal-more-menu');
+        this.restoreOnboardingHint();
+      });
+    }
 
     items.forEach(({ id, target }) => {
       const el = document.getElementById(id);

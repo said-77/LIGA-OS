@@ -3658,3 +3658,105 @@ body.client-mode .btn-floating-voice {
   padding: 2px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.3px;
 }
 #modal-ai-concierge .modal-body { display: flex; flex-direction: column; }
+
+/* ── СТИЛИ КНОПКИ LIGA AI В ШАПКЕ v2.2.1 ─────────────────────────────────── */
+.btn-ai-header {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  color: var(--neon-emerald) !important;
+  font-weight: 800;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.btn-ai-header:hover {
+  border-color: var(--neon-emerald) !important;
+  transform: translateY(-1px);
+}
+
+.btn-ai-header .ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-emerald);
+  box-shadow: 0 0 6px var(--neon-emerald);
+  flex-shrink: 0;
+  animation: pulseDot 2s infinite;
+}
+
+.btn-ai-header.offline {
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: var(--text-dim) !important;
+}
+
+.btn-ai-header.offline .ai-dot {
+  background: var(--text-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+/* ── АДАПТИВНАЯ КОМПАКТНАЯ ШАПКА ─────────────────────────────────────────── */
+.top-header-primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand-text-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.brand-subtitle {
+  font-size: 9.5px;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.header-main-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-border-subtle);
+}
+
+.header-actions .btn-icon-top {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  font-size: 14px;
+}

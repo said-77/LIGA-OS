@@ -74,4 +74,40 @@ def test_all_header_and_nav_buttons_responsive(local_server):
             is_active = page.evaluate(f"document.getElementById('{screen_id}').classList.contains('active')")
             assert is_active, f"Экран '{screen_key}' не активировался по клику в навигации"
 
+        # 6. Проверяем клик по кнопке Настройки ⚙️
+        page.click("#btn-settings-top")
+        page.wait_for_timeout(300)
+        is_settings_open = page.evaluate("document.getElementById('modal-settings').classList.contains('open')")
+        assert is_settings_open, "Модалка настроек LIGA OS не открылась по клику на ⚙️"
+        page.click("#btn-close-settings")
+        page.wait_for_timeout(200)
+        assert not page.evaluate("document.getElementById('modal-settings').classList.contains('open')"), "Модалка настроек не закрылась"
+
+        # 7. Проверяем клик по кнопке LIGA AI
+        page.click("#btn-ai-concierge-open")
+        page.wait_for_timeout(300)
+        is_ai_open = page.evaluate("document.getElementById('modal-ai-concierge').classList.contains('open')")
+        assert is_ai_open, "Модалка LIGA AI Консьержа не открылась"
+        page.click("#btn-close-ai-concierge")
+        page.wait_for_timeout(200)
+        assert not page.evaluate("document.getElementById('modal-ai-concierge').classList.contains('open')"), "Модалка LIGA AI не закрылась"
+
+        # 8. Проверяем адаптивность шапки на мобильном экране (360px): всё помещается в экран
+        page.set_viewport_size({"width": 360, "height": 740})
+        page.wait_for_timeout(200)
+        more_btn_box = page.locator("#btn-more-menu-toggle").bounding_box()
+        assert more_btn_box is not None, "Кнопка '⋯ Ещё' отсутствует на экране"
+        assert more_btn_box["x"] + more_btn_box["width"] <= 360, (
+            f"Кнопка '⋯ Ещё' вылезла за правый край экрана 360px: {more_btn_box['x'] + more_btn_box['width']}"
+        )
+
+        settings_btn_box = page.locator("#btn-settings-top").bounding_box()
+        assert settings_btn_box is not None, "Кнопка Настройки ⚙️ отсутствует"
+        assert settings_btn_box["x"] > 0, "Кнопка Настройки ⚙️ невидима"
+
+        client_btn_box = page.locator("#btn-client-mode-toggle").bounding_box()
+        assert client_btn_box is not None, "Кнопка режима клиента 👁️ отсутствует"
+        assert client_btn_box["x"] > 0, "Кнопка режима клиента 👁️ невидима"
+
         browser.close()
+

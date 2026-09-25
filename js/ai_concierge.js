@@ -214,15 +214,15 @@ class LigaAIConcierge {
     if (this.isOnline && this.isEnabled && this.apiKey) {
       indicator.classList.remove('offline');
       if (dot) dot.style.display = '';
-      if (label) label.textContent = 'LIGA AI';
+      if (label) label.textContent = 'AI';
       indicator.title = 'LIGA AI • НА СВЯЗИ (Gemini 2.5 Flash)';
     } else if (this.isOnline && this.isEnabled && !this.apiKey) {
       indicator.classList.add('offline');
-      if (label) label.textContent = 'AI: ключ?';
+      if (label) label.textContent = 'AI';
       indicator.title = 'LIGA AI — укажите API ключ в настройках';
     } else {
       indicator.classList.add('offline');
-      if (label) label.textContent = 'AI ОФЛАЙН';
+      if (label) label.textContent = 'AI';
       indicator.title = 'LIGA AI ОФЛАЙН • Ядро LIGA OS работает автономно';
     }
 
@@ -239,32 +239,47 @@ class LigaAIConcierge {
   openModal() {
     const modal = document.getElementById('modal-ai-concierge');
     if (modal) {
-      modal.classList.add('active');
-      this._updateNetworkIndicator();
-      // Если ключа нет — подсказать
-      if (!this.apiKey) {
-        this._addSystemMessage('⚙️ Для работы LIGA AI укажите Google AI API ключ в Настройках (⚙️).');
+      if (window.app && window.app.openModal) {
+        window.app.openModal('modal-ai-concierge');
+      } else {
+        modal.classList.add('open');
       }
-      setTimeout(() => this.chatInput && this.chatInput.focus(), 100);
+      this._updateNetworkIndicator();
+      if (!this.apiKey) {
+        this._addSystemMessage('⚙️ Для работы LIGA AI укажите бесплатный Google AI API ключ в Настройках (кнопка ⚙️ вверху).');
+      }
+      setTimeout(() => this.chatInput && this.chatInput.focus(), 150);
     }
   }
 
   closeModal() {
-    const modal = document.getElementById('modal-ai-concierge');
-    if (modal) modal.classList.remove('active');
+    if (window.app && window.app.closeModal) {
+      window.app.closeModal('modal-ai-concierge');
+    } else {
+      const modal = document.getElementById('modal-ai-concierge');
+      if (modal) modal.classList.remove('open');
+    }
   }
 
   openSettings() {
     const modal = document.getElementById('modal-settings');
     if (modal) {
       this._syncSettingsUI();
-      modal.classList.add('active');
+      if (window.app && window.app.openModal) {
+        window.app.openModal('modal-settings');
+      } else {
+        modal.classList.add('open');
+      }
     }
   }
 
   closeSettings() {
-    const modal = document.getElementById('modal-settings');
-    if (modal) modal.classList.remove('active');
+    if (window.app && window.app.closeModal) {
+      window.app.closeModal('modal-settings');
+    } else {
+      const modal = document.getElementById('modal-settings');
+      if (modal) modal.classList.remove('open');
+    }
   }
 
   _syncSettingsUI() {

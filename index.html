@@ -38,7 +38,7 @@
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.2.0 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.2.0">
+  <link rel="stylesheet" href="./css/style.css?v=2.2.1">
 </head>
 <body>
   <div class="app-container">
@@ -48,20 +48,20 @@
       <div class="top-header-primary">
         <div class="brand-badge">
           <img src="./icons/logo.svg" alt="LIGA Logo" class="brand-logo">
-          <div>
+          <div class="brand-text-block">
             <div class="brand-title">LIGA OS</div>
             <div class="brand-subtitle" title="Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть">
-              <span class="offline-pulse"></span> ТАШКЕНТ • 🟢 БАЗА ОФФЛАЙН
+              <span class="offline-pulse"></span> 🟢 БАЗА ОФФЛАЙН
+              <button id="btn-ai-concierge-open" class="liga-ai-indicator" title="LIGA AI • Инженерный Консьерж (Gemini 2.5 Flash)" type="button">
+                <span class="ai-dot"></span>
+                <span class="ai-label">AI</span>
+              </button>
             </div>
           </div>
         </div>
         <div class="header-main-actions">
-          <!-- LIGA AI Консьерж: индикатор сети/ИИ -->
-          <button id="btn-ai-concierge-open" class="liga-ai-indicator" title="LIGA AI Инженерный Консьерж (Gemini 2.5 Flash)" type="button">
-            <span class="ai-dot"></span>
-            <span class="ai-label">LIGA AI</span>
-          </button>
           <button id="btn-client-mode-toggle" class="btn-icon-top" title="Режим показа клиенту (демонстрация на экране мастера)">👁️</button>
+          <button id="btn-settings-top" class="btn-icon-top" title="Настройки LIGA OS">⚙️</button>
           <button id="btn-more-menu-toggle" class="btn-more-menu-toggle" title="Все инструменты и меню мастера">⋯ Ещё</button>
         </div>
       </div>
@@ -78,8 +78,6 @@
         <button id="btn-theme-toggle" class="btn-icon-top" title="Сменить тему (Светлая / Тёмная)">☀️</button>
         <!-- Кнопка резервной копии базы данных -->
         <button id="btn-backup-top" class="btn-icon-top master-only" title="Сохранить резервную копию базы">💾</button>
-        <!-- Кнопка Настроек LIGA OS -->
-        <button id="btn-settings-top" class="btn-icon-top" title="Настройки LIGA OS">⚙️</button>
       </div>
     </header>
 
@@ -2014,19 +2012,19 @@
 
 
     <!-- ====================================================================
-         МОДАЛЬНОЕ ОКНО: ⚙️ НАСТРОЙКИ LIGA OS (v2.2.0)
+         МОДАЛЬНОЕ ОКНО: ⚙️ НАСТРОЙКИ LIGA OS (v2.2.1)
          ==================================================================== -->
     <div id="modal-settings" class="modal-overlay">
-      <div class="modal-card" style="max-width:480px;">
-        <div class="modal-header">
-          <div class="modal-title">⚙️ Настройки LIGA OS</div>
-          <button class="btn-close-modal" id="btn-close-settings">✕</button>
+      <div class="modal-sheet" style="max-height:85vh; overflow-y:auto;">
+        <div class="modal-title">
+          <span>⚙️ Настройки LIGA OS</span>
+          <button class="btn-close-modal" id="btn-close-settings" onclick="window.app.closeModal('modal-settings')">&times;</button>
         </div>
-        <div class="modal-body" style="overflow-y:auto; max-height:70vh;">
+        <div class="modal-body" style="padding-bottom:16px;">
 
           <!-- Секция: Интерфейс -->
           <div class="settings-section">
-            <div class="settings-section-title">Интерфейс</div>
+            <div class="settings-section-title">Интерфейс и звуки</div>
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
                 <div class="settings-toggle-label">Звуковые сигналы</div>
@@ -2039,8 +2037,8 @@
             </div>
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
-                <div class="settings-toggle-label">Тёмная тема</div>
-                <div class="settings-toggle-desc">Dark Titanium / Light Ceramic</div>
+                <div class="settings-toggle-label">Тёмная тема (Dark Titanium)</div>
+                <div class="settings-toggle-desc">Переключение светлой и тёмной темы</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="toggle-theme-settings">
@@ -2052,37 +2050,37 @@
           <!-- Секция: Подсказки -->
           <div class="settings-section">
             <div class="settings-section-title">Подсказки и обучение</div>
-            <button class="btn-restore-onboarding" id="btn-restore-onboarding" type="button">
+            <button class="btn-restore-onboarding" id="btn-restore-onboarding" type="button" onclick="window.app.restoreOnboardingHint()">
               💡 Вернуть подсказку «Как работать за 3 шага»
             </button>
             <div style="font-size:10px; color:var(--text-dim); margin-top:4px;">
-              Подсказка появляется при первом запуске. Можно скрыть крестиком и вернуть здесь в любой момент.
+              Если вы случайно скрыли памятку на главном экране — нажмите эту кнопку, чтобы вернуть её.
             </div>
           </div>
 
           <!-- Секция: LIGA AI Консьерж -->
           <div class="settings-section">
-            <div class="settings-section-title">
-              LIGA AI Консьерж
+            <div class="settings-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>LIGA AI Консьерж</span>
               <span class="ai-model-badge">Gemini 2.5 Flash</span>
             </div>
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
                 <div class="settings-toggle-label">ИИ-Консьерж активен</div>
-                <div class="settings-toggle-desc">Голосовой помощник с пониманием сантехники</div>
+                <div class="settings-toggle-desc">Умный голосовой инженерный консультант</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggle-ai-enabled">
+                <input type="checkbox" id="toggle-ai-enabled" checked>
                 <span class="toggle-track"></span>
               </label>
             </div>
-            <div style="margin-top:10px;">
-              <div class="settings-toggle-label" style="margin-bottom:4px;">Google AI API ключ</div>
-              <div style="font-size:10px; color:var(--text-dim); margin-bottom:4px;">
-                Получить бесплатно на <b style="color:var(--neon-emerald)">aistudio.google.com</b>. Ключ хранится только локально на устройстве.
+            <div style="margin-top:12px;">
+              <div class="settings-toggle-label" style="margin-bottom:4px;">Google AI API ключ:</div>
+              <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">
+                Бесплатный ключ на <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:var(--neon-emerald); text-decoration:underline;">aistudio.google.com</a>. Хранится только на вашем телефоне.
               </div>
               <input class="ai-api-key-field" type="password" id="ai-api-key-input"
-                placeholder="AIza..." autocomplete="off">
+                placeholder="Вставьте ключ вида AIza..." autocomplete="off">
               <button id="btn-save-ai-key" type="button"
                 style="margin-top:8px; width:100%; padding:10px; background:var(--gold-gradient);
                 border:none; border-radius:10px; color:var(--btn-gold-text); font-size:13px;
@@ -2090,10 +2088,10 @@
                 💾 Сохранить API ключ
               </button>
             </div>
-            <div class="settings-toggle-row" style="margin-top:8px;">
+            <div class="settings-toggle-row" style="margin-top:10px;">
               <div class="settings-toggle-info">
                 <div class="settings-toggle-label">Голосовые ответы ИИ</div>
-                <div class="settings-toggle-desc">Озвучивать ответы консьержа (Web Speech)</div>
+                <div class="settings-toggle-desc">Озвучивать ответы голосом устройства</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="toggle-ai-voice" checked>
@@ -2107,37 +2105,36 @@
     </div>
 
     <!-- ====================================================================
-         МОДАЛЬНОЕ ОКНО: 🤖 LIGA AI КОНСЬЕРЖ (v2.2.0)
+         МОДАЛЬНОЕ ОКНО: 🤖 LIGA AI КОНСЬЕРЖ (v2.2.1)
          ==================================================================== -->
     <div id="modal-ai-concierge" class="modal-overlay">
-      <div class="modal-card" style="max-width:520px; display:flex; flex-direction:column;">
-        <div class="modal-header">
-          <div class="modal-title">
-            🤖 LIGA AI • Инженерный Консьерж
-            <span class="ai-model-badge" style="margin-left:8px;">Gemini 2.5 Flash</span>
+      <div class="modal-sheet" style="max-height:85vh; display:flex; flex-direction:column; overflow:hidden;">
+        <div class="modal-title" style="margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>🤖 LIGA AI</span>
+            <span class="ai-model-badge">Gemini 2.5 Flash</span>
           </div>
-          <button class="btn-close-modal" id="btn-close-ai-concierge">✕</button>
+          <button class="btn-close-modal" id="btn-close-ai-concierge" onclick="window.app.closeModal('modal-ai-concierge')">&times;</button>
         </div>
-        <div class="modal-body" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div class="modal-body" style="flex:1; display:flex; flex-direction:column; overflow:hidden; padding-bottom:8px;">
           <!-- Чат-сообщения -->
-          <div class="ai-chat-messages" id="ai-chat-messages">
+          <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; max-height:45vh;">
             <!-- Приветственное сообщение -->
             <div class="ai-msg">
               <div class="ai-msg-avatar">🛡️</div>
               <div class="ai-msg-bubble">
-                Здравствуйте! Я LIGA AI — инженерный консьерж системы.<br><br>
-                Могу помочь с вопросами по монтажу, объяснить формулы опрессовки, 
-                подготовить диалог с заказчиком или рассчитать материалы.<br><br>
-                Спрашивайте голосом или текстом — я понимаю контекст LIGA OS.
+                Здравствуйте! Я <b>LIGA AI</b> — ваш инженерный консьерж.<br><br>
+                Помогу с нормами СНиП, формулами опрессовки 16 бар, материалами Rehau/FAR и диалогами с дизайнерами.<br><br>
+                Задавайте вопрос голосом или текстом!
               </div>
             </div>
           </div>
           <!-- Статус offline -->
           <div id="ai-offline-warning" style="display:none; text-align:center; padding:8px; font-size:11px; color:var(--text-dim); border-top:1px solid var(--glass-border-subtle);">
-            ⚪ Нет интернета — LIGA AI недоступен. Ядро LIGA OS работает в автономном режиме.
+            ⚪ Нет интернета — LIGA AI недоступен. Ядро LIGA OS работает автономно без сети.
           </div>
           <!-- Строка ввода -->
-          <div class="ai-chat-input-row">
+          <div class="ai-chat-input-row" style="margin-top:8px;">
             <textarea class="ai-chat-input" id="ai-chat-input"
               placeholder="Спросите инженерного консьержа..." rows="1"></textarea>
             <button class="btn-ai-voice-send" id="btn-ai-voice" type="button" title="Голосовой ввод">🎙️</button>
@@ -2148,10 +2145,10 @@
     </div>
 
   <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
-  <script src="./js/image_processor.js?v=2.2.0"></script>
-  <script src="./js/db.js?v=2.2.0"></script>
-  <script src="./js/pdf_engine.js?v=2.2.0"></script>
-  <script src="./js/ai_concierge.js?v=2.2.0"></script>
-  <script src="./js/app.js?v=2.2.0"></script>
+  <script src="./js/image_processor.js?v=2.2.1"></script>
+  <script src="./js/db.js?v=2.2.1"></script>
+  <script src="./js/pdf_engine.js?v=2.2.1"></script>
+  <script src="./js/ai_concierge.js?v=2.2.1"></script>
+  <script src="./js/app.js?v=2.2.1"></script>
 </body>
 </html>
