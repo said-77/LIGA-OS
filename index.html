@@ -38,7 +38,7 @@
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.2.0 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.2.2">
+  <link rel="stylesheet" href="./css/style.css?v=2.2.3">
 </head>
 <body>
   <div class="app-container">
@@ -778,6 +778,13 @@
           📦 Спецификация сертифицированных европейских материалов Rehau / FAR / Geberit
         </div>
 
+        <!-- Кнопка быстрого добавления базового комплекта Rehau/FAR -->
+        <div class="master-only" style="margin-bottom:12px;">
+          <button id="btn-load-standard-materials" type="button" class="btn-contact" style="width:100%; height:38px; font-size:12px; font-weight:800; color:var(--gold-primary); border-color:var(--gold-primary); background:rgba(212,175,55,0.06);">
+            <span>📦</span> Загрузить базовый комплект Rehau / FAR (6 позиций в 1 тап)
+          </button>
+        </div>
+
         <!-- Фильтры категорий и статуса -->
         <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
           <button class="btn-contact mat-filter active" data-filter="all" style="height:32px; padding:2px 12px; font-size:11px; flex-shrink:0;">Все</button>
@@ -862,6 +869,30 @@
           Нажимайте крупные кнопки для мгновенного расчета стоимости работ прямо на первой встрече с заказчиком:
         </p>
 
+        <!-- БЫСТРЫЕ ШАБЛОНЫ ПЛАНИРОВОК ТАШКЕНТА В 1 КЛИК -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            ⚡ Быстрый расчет по типу объекта (в 1 тап):
+          </div>
+          <div class="estimate-presets-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyEstimatePreset('studio')">
+              🏢 Студия (1 с/у)
+            </button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyEstimatePreset('standard')">
+              🏢 2-комн. (Стандарт)
+            </button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyEstimatePreset('comfort')">
+              🏰 3-комн. (Комфорт)
+            </button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyEstimatePreset('luxury')">
+              👑 4-комн. (Mirabad)
+            </button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyEstimatePreset('cottage')">
+              🏡 Коттедж / Вилла
+            </button>
+          </div>
+        </div>
+
         <div class="counter-grid">
           <div class="counter-card">
             <div class="counter-header">Санузлов</div>
@@ -937,8 +968,13 @@
         </div>
 
         <!-- Кнопка копирования в Telegram -->
-        <button id="btn-copy-estimate" class="btn-flagship-gold" style="margin-top:14px; height:52px; font-size:13px;">
+        <button id="btn-copy-estimate" class="btn-flagship-gold" style="margin-top:14px; height:50px; font-size:13px;">
           <span>💬</span> Скопировать расчет для Telegram
+        </button>
+
+        <!-- Кнопка утверждения сметы как суммы договора текущего объекта -->
+        <button id="btn-apply-estimate-to-site" class="btn-flagship-gold master-only" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #065f46 0%, #047857 100%); border-color:var(--neon-emerald); color:#fff;">
+          <span>📌</span> Утвердить как сумму договора объекта
         </button>
       </div>
     </section>
@@ -2235,10 +2271,10 @@
     </div>
 
   <!-- Скрипты LIGA OS (Версия 2.1.0: Королевский швейцарский интерфейс и 4 ситуации мастера) -->
-  <script src="./js/image_processor.js?v=2.2.2"></script>
-  <script src="./js/db.js?v=2.2.2"></script>
-  <script src="./js/pdf_engine.js?v=2.2.2"></script>
-  <script src="./js/ai_concierge.js?v=2.2.2"></script>
-  <script src="./js/app.js?v=2.2.2"></script>
+  <script src="./js/image_processor.js?v=2.2.3"></script>
+  <script src="./js/db.js?v=2.2.3"></script>
+  <script src="./js/pdf_engine.js?v=2.2.3"></script>
+  <script src="./js/ai_concierge.js?v=2.2.3"></script>
+  <script src="./js/app.js?v=2.2.3"></script>
 </body>
 </html>

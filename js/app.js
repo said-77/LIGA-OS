@@ -785,6 +785,16 @@ class LigaApp {
       btnCopyEstimate.addEventListener('click', () => this.copyEstimateToTelegram());
     }
 
+    const btnApplyEst = document.getElementById('btn-apply-estimate-to-site');
+    if (btnApplyEst) {
+      btnApplyEst.addEventListener('click', () => this.applyEstimateToCurrentSite());
+    }
+
+    const btnLoadPack = document.getElementById('btn-load-standard-materials');
+    if (btnLoadPack) {
+      btnLoadPack.addEventListener('click', () => this.loadStandardMaterialPack());
+    }
+
     // 11.1 Настройка тарифов сметы (P0-1)
     const btnOpenTariffs = document.getElementById('btn-open-tariffs');
     if (btnOpenTariffs) {
@@ -2631,6 +2641,140 @@ ${itemsText}
       console.error('Ошибка восстановления базы:', err);
       alert('Не удалось восстановить базу: ' + err.message);
     }
+  }
+
+  // ==========================================================================
+  // АВТОМАТИЗАЦИЯ СМЕТЫ И СКЛАДА МАТЕРИАЛОВ (v2.2.3)
+  // ==========================================================================
+  applyEstimatePreset(presetKey) {
+    const presets = {
+      studio: {
+        bathrooms: 1, waterPoints: 6, geberit: 1, ibox: 1, drains: 1, floorHeatingSqM: 20,
+        name: 'Студия'
+      },
+      standard: {
+        bathrooms: 1, waterPoints: 10, geberit: 1, ibox: 1, drains: 1, floorHeatingSqM: 35,
+        name: '2-комн. (Стандарт)'
+      },
+      comfort: {
+        bathrooms: 2, waterPoints: 14, geberit: 2, ibox: 2, drains: 2, floorHeatingSqM: 55,
+        name: '3-комн. (Комфорт)'
+      },
+      luxury: {
+        bathrooms: 2, waterPoints: 18, geberit: 2, ibox: 3, drains: 2, floorHeatingSqM: 80,
+        name: '4-комн. (Mirabad)'
+      },
+      cottage: {
+        bathrooms: 3, waterPoints: 26, geberit: 3, ibox: 4, drains: 3, floorHeatingSqM: 140,
+        name: 'Коттедж / Вилла'
+      }
+    };
+
+    const p = presets[presetKey];
+    if (!p) return;
+
+    this.estimate.bathrooms = p.bathrooms;
+    this.estimate.waterPoints = p.waterPoints;
+    this.estimate.geberit = p.geberit;
+    this.estimate.ibox = p.ibox;
+    this.estimate.drains = p.drains;
+    this.estimate.floorHeatingSqM = p.floorHeatingSqM;
+
+    ['bathrooms', 'waterPoints', 'geberit', 'ibox', 'drains', 'floorHeatingSqM'].forEach(f => {
+      const el = document.getElementById(`val-${f}`);
+      if (el) el.innerText = this.estimate[f];
+    });
+
+    this.calculateEstimate();
+    this.showToast(`✓ Загружен шаблон: ${p.name}`);
+  }
+
+  async applyEstimateToCurrentSite() {
+    if (!this.currentSite && this.currentSiteId) {
+      this.currentSite = await window.ligaDB.get('sites', this.currentSiteId);
+    }
+    if (!this.currentSite) {
+      const sites = await window.ligaDB.getAll('sites');
+      if (sites && sites.length > 0) {
+        this.currentSite = sites[0];
+        this.currentSiteId = sites[0].id;
+      }
+    }
+    if (!this.currentSite) {
+      this.showToast('⚠️ Сначала создайте объект на дашборде!');
+      this.switchScreen('dashboard');
+      return;
+    }
+
+    const t = this.tariffSettings || this.defaultTariffSettings;
+    const e = this.estimate;
+    const costBathrooms = (e.bathrooms || 0) * (t.costPerBathroom || 0);
+    const costPoints = (e.waterPoints || 0) * (t.costPerPoint || 0);
+    const costGeberit = (e.geberit || 0) * (t.costPerGeberit || 0);
+    const costIbox = (e.ibox || 0) * (t.costPerIbox || 0);
+    const costDrains = (e.drains || 0) * (t.costPerDrain || 0);
+    const costFloor = (e.floorHeatingSqM || 0) * (t.costPerSqMFloor || 0);
+    const baseAudit = t.baseAuditWork || 0;
+    const calculatedMin = costBathrooms + costPoints + costGeberit + costIbox + costDrains + costFloor + baseAudit;
+
+    this.currentSite.contractAmount = calculatedMin;
+    this.currentSite.totalSum = calculatedMin;
+    await window.ligaDB.put('sites', this.currentSite);
+
+    await window.ligaDB.add('site_timeline_events', {
+      siteId: this.currentSiteId,
+      date: new Date().toISOString(),
+      title: 'Утверждена смета монтажа',
+      desc: `Смета ${this.formatSum(calculatedMin)}: ${e.bathrooms} с/у, ${e.waterPoints} точек, ${e.floorHeatingSqM} м² тёплый пол.`,
+      icon: '⚡'
+    });
+
+    this.render();
+    this.switchScreen('dashboard');
+    await this.renderScreenContent('dashboard');
+    this.showToast(`✓ Смета ${this.formatSum(calculatedMin)} утверждена для «${this.currentSite.name}»!`);
+  }
+
+  async loadStandardMaterialPack() {
+    if (!this.currentSite && this.currentSiteId) {
+      this.currentSite = await window.ligaDB.get('sites', this.currentSiteId);
+    }
+    if (!this.currentSite) {
+      const sites = await window.ligaDB.getAll('sites');
+      if (sites && sites.length > 0) {
+        this.currentSite = sites[0];
+        this.currentSiteId = sites[0].id;
+      }
+    }
+    if (!this.currentSiteId) {
+      this.showToast('⚠️ Сначала выберите активный объект!');
+      return;
+    }
+
+    const standardPack = [
+      { category: 'Трубы и фитинги', name: 'Труба Rehau Rautitan Pink 16x2.0 (EVOH)', qty: '200 м', price: 3400000, isPurchased: false },
+      { category: 'Коллекторы FAR', name: 'Коллекторная группа FAR 1" с расходомерами (6 выходов)', qty: '1 шт', price: 2200000, isPurchased: false },
+      { category: 'Инсталляции', name: 'Инсталляция Geberit Duofix Delta с клавишей', qty: '2 шт', price: 4600000, isPurchased: false },
+      { category: 'Автоматика и фильтры', name: 'Редуктор давления Caleffi 3/4" с манометром', qty: '2 шт', price: 1800000, isPurchased: false },
+      { category: 'Автоматика и фильтры', name: 'Гаситель гидроударов FAR 1/2"', qty: '2 шт', price: 900000, isPurchased: false },
+      { category: 'Трапы и сливы', name: 'Трап щелевой 70 см с сухим затвором', qty: '2 шт', price: 1600000, isPurchased: false }
+    ];
+
+    for (const item of standardPack) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: item.isPurchased,
+        receiptPhoto: null
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.showToast('✓ Базовый комплект Rehau/FAR загружен в список закупки!');
   }
 
   updateEstimate(field, delta) {
