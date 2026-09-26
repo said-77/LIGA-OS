@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.3.2-hydraulic-balancing-calculator';
+const CACHE_NAME = 'liga-os-v2.3.3-circulation-pump-calculator';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

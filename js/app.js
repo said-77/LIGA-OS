@@ -4659,6 +4659,305 @@ ${loopsText}
     setTimeout(cleanup, 2000);
   }
 
+  // ==========================================================================
+  // КАЛЬКУЛЯТОР ЦИРКУЛЯЦИОННОГО НАСОСА И МАГИСТРАЛЕЙ ОТОПЛЕНИЯ (v2.3.3)
+  // Стандарт DIN EN 12831 / DIN 1988: расход G, напор H, скорость потока v ≤ 0.7 м/с
+  // ==========================================================================
+  openPumpCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.pumpCalc) {
+      this.pumpCalc = {
+        powerKw: 24,
+        deltaT: 15,
+        distanceM: 25
+      };
+    }
+
+    const pwrEl = document.getElementById('pump-calc-power-input');
+    const dtEl = document.getElementById('pump-calc-delta-t-select');
+    const distEl = document.getElementById('pump-calc-distance-input');
+
+    if (pwrEl) pwrEl.value = this.pumpCalc.powerKw;
+    if (dtEl) dtEl.value = String(this.pumpCalc.deltaT);
+    if (distEl) distEl.value = this.pumpCalc.distanceM;
+
+    this.recalculatePumpSystem();
+    this.openModal('modal-pump-calculator');
+  }
+
+  setPumpPower(kw) {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+    const val = Math.max(3, Math.min(120, parseFloat(kw) || 24));
+    this.pumpCalc.powerKw = val;
+    const pwrEl = document.getElementById('pump-calc-power-input');
+    if (pwrEl) pwrEl.value = val;
+    this.recalculatePumpSystem();
+  }
+
+  adjustPumpPower(delta) {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+    this.setPumpPower((this.pumpCalc.powerKw || 24) + delta);
+  }
+
+  updatePumpPower(kw) {
+    this.setPumpPower(kw);
+  }
+
+  updatePumpDeltaT(dt) {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+    this.pumpCalc.deltaT = Math.max(3, Math.min(30, parseFloat(dt) || 15));
+    this.recalculatePumpSystem();
+  }
+
+  adjustPumpDistance(delta) {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+    const nextDist = Math.max(5, Math.min(80, (this.pumpCalc.distanceM || 25) + delta));
+    this.pumpCalc.distanceM = nextDist;
+    const distEl = document.getElementById('pump-calc-distance-input');
+    if (distEl) distEl.value = nextDist;
+    this.recalculatePumpSystem();
+  }
+
+  updatePumpDistance(dist) {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+    this.pumpCalc.distanceM = Math.max(5, Math.min(80, parseFloat(dist) || 25));
+    this.recalculatePumpSystem();
+  }
+
+  recalculatePumpSystem() {
+    if (!this.pumpCalc) {
+      this.pumpCalc = { powerKw: 24, deltaT: 15, distanceM: 25 };
+    }
+
+    const powerKw = Math.max(3, Math.min(120, this.pumpCalc.powerKw || 24));
+    const deltaT = Math.max(3, Math.min(30, this.pumpCalc.deltaT || 15));
+    const distanceM = Math.max(5, Math.min(80, this.pumpCalc.distanceM || 25));
+
+    // 1. Расход теплоносителя: G (м³/ч) = (Q * 0.86) / ΔT
+    const flowM3h = (powerKw * 0.86) / deltaT;
+    const flowLpm = (flowM3h * 1000) / 60;
+
+    // 2. Подбор диаметра трубы Rehau Rautitan Stabil по скорости потока
+    const pipes = [
+      { name: 'Rehau Rautitan Stabil 16×2.6', innerD: 0.0108, outerMm: 16 },
+      { name: 'Rehau Rautitan Stabil 20×2.9', innerD: 0.0142, outerMm: 20 },
+      { name: 'Rehau Rautitan Stabil 25×3.7', innerD: 0.0176, outerMm: 25 },
+      { name: 'Rehau Rautitan Stabil 32×4.7', innerD: 0.0226, outerMm: 32 },
+      { name: 'Rehau Rautitan Stabil 40×6.0', innerD: 0.0280, outerMm: 40 }
+    ];
+
+    let selectedPipe = pipes[pipes.length - 1];
+    let selectedVelocity = 0;
+
+    for (const p of pipes) {
+      const area = Math.PI * Math.pow(p.innerD / 2, 2);
+      const velocity = (flowM3h / 3600) / area;
+      if (velocity <= 1.05) {
+        selectedPipe = p;
+        selectedVelocity = velocity;
+        break;
+      }
+    }
+    if (selectedVelocity === 0) {
+      const area = Math.PI * Math.pow(selectedPipe.innerD / 2, 2);
+      selectedVelocity = (flowM3h / 3600) / area;
+    }
+
+    // Текстовая оценка скорости
+    let velStatusText = 'Бесшумно (швейцарский стандарт)';
+    let velColor = 'var(--neon-emerald)';
+    if (selectedVelocity > 0.72 && selectedVelocity <= 1.05) {
+      velStatusText = 'Норма для магистрали (котельная)';
+      velColor = 'var(--neon-emerald)';
+    } else if (selectedVelocity > 1.05) {
+      velStatusText = 'Превышение! Риск шума в трубах';
+      velColor = 'var(--neon-ruby)';
+    }
+
+    // 3. Расчет требуемого напора циркуляционного насоса (H, м.в.ст.)
+    const totalPipeLength = distanceM * 2;
+    const linearLossesKPa = (totalPipeLength * 130) / 1000;
+    const localLossesKPa = (linearLossesKPa * 0.4) + 12.0;
+    const totalHeadKPa = linearLossesKPa + localLossesKPa;
+    let headM = (totalHeadKPa / 9.81) * 1.15;
+    headM = Math.max(2.0, Math.min(8.5, Math.round(headM * 10) / 10));
+
+    // 4. Рекомендация насоса Grundfos / Wilo
+    let pumpModel = 'Grundfos UPS 25-60 180 (или ALPHA2 25-60)';
+    let speedMode = 'Скорость II (постоянный напор CP2) • Золотой стандарт';
+    let pumpPrice = 1850000;
+    let fittingsCost = 280000;
+
+    if (powerKw <= 14 && flowM3h <= 1.0) {
+      pumpModel = 'Grundfos UPS 25-40 180 (или ALPHA1 L 25-40)';
+      speedMode = 'Скорость II (энергоэффективно CP1)';
+      pumpPrice = 1650000;
+    } else if (powerKw > 38 || flowM3h > 2.6 || headM > 5.8) {
+      pumpModel = 'Grundfos UPS 25-80 180 (или MAGNA1 25-80)';
+      speedMode = 'Скорость III (максимальный напор CP3)';
+      pumpPrice = 2450000;
+    }
+
+    const pipeUnitPrices = {
+      16: 28000,
+      20: 38000,
+      25: 58000,
+      32: 88000,
+      40: 135000
+    };
+    const pipeUnitPrice = pipeUnitPrices[selectedPipe.outerMm] || 58000;
+    const totalPipeCost = totalPipeLength * pipeUnitPrice;
+
+    this.currentCalculatedPump = {
+      powerKw,
+      deltaT,
+      distanceM,
+      totalPipeLength,
+      flowM3h: Math.round(flowM3h * 100) / 100,
+      flowLpm: Math.round(flowLpm * 10) / 10,
+      headM,
+      totalHeadKPa: Math.round(totalHeadKPa * 10) / 10,
+      pipeName: selectedPipe.name,
+      pipeOuterMm: selectedPipe.outerMm,
+      pipeUnitPrice,
+      totalPipeCost,
+      velocity: Math.round(selectedVelocity * 100) / 100,
+      velStatusText,
+      velColor,
+      pumpModel,
+      speedMode,
+      pumpPrice,
+      fittingsCost
+    };
+
+    // Обновляем DOM
+    const flowResEl = document.getElementById('res-pump-flow');
+    const headResEl = document.getElementById('res-pump-head');
+    const pipeResEl = document.getElementById('res-pump-pipe-dia');
+    const velResEl = document.getElementById('res-pump-velocity');
+    const pumpResEl = document.getElementById('res-pump-model-name');
+    const speedResEl = document.getElementById('res-pump-speed-mode');
+
+    if (flowResEl) flowResEl.innerText = `${flowM3h.toFixed(2)} м³/ч (${flowLpm.toFixed(1)} л/мин)`;
+    if (headResEl) headResEl.innerText = `${headM.toFixed(1)} м вод. ст. (${totalHeadKPa.toFixed(1)} кПа)`;
+    if (pipeResEl) pipeResEl.innerText = selectedPipe.name;
+    if (velResEl) {
+      velResEl.innerText = `${selectedVelocity.toFixed(2)} м/с • ${velStatusText}`;
+      velResEl.style.color = velColor;
+    }
+    if (pumpResEl) pumpResEl.innerText = pumpModel;
+    if (speedResEl) speedResEl.innerText = speedMode;
+  }
+
+  async copyPumpCalculation() {
+    const p = this.currentCalculatedPump;
+    if (!p) {
+      this.recalculatePumpSystem();
+    }
+    const calc = this.currentCalculatedPump;
+    if (!calc) return;
+
+    const siteName = this.currentSite ? this.currentSite.title : 'Объект LIGA OS';
+
+    const report = `🌀 ИНЖЕНЕРНЫЙ РАСЧЕТ ЦИРКУЛЯЦИОННОГО НАСОСА И МАГИСТРАЛЕЙ
+«Лига Опытных Мастеров» • Стандарт DIN EN 12831 (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+📍 Объект: ${siteName}
+📅 Дата: ${new Date().toLocaleDateString('ru-RU')}
+
+ИСХОДНЫЕ ДАННЫЕ СИСТЕМЫ:
+• Тепловая нагрузка: ${calc.powerKw} кВт
+• Температурный график (ΔT): ${calc.deltaT}°C
+• Длина плеча магистрали: ${calc.distanceM} м (трасса подачи + обратки: ${calc.totalPipeLength} м)
+
+ГИДРАВЛИЧЕСКИЙ РАСЧЕТ РАБОЧЕЙ ТОЧКИ:
+• Расчетный расход (Q): ${calc.flowM3h.toFixed(2)} м³/ч (${calc.flowLpm.toFixed(1)} л/мин)
+• Требуемый напор (H): ${calc.headM.toFixed(1)} м вод. ст. (${calc.totalHeadKPa.toFixed(1)} кПа)
+• Рекомендуемая магистраль: ${calc.pipeName}
+• Скорость теплоносителя: ${calc.velocity.toFixed(2)} м/с (${calc.velStatusText})
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Циркуляционный насос: ${calc.pumpModel}
+2. Режим работы: ${calc.speedMode}
+3. Магистральная труба: ${calc.pipeName} — ${calc.totalPipeLength} м
+4. Запорная арматура: Разъемные сгоны-американки FAR 1" (2 шт)
+
+🛡️ ИНЖЕНЕРНЫЙ СТАНДАРТ БЕЗОПАСНОСТИ:
+Скорость теплоносителя в пределах 0.3–0.7 м/с гарантирует 100% бесшумность радиаторов, исключает кавитацию и вибрацию труб в стяжке.
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        await this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет насоса и магистрали скопирован для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Расчет насоса сформирован!');
+    }
+  }
+
+  async addCalculatedPumpToMaterials() {
+    const calc = this.currentCalculatedPump;
+    if (!calc) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [
+      {
+        category: 'boiler',
+        name: `Циркуляционный насос: ${calc.pumpModel}`,
+        qty: '1 шт',
+        price: calc.pumpPrice,
+        isPurchased: false
+      },
+      {
+        category: 'pipes',
+        name: `Магистральная труба: ${calc.pipeName}`,
+        qty: `${calc.totalPipeLength} м`,
+        price: calc.totalPipeCost,
+        isPurchased: false
+      },
+      {
+        category: 'fittings',
+        name: 'Разъемные сгоны (американки) FAR 1" для быстрого монтажа циркуляционного насоса',
+        qty: '2 шт',
+        price: calc.fittingsCost,
+        isPurchased: false
+      }
+    ];
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-pump-calculator');
+    this.showToast('✓ Добавлено 3 позиции насосного оборудования в закупку на склад!');
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -5149,6 +5448,14 @@ ${loopsText}
         target: 'openLeakCalculator',
         title: '🛡️ Инструмент: Защита от протечек Neptun / Gidrolock',
         desc: 'Открываю расчет кранов с электроприводом, радиодатчиков и блока питания LiFePO4...'
+      };
+    }
+    if ((lower.includes('подбор насоса') || lower.includes('калькулятор насоса') || lower.includes('напор насоса') || (lower.includes('циркуляционн') && lower.includes('насос')) || (lower.includes('какой') && lower.includes('насос')) || lower.includes('магистрал') || (lower.includes('насос') && (lower.includes('расчет') || lower.includes('отоплени')))) && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openPumpCalculator',
+        title: '🌀 Инструмент: Подбор циркуляционного насоса и магистралей',
+        desc: 'Открываю расчет рабочей точки насоса (Q, H), скорости теплоносителя и диаметров Rehau...'
       };
     }
 

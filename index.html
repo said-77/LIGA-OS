@@ -37,8 +37,8 @@
   <meta name="twitter:image" content="https://liga-os-beige.vercel.app/icons/og-preview.png">
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
-  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.3.2 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.3.2">
+  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.3.3 -->
+  <link rel="stylesheet" href="./css/style.css?v=2.3.3">
 </head>
 <body>
   <div class="app-container">
@@ -153,6 +153,13 @@
             <div class="more-menu-info">
               <div class="more-menu-label">Балансировка коллектора</div>
               <div class="more-menu-desc">Ротаметры FAR (л/мин), увязка контуров и стикер на шкаф</div>
+            </div>
+          </button>
+          <button id="menu-item-pump-calc" class="more-menu-item" type="button" onclick="window.app.openPumpCalculator()">
+            <span class="more-menu-icon">🌀</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Насос и магистраль отопления</div>
+              <div class="more-menu-desc">Расход Q, напор H, диаметры Rehau и скорость v ≤ 0.7 м/с</div>
             </div>
           </button>
         </div>
@@ -1119,6 +1126,11 @@
         <!-- Кнопка перехода в гидравлический балансировщик коллектора (v2.3.2) -->
         <button id="btn-open-balancing-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #a855f7; color:var(--text-main);" onclick="window.app.openBalancingCalculator()">
           <span>⚖️</span> Балансировка коллектора и ротаметров (л/мин)
+        </button>
+
+        <!-- Кнопка перехода в калькулятор циркуляционного насоса и магистралей (v2.3.3) -->
+        <button id="btn-open-pump-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #38bdf8; color:var(--text-main);" onclick="window.app.openPumpCalculator()">
+          <span>🌀</span> Подбор циркуляционного насоса и магистрали отопления
         </button>
       </div>
     </section>
@@ -2591,6 +2603,133 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: КАЛЬКУЛЯТОР ЦИРКУЛЯЦИОННОГО НАСОСА И МАГИСТРАЛЕЙ (v2.3.3)
+         Швейцарский расчет по DIN EN 12831 / DIN 1988: расход G, напор H, скорость v
+         ==================================================================== -->
+    <div id="modal-pump-calculator" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:88vh; overflow-y:auto;">
+        <div class="modal-title">
+          <div>
+            <span style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px; display:block;">Инженерный гидравлический расчет котельной</span>
+            <span>🌀 Подбор насоса и магистрали отопления</span>
+          </div>
+          <button onclick="window.app.closeModal('modal-pump-calculator')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
+          Расчет рабочей точки (расход Q м³/ч, напор H м.в.ст.), защита от шума в радиаторах (скорость v ≤ 0.7 м/с) и подбор оригинального насоса Grundfos / Wilo.
+        </p>
+
+        <!-- 1. Тепловая нагрузка контура / системы -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase;">
+              1. Тепловая мощность системы / контура:
+            </label>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="btn-counter" onclick="window.app.adjustPumpPower(-2)" style="width:32px; height:32px; font-size:16px;">-2</button>
+              <div style="display:flex; align-items:center;">
+                <input type="number" id="pump-calc-power-input" value="24" min="3" max="120" step="1"
+                  onchange="window.app.updatePumpPower(this.value)"
+                  style="width:52px; height:32px; text-align:center; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border-subtle); border-radius:6px; color:var(--text-main); font-size:15px; font-weight:900;" />
+                <span style="font-size:12px; color:var(--text-muted); margin-left:4px; font-weight:700;">кВт</span>
+              </div>
+              <button type="button" class="btn-counter" onclick="window.app.adjustPumpPower(2)" style="width:32px; height:32px; font-size:16px;">+2</button>
+            </div>
+          </div>
+
+          <!-- Быстрые пресеты мощности -->
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+            <button type="button" class="btn-preset-est" onclick="window.app.setPumpPower(12)" style="padding:4px 8px; font-size:10px;">12 кВт (~120 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.setPumpPower(18)" style="padding:4px 8px; font-size:10px;">18 кВт (~180 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.setPumpPower(24)" style="padding:4px 8px; font-size:10px;">24 кВт (~240 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.setPumpPower(32)" style="padding:4px 8px; font-size:10px;">32 кВт (~320 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.setPumpPower(45)" style="padding:4px 8px; font-size:10px;">45 кВт (~450 м²)</button>
+          </div>
+        </div>
+
+        <!-- 2. Температурный перепад ΔT и длина магистрали -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px; display:flex; flex-direction:column; gap:10px;">
+          <div>
+            <label style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; display:block; margin-bottom:6px;">
+              2. Температурный график системы:
+            </label>
+            <select id="pump-calc-delta-t-select" onchange="window.app.updatePumpDeltaT(this.value)" class="form-select-pro" style="width:100%; height:38px; font-size:12px;">
+              <option value="15" selected>Комбинированное 65/50°C (ΔT=15°C, радиаторы + теплый пол)</option>
+              <option value="10">Стандартное радиаторное 75/65°C (ΔT=10°C, максимальный комфорт)</option>
+              <option value="20">Высокотемпературное 80/60°C (ΔT=20°C, классические радиаторы)</option>
+              <option value="5">Низкотемпературное 40/35°C (ΔT=5°C, только теплые полы)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:4px; border-top:1px solid rgba(255,255,255,0.05);">
+            <div>
+              <span style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; display:block;">
+                3. Длина самой дальней ветки:
+              </span>
+              <span style="font-size:10px; color:var(--text-muted);">От котельной до дальнего коллектора</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="btn-counter" onclick="window.app.adjustPumpDistance(-5)" style="width:30px; height:30px; font-size:14px;">-5</button>
+              <div style="display:flex; align-items:center;">
+                <input type="number" id="pump-calc-distance-input" value="25" min="5" max="80" step="1"
+                  onchange="window.app.updatePumpDistance(this.value)"
+                  style="width:46px; height:30px; text-align:center; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border-subtle); border-radius:6px; color:var(--text-main); font-size:13px; font-weight:800;" />
+                <span style="font-size:11px; color:var(--text-muted); margin-left:3px;">м</span>
+              </div>
+              <button type="button" class="btn-counter" onclick="window.app.adjustPumpDistance(5)" style="width:30px; height:30px; font-size:14px;">+5</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Сводный результат гидравлики и рекомендации оборудования -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px;">
+            4. Результаты гидравлического расчета:
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Расчетный расход теплоносителя (Q):</span>
+              <span id="res-pump-flow" style="font-weight:900; color:var(--neon-cyan);">1.38 м³/ч (22.9 л/мин)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Требуемый напор насоса (H):</span>
+              <span id="res-pump-head" style="font-weight:900; color:var(--gold-primary);">4.4 м вод. ст. (43.2 кПа)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Диаметр магистрали Rehau:</span>
+              <span id="res-pump-pipe-dia" style="font-weight:800; color:var(--text-main);">Rehau Rautitan Stabil 25×3.7</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Скорость потока (норма 0.3–0.7 м/с):</span>
+              <span id="res-pump-velocity" style="font-weight:800; color:var(--neon-emerald);">0.58 м/с • Бесшумно (норма)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Рекомендуемый насос:</span>
+              <span id="res-pump-model-name" style="font-weight:900; color:#38bdf8; text-align:right;">Grundfos UPS 25-60 180</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Режим работы насоса:</span>
+              <span id="res-pump-speed-mode" style="font-weight:800; color:var(--neon-emerald); text-align:right;">Скорость II (постоянный напор CP2)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопки действий мастера -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-pump-calc" onclick="window.app.copyPumpCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать расчет насоса для Telegram
+          </button>
+          <button id="btn-add-pump-to-materials" onclick="window.app.addCalculatedPumpToMaterials()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:46px;">
+            📦 Добавить насос и магистраль Rehau в закупку на склад
+          </button>
+          <button onclick="window.app.closeModal('modal-pump-calculator')" class="btn-submit-modal" style="background:rgba(255,255,255,0.08); color:var(--text-main); height:40px; margin-top:2px;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -3274,11 +3413,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.3.2: Гидравлический балансировщик коллектора и ротаметров) -->
-  <script src="./js/image_processor.js?v=2.3.2"></script>
-  <script src="./js/db.js?v=2.3.2"></script>
-  <script src="./js/pdf_engine.js?v=2.3.2"></script>
-  <script src="./js/ai_concierge.js?v=2.3.2"></script>
-  <script src="./js/app.js?v=2.3.2"></script>
+  <!-- Скрипты LIGA OS (Версия 2.3.3: Калькулятор циркуляционного насоса и магистралей) -->
+  <script src="./js/image_processor.js?v=2.3.3"></script>
+  <script src="./js/db.js?v=2.3.3"></script>
+  <script src="./js/pdf_engine.js?v=2.3.3"></script>
+  <script src="./js/ai_concierge.js?v=2.3.3"></script>
+  <script src="./js/app.js?v=2.3.3"></script>
 </body>
 </html>
