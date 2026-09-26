@@ -1152,10 +1152,11 @@ class LigaApp {
     this.render();
   }
 
-  // Переключение экранов приложения
+  // Переключение экранов приложения с навигационным компасом и тактильной отдачей (v2.3.1)
   switchScreen(screenName) {
     this.currentScreen = screenName;
 
+    // 1. Переключение видимости экранов с анимацией появления
     document.querySelectorAll('.app-screen').forEach(el => {
       el.classList.remove('active');
     });
@@ -1164,6 +1165,7 @@ class LigaApp {
       target.classList.add('active');
     }
 
+    // 2. Роскошная подсветка активной вкладки в нижнем меню
     document.querySelectorAll('.nav-item').forEach(btn => {
       if (btn.getAttribute('data-screen') === screenName) {
         btn.classList.add('active');
@@ -1172,7 +1174,39 @@ class LigaApp {
       }
     });
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    // 3. Обновление навигационного компаса в шапке (Header Ribbon)
+    const screenMeta = {
+      dashboard: { icon: '🏢', name: 'ОБЪЕКТЫ', title: 'Объекты мастера' },
+      finances: { icon: '💰', name: 'ФИНАНСЫ', title: 'Финансы и касса' },
+      materials: { icon: '📦', name: 'СКЛАД', title: 'Склад и снабжение' },
+      checklist: { icon: '🛡️', name: 'КОНТРОЛЬ', title: 'Технадзор 16 бар' },
+      estimate: { icon: '⚡', name: 'СМЕТА', title: 'Экспресс-смета' },
+      history: { icon: '📜', name: 'ИСТОРИЯ', title: 'История объекта' }
+    };
+    const meta = screenMeta[screenName] || { icon: '📱', name: 'РАЗДЕЛ', title: 'Раздел системы' };
+    const ribbonIcon = document.getElementById('ribbon-screen-icon');
+    const ribbonName = document.getElementById('ribbon-screen-name');
+    const ribbonSite = document.getElementById('ribbon-site-name');
+    if (ribbonIcon) ribbonIcon.innerText = meta.icon;
+    if (ribbonName) ribbonName.innerText = meta.name;
+    if (ribbonSite && this.currentSite) ribbonSite.innerText = this.currentSite.name;
+
+    // 4. Тактильный виброотклик смартфона (haptic click)
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(25);
+      } catch (e) {
+        // Игнорируем в браузерах без поддержки
+      }
+    }
+
+    // 5. Швейцарский тихий клик
+    if (this.isSoundEnabled && typeof this.playSubtleClick === 'function') {
+      this.playSubtleClick();
+    }
+
+    // 6. Мгновенная прокрутка наверх экрана для 100% фокуса
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     this.renderScreenContent(screenName);
   }
 
@@ -1203,6 +1237,8 @@ class LigaApp {
 
     const s = this.currentSite;
     document.getElementById('site-name-display').innerText = s.name;
+    const ribbonSite = document.getElementById('ribbon-site-name');
+    if (ribbonSite) ribbonSite.innerText = s.name;
     document.getElementById('site-unit-display').innerText = s.unit || 'Премиальный жилой фонд';
     document.getElementById('site-client-display').innerText = `Клиент: ${s.client}`;
     document.getElementById('site-designer-display').innerText = `Дизайнер: ${s.designer || 'Прямой заказ'}`;
@@ -3938,6 +3974,292 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций ГВС и оборудования бойлера в список закупки на склад!`);
   }
 
+  // ==========================================================================
+  // РАСЧЕТ СИСТЕМЫ ЗАЩИТЫ ОТ ПРОТЕЧЕК NEPTUN / GIDROLOCK (v2.3.0)
+  // 100% защита: электрокраны Bugatti 12V, радиодатчики, резерв LiFePO4
+  // ==========================================================================
+  openLeakCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.leakCalc) {
+      this.leakCalc = {
+        diameter: '3/4',
+        system: 'neptun',
+        valvesCount: 2,
+        sensorsCount: 6,
+        wireless: true,
+        ups: true,
+        serviceValves: true
+      };
+    }
+    const diaEl = document.getElementById('leak-calc-diameter-select');
+    const sysEl = document.getElementById('leak-calc-system-select');
+    const valEl = document.getElementById('leak-calc-valves-val');
+    const sensEl = document.getElementById('leak-calc-sensors-val');
+    const wireEl = document.getElementById('leak-calc-wireless');
+    const upsEl = document.getElementById('leak-calc-ups');
+    const servEl = document.getElementById('leak-calc-service-valves');
+
+    if (diaEl) diaEl.value = this.leakCalc.diameter;
+    if (sysEl) sysEl.value = this.leakCalc.system;
+    if (valEl) valEl.innerText = this.leakCalc.valvesCount;
+    if (sensEl) sensEl.innerText = this.leakCalc.sensorsCount;
+    if (wireEl) wireEl.checked = this.leakCalc.wireless;
+    if (upsEl) upsEl.checked = this.leakCalc.ups;
+    if (servEl) servEl.checked = this.leakCalc.serviceValves;
+
+    this.recalculateLeakSystem();
+    this.openModal('modal-leak-calculator');
+  }
+
+  adjustLeakValves(delta) {
+    if (!this.leakCalc) {
+      this.leakCalc = { diameter: '3/4', system: 'neptun', valvesCount: 2, sensorsCount: 6, wireless: true, ups: true, serviceValves: true };
+    }
+    this.leakCalc.valvesCount = Math.max(1, Math.min(8, (this.leakCalc.valvesCount || 2) + delta));
+    const valEl = document.getElementById('leak-calc-valves-val');
+    if (valEl) valEl.innerText = this.leakCalc.valvesCount;
+    this.recalculateLeakSystem();
+  }
+
+  adjustLeakSensors(delta) {
+    if (!this.leakCalc) {
+      this.leakCalc = { diameter: '3/4', system: 'neptun', valvesCount: 2, sensorsCount: 6, wireless: true, ups: true, serviceValves: true };
+    }
+    this.leakCalc.sensorsCount = Math.max(2, Math.min(16, (this.leakCalc.sensorsCount || 6) + delta));
+    const sensEl = document.getElementById('leak-calc-sensors-val');
+    if (sensEl) sensEl.innerText = this.leakCalc.sensorsCount;
+    this.recalculateLeakSystem();
+  }
+
+  recalculateLeakSystem() {
+    if (!this.leakCalc) {
+      this.leakCalc = { diameter: '3/4', system: 'neptun', valvesCount: 2, sensorsCount: 6, wireless: true, ups: true, serviceValves: true };
+    }
+    const diaEl = document.getElementById('leak-calc-diameter-select');
+    const sysEl = document.getElementById('leak-calc-system-select');
+    const wireEl = document.getElementById('leak-calc-wireless');
+    const upsEl = document.getElementById('leak-calc-ups');
+    const servEl = document.getElementById('leak-calc-service-valves');
+
+    const diameter = diaEl ? diaEl.value : this.leakCalc.diameter;
+    const system = sysEl ? sysEl.value : this.leakCalc.system;
+    const valvesCount = this.leakCalc.valvesCount || 2;
+    const sensorsCount = this.leakCalc.sensorsCount || 6;
+    const wireless = wireEl ? wireEl.checked : this.leakCalc.wireless;
+    const ups = upsEl ? upsEl.checked : this.leakCalc.ups;
+    const serviceValves = servEl ? servEl.checked : this.leakCalc.serviceValves;
+
+    this.leakCalc.diameter = diameter;
+    this.leakCalc.system = system;
+    this.leakCalc.wireless = wireless;
+    this.leakCalc.ups = ups;
+    this.leakCalc.serviceValves = serviceValves;
+
+    // Модуль управления
+    let controlUnit = '';
+    let controlPrice = 0;
+    if (system === 'neptun') {
+      controlUnit = 'Модуль управления Neptun Smart Plus (Wi-Fi, Tuya, радио 868 МГц)';
+      controlPrice = 2850000;
+    } else {
+      controlUnit = 'Блок управления Gidrolock Premium (автоочистка кранов каждые 14 дней)';
+      controlPrice = 3100000;
+    }
+
+    // Краны с электроприводом
+    let valvesText = '';
+    let valveUnitCost = 0;
+    if (system === 'neptun') {
+      valveUnitCost = diameter === '1/2' ? 1250000 : (diameter === '3/4' ? 1450000 : 1850000);
+      valvesText = `${valvesCount} шт кранов Bugatti Pro 12V ${diameter}" (латунь CW617N, металлические шестерни)`;
+    } else {
+      valveUnitCost = diameter === '1/2' ? 1400000 : (diameter === '3/4' ? 1650000 : 2100000);
+      valvesText = `${valvesCount} шт кранов Bonomi / Enolgas 12V ${diameter}" (усиленный редуктор 35 Нм)`;
+    }
+    const totalValvesCost = valveUnitCost * valvesCount;
+
+    // Датчики мокрых зон
+    let sensorsText = '';
+    let totalSensorsCost = 0;
+    if (wireless) {
+      const radioCount = Math.max(1, sensorsCount - 1);
+      sensorsText = `${radioCount} радиодатчиков 868 МГц + 1 проводной в коллекторный шкаф`;
+      totalSensorsCost = (radioCount * 280000) + 120000;
+    } else {
+      sensorsText = `${sensorsCount} проводных датчиков (с контролем обрыва линии)`;
+      totalSensorsCost = sensorsCount * 120000;
+    }
+
+    // Резервное питание
+    let upsText = '';
+    let upsCost = 0;
+    if (ups) {
+      upsText = 'Аккумулятор LiFePO4 12V 3.2Ah (до 72 ч автономности при отключении света)';
+      upsCost = 380000;
+    } else {
+      upsText = 'Питание только от сети 220V (без аккумулятора)';
+      upsCost = 0;
+    }
+
+    // Сервисные американки FAR
+    let fittingsText = '';
+    let fittingsCost = 0;
+    if (serviceValves) {
+      fittingsText = `Американки быстрого монтажа FAR / Tiemme ${diameter}" (${valvesCount} компл)`;
+      fittingsCost = valvesCount * 140000;
+    } else {
+      fittingsText = 'Прямое подключение (без быстроразъемных сгонов)';
+      fittingsCost = 0;
+    }
+
+    // Сохраняем расчет для экспорта
+    this.currentCalculatedLeak = {
+      diameter,
+      system,
+      valvesCount,
+      sensorsCount,
+      wireless,
+      ups,
+      serviceValves,
+      controlUnit,
+      controlPrice,
+      valvesText,
+      totalValvesCost,
+      sensorsText,
+      totalSensorsCost,
+      upsText,
+      upsCost,
+      fittingsText,
+      fittingsCost
+    };
+
+    // Обновляем DOM
+    const badgeEl = document.getElementById('res-leak-status-badge');
+    const ctrlEl = document.getElementById('res-leak-control-unit');
+    const valResEl = document.getElementById('res-leak-valves');
+    const sensResEl = document.getElementById('res-leak-sensors');
+    const upsResEl = document.getElementById('res-leak-ups');
+    const fitResEl = document.getElementById('res-leak-fittings');
+
+    if (badgeEl) badgeEl.innerText = `${valvesCount} крана • ${sensorsCount} датчиков`;
+    if (ctrlEl) ctrlEl.innerText = controlUnit;
+    if (valResEl) valResEl.innerText = valvesText;
+    if (sensResEl) sensResEl.innerText = sensorsText;
+    if (upsResEl) upsResEl.innerText = upsText;
+    if (fitResEl) fitResEl.innerText = fittingsText;
+  }
+
+  async copyLeakCalculation() {
+    const l = this.currentCalculatedLeak;
+    if (!l) return;
+
+    const report = `🛡️ ИНЖЕНЕРНЫЙ РАСЧЕТ СИСТЕМЫ ЗАЩИТЫ ОТ ПРОТЕЧЕК
+«Лига Опытных Мастеров» • Стандарт 100% защиты от затопления (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+
+📍 Стояки ввода: ${l.valvesCount} шт (диаметр: ${l.diameter}")
+📡 Мокрые зоны: ${l.sensorsCount} датчиков (${l.wireless ? 'радиоканал 868 МГц' : 'проводные'})
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Блок управления: ${l.controlUnit}
+2. Краны с электроприводом: ${l.valvesText}
+3. Датчики мокрых зон: ${l.sensorsText}
+4. Резервное питание: ${l.upsText}
+5. Сервисная арматура: ${l.fittingsText}
+
+🛡️ 100% БЕЗОПАСНОСТЬ ОТ ЗАТОПЛЕНИЯ:
+Время перекрытия стояков: 18-21 сек. Металлические шестерни редуктора исключают заклинивание. Система предотвращает катастрофический ущерб ремонту и соседям снизу!
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет защиты от протечек скопирован для Telegram / Базара!');
+    } catch (e) {
+      this.showToast('✓ Расчет защиты от протечек сформирован!');
+    }
+  }
+
+  async addCalculatedLeakToMaterials() {
+    const l = this.currentCalculatedLeak;
+    if (!l) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [];
+
+    // 1. Модуль управления
+    itemsToAdd.push({
+      category: 'safety',
+      name: `Модуль защиты от протечек: ${l.controlUnit}`,
+      qty: '1 компл',
+      price: l.controlPrice,
+      isPurchased: false
+    });
+
+    // 2. Краны с электроприводом
+    itemsToAdd.push({
+      category: 'valves',
+      name: `Шаровые краны с электроприводом: ${l.valvesText}`,
+      qty: `${l.valvesCount} шт`,
+      price: l.totalValvesCost,
+      isPurchased: false
+    });
+
+    // 3. Датчики протечки
+    itemsToAdd.push({
+      category: 'safety',
+      name: `Комплект датчиков протечки: ${l.sensorsText}`,
+      qty: `${l.sensorsCount} шт`,
+      price: l.totalSensorsCost,
+      isPurchased: false
+    });
+
+    // 4. Резервное питание (если включено)
+    if (l.ups && l.upsCost > 0) {
+      itemsToAdd.push({
+        category: 'safety',
+        name: `Блок резервного питания: ${l.upsText}`,
+        qty: '1 шт',
+        price: l.upsCost,
+        isPurchased: false
+      });
+    }
+
+    // 5. Американки FAR (если включены)
+    if (l.serviceValves && l.fittingsCost > 0) {
+      itemsToAdd.push({
+        category: 'fittings',
+        name: `Разъемные сгоны (американки) FAR / Tiemme ${l.diameter}" для быстрого сервиса электрокранов`,
+        qty: `${l.valvesCount} компл`,
+        price: l.fittingsCost,
+        isPurchased: false
+      });
+    }
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-leak-calculator');
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций защиты от протечек в список закупки на склад!`);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -4412,6 +4734,14 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         target: 'openBoilerCalculator',
         title: '⚡ Инструмент: Калькулятор бойлера и бака ГВС',
         desc: 'Открываю расчет объема бойлера, мембранного бака Reflex и рециркуляции ГВС...'
+      };
+    }
+    if ((lower.includes('протечк') || lower.includes('нептун') || lower.includes('гидролок') || lower.includes('электропривод') || lower.includes('датчик протечки') || lower.includes('аквасторож')) && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openLeakCalculator',
+        title: '🛡️ Инструмент: Защита от протечек Neptun / Gidrolock',
+        desc: 'Открываю расчет кранов с электроприводом, радиодатчиков и блока питания LiFePO4...'
       };
     }
 
@@ -5698,6 +6028,14 @@ ${shareUrl}
     }
     const m = document.getElementById(modalId);
     if (m) m.classList.add('open');
+    if (modalId === 'modal-more-menu') {
+      document.body.classList.add('more-menu-open');
+      const btn = document.getElementById('btn-more-menu-toggle');
+      if (btn) {
+        btn.classList.add('active');
+        btn.innerText = '✕ Меню';
+      }
+    }
   }
 
   closeModal(modalId) {
@@ -5707,6 +6045,14 @@ ${shareUrl}
     }
     const m = document.getElementById(modalId);
     if (m) m.classList.remove('open');
+    if (modalId === 'modal-more-menu') {
+      document.body.classList.remove('more-menu-open');
+      const btn = document.getElementById('btn-more-menu-toggle');
+      if (btn) {
+        btn.classList.remove('active');
+        btn.innerText = '⋯ Меню';
+      }
+    }
   }
 
   showToast(msg) {
@@ -5912,12 +6258,18 @@ ${shareUrl}
     this.closeModal('modal-more-menu');
   }
 
-    initMoreMenu() {
+  initMoreMenu() {
     const btnToggle = document.getElementById('btn-more-menu-toggle');
     if (btnToggle) {
-      btnToggle.addEventListener('click', () => {
+      btnToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.playSubtleClick();
-        this.openModal('modal-more-menu');
+        const modal = document.getElementById('modal-more-menu');
+        if (modal && modal.classList.contains('open')) {
+          this.closeModal('modal-more-menu');
+        } else {
+          this.openModal('modal-more-menu');
+        }
       });
     }
 
@@ -5925,6 +6277,52 @@ ${shareUrl}
     if (btnClose) {
       btnClose.addEventListener('click', () => this.closeModal('modal-more-menu'));
     }
+
+    const btnCloseBottom = document.getElementById('btn-close-more-menu-bottom');
+    if (btnCloseBottom) {
+      btnCloseBottom.addEventListener('click', () => this.closeModal('modal-more-menu'));
+    }
+
+    // Закрытие по клику на фон оверлея
+    const modalMore = document.getElementById('modal-more-menu');
+    if (modalMore) {
+      modalMore.addEventListener('click', (e) => {
+        if (e.target === modalMore) {
+          this.closeModal('modal-more-menu');
+        }
+      });
+    }
+
+    // Закрытие при клике в любое место экрана вне шторки и вне кнопки переключения
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('modal-more-menu');
+      if (modal && modal.classList.contains('open')) {
+        const sheet = modal.querySelector('.modal-sheet');
+        const btnToggle = document.getElementById('btn-more-menu-toggle');
+        if (sheet && !sheet.contains(e.target) && btnToggle && !btnToggle.contains(e.target)) {
+          this.closeModal('modal-more-menu');
+        }
+      }
+    });
+
+    // Универсальное закрытие любой открытой модалки по клику на фон
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.closeModal(modal.id);
+        }
+      });
+    });
+
+    // Универсальное закрытие по клавише Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const activeModal = document.querySelector('.modal-overlay.open');
+        if (activeModal) {
+          this.closeModal(activeModal.id);
+        }
+      }
+    });
 
     // Делегирование элементов меню
     const items = [
