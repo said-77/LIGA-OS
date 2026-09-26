@@ -4958,6 +4958,316 @@ ${loopsText}
     this.showToast('✓ Добавлено 3 позиции насосного оборудования в закупку на склад!');
   }
 
+  // ==========================================================================
+  // КАЛЬКУЛЯТОР МЕМБРАННОГО РАСШИРИТЕЛЬНОГО БАКА И КЛАПАНА DIN EN 12828 (v2.3.4)
+  // Точный подбор Reflex N, расчет давления азота P0, водяного затвора и сбросного клапана
+  // ==========================================================================
+  openExpansionTankCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.expansionCalc) {
+      this.expansionCalc = {
+        powerKw: 24,
+        systemType: 'combo',
+        floors: 2,
+        fluid: 'water'
+      };
+    }
+
+    const pwrEl = document.getElementById('exp-calc-power-input');
+    const sysEl = document.getElementById('exp-calc-system-type-select');
+    const flrEl = document.getElementById('exp-calc-floors-select');
+    const fldEl = document.getElementById('exp-calc-fluid-select');
+
+    if (pwrEl) pwrEl.value = this.expansionCalc.powerKw;
+    if (sysEl) sysEl.value = this.expansionCalc.systemType;
+    if (flrEl) flrEl.value = String(this.expansionCalc.floors);
+    if (fldEl) fldEl.value = this.expansionCalc.fluid;
+
+    this.recalculateExpansionTank();
+    this.openModal('modal-expansion-tank-calculator');
+  }
+
+  setExpansionPower(kw) {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+    const val = Math.max(3, Math.min(120, parseFloat(kw) || 24));
+    this.expansionCalc.powerKw = val;
+    const pwrEl = document.getElementById('exp-calc-power-input');
+    if (pwrEl) pwrEl.value = val;
+    this.recalculateExpansionTank();
+  }
+
+  adjustExpansionPower(delta) {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+    this.setExpansionPower((this.expansionCalc.powerKw || 24) + delta);
+  }
+
+  updateExpansionPower(kw) {
+    this.setExpansionPower(kw);
+  }
+
+  updateExpansionSystemType(type) {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+    this.expansionCalc.systemType = type || 'combo';
+    this.recalculateExpansionTank();
+  }
+
+  updateExpansionFloors(floors) {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+    this.expansionCalc.floors = parseInt(floors, 10) || 2;
+    this.recalculateExpansionTank();
+  }
+
+  updateExpansionFluid(fluid) {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+    this.expansionCalc.fluid = fluid || 'water';
+    this.recalculateExpansionTank();
+  }
+
+  recalculateExpansionTank() {
+    if (!this.expansionCalc) {
+      this.expansionCalc = { powerKw: 24, systemType: 'combo', floors: 2, fluid: 'water' };
+    }
+
+    const powerKw = Math.max(3, Math.min(120, this.expansionCalc.powerKw || 24));
+    const systemType = this.expansionCalc.systemType || 'combo';
+    const floors = parseInt(this.expansionCalc.floors, 10) || 2;
+    const fluid = this.expansionCalc.fluid || 'water';
+
+    // 1. Удельный объем системы (л/кВт)
+    const specificVolumes = {
+      radiators_panel: 10,
+      radiators_sec: 11,
+      combo: 16,
+      floor_only: 22,
+      cast_iron: 25
+    };
+    const specVol = specificVolumes[systemType] || 16;
+    const totalVolume = Math.round(powerKw * specVol);
+
+    // 2. Коэффициент теплового расширения e при нагреве до 85°C
+    let expansionCoeff = 0.0324; // Вода (3.24%)
+    let fluidName = 'Вода подготовленная';
+    if (fluid === 'glycol30') {
+      expansionCoeff = 0.0435;
+      fluidName = 'Пропиленгликоль 30%';
+    } else if (fluid === 'glycol40') {
+      expansionCoeff = 0.0485;
+      fluidName = 'Пропиленгликоль 40%';
+    }
+
+    // Объем теплового расширения Ve
+    const expansionVolume = totalVolume * expansionCoeff;
+
+    // Водяной затвор Vwr по DIN EN 12828 (минимум 3.0 л или 0.5% от объема)
+    const waterSeal = Math.max(3.0, totalVolume * 0.005);
+
+    // 3. Статическое давление Pst и давление накачки P0
+    const staticPressures = {
+      1: 0.5,
+      2: 0.8,
+      3: 1.1,
+      4: 1.5
+    };
+    const pStat = staticPressures[floors] || 0.8;
+    // Давление накачки P0 = Pst + 0.3 бар (минимум 1.0 бар по швейцарскому регламенту)
+    const p0 = Math.max(1.0, Math.round((pStat + 0.3) * 10) / 10);
+
+    // 4. Конечное допустимое давление Pe (сбросной клапан 3.0 бар, Pe = 3.0 - 0.5 = 2.5 бар)
+    const pValve = 3.0;
+    const pEnd = 2.5;
+
+    // Коэффициент полезного использования объема бака: eta = (Pe - P0) / (Pe + 1)
+    const eta = (pEnd - p0) / (pEnd + 1.0);
+
+    // 5. Минимальный требуемый объем расширительного бака
+    const minNominalVolume = (expansionVolume + waterSeal) / Math.max(0.1, eta);
+
+    // 6. Подбор стандартного типоразмера Reflex N
+    const reflexModels = [
+      { vol: 18, name: 'Reflex N 18 / 4 бар', price: 720000, suSize: '3/4"' },
+      { vol: 25, name: 'Reflex N 25 / 4 бар', price: 890000, suSize: '3/4"' },
+      { vol: 35, name: 'Reflex N 35 / 4 бар', price: 1180000, suSize: '3/4"' },
+      { vol: 50, name: 'Reflex N 50 / 6 бар', price: 1540000, suSize: '3/4"' },
+      { vol: 80, name: 'Reflex N 80 / 6 бар', price: 2350000, suSize: '1"' },
+      { vol: 100, name: 'Reflex N 100 / 6 бар', price: 2950000, suSize: '1"' },
+      { vol: 140, name: 'Reflex N 140 / 6 бар', price: 3950000, suSize: '1"' }
+    ];
+
+    let selectedTank = reflexModels[reflexModels.length - 1];
+    for (const m of reflexModels) {
+      if (m.vol >= minNominalVolume) {
+        selectedTank = m;
+        break;
+      }
+    }
+
+    const serviceValveName = `Reflex SU ${selectedTank.suSize} (с защитным колпачком, пломбой и сливным краном)`;
+    const serviceValvePrice = selectedTank.suSize === '1"' ? 490000 : 380000;
+    const safetyValveName = 'Caleffi 3.0 бар 1/2" (мембранный сбросной клапан, CW617N)';
+    const safetyValvePrice = 260000;
+
+    const systemTypeTitles = {
+      radiators_panel: 'Панельные стальные радиаторы (Purmo/Kermi)',
+      radiators_sec: 'Секционные алюминий / биметалл',
+      combo: 'Комбинированная система (Радиаторы + теплый пол)',
+      floor_only: 'Только водяной теплый пол',
+      cast_iron: 'Чугунные радиаторы / гравитационка'
+    };
+
+    this.currentCalculatedTank = {
+      powerKw,
+      systemType,
+      systemTypeTitle: systemTypeTitles[systemType] || systemType,
+      floors,
+      fluid,
+      fluidName,
+      totalVolume,
+      expansionVolume: Math.round(expansionVolume * 10) / 10,
+      waterSeal: Math.round(waterSeal * 10) / 10,
+      pStat,
+      p0,
+      pValve,
+      pEnd,
+      eta: Math.round(eta * 100) / 100,
+      minNominalVolume: Math.round(minNominalVolume * 10) / 10,
+      tankModel: selectedTank.name,
+      tankVolume: selectedTank.vol,
+      tankPrice: selectedTank.price,
+      serviceValveName,
+      serviceValvePrice,
+      safetyValveName,
+      safetyValvePrice
+    };
+
+    // Обновляем DOM
+    const totVolEl = document.getElementById('res-exp-total-volume');
+    const expVolEl = document.getElementById('res-exp-expansion-volume');
+    const pStatEl = document.getElementById('res-exp-p-stat');
+    const p0El = document.getElementById('res-exp-p0');
+    const minVolEl = document.getElementById('res-exp-min-volume');
+    const tankModEl = document.getElementById('res-exp-tank-model');
+    const servValEl = document.getElementById('res-exp-service-valve');
+    const safeValEl = document.getElementById('res-exp-safety-valve');
+
+    if (totVolEl) totVolEl.innerText = `${totalVolume} л`;
+    if (expVolEl) expVolEl.innerText = `${this.currentCalculatedTank.expansionVolume} л + ${this.currentCalculatedTank.waterSeal} л затвор`;
+    if (pStatEl) pStatEl.innerText = `${pStat.toFixed(1)} бар (${floors} эт.)`;
+    if (p0El) p0El.innerText = `${p0.toFixed(1)} бар (на сухом баке!)`;
+    if (minVolEl) minVolEl.innerText = `${this.currentCalculatedTank.minNominalVolume} л`;
+    if (tankModEl) tankModEl.innerText = selectedTank.name;
+    if (servValEl) servValEl.innerText = serviceValveName;
+    if (safeValEl) safeValEl.innerText = safetyValveName;
+  }
+
+  async copyExpansionTankCalculation() {
+    if (!this.currentCalculatedTank) {
+      this.recalculateExpansionTank();
+    }
+    const c = this.currentCalculatedTank;
+    if (!c) return;
+
+    const siteName = this.currentSite ? this.currentSite.title : 'Объект LIGA OS';
+
+    const report = `🛑 ИНЖЕНЕРНЫЙ РАСЧЕТ РАСШИРИТЕЛЬНОГО БАКА И БЕЗОПАСНОСТИ
+«Лига Опытных Мастеров» • Стандарт DIN EN 12828 (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+📍 Объект: ${siteName}
+📅 Дата: ${new Date().toLocaleDateString('ru-RU')}
+
+ИСХОДНЫЕ ДАННЫЕ СИСТЕМЫ:
+• Тепловая мощность: ${c.powerKw} кВт
+• Тип отопительных приборов: ${c.systemTypeTitle}
+• Этажность (статическая высота): ${c.floors} эт. (Pst = ${c.pStat} бар)
+• Теплоноситель: ${c.fluidName}
+
+РЕЗУЛЬТАТЫ ГИДРАВЛИЧЕСКОГО РАСЧЕТА:
+• Общий объем системы (Vs): ${c.totalVolume} л
+• Объем температурного расширения (Ve): ${c.expansionVolume} л
+• Водяной затвор мембраны (Vwr): ${c.waterSeal} л
+• Предварительное давление накачки азота (P₀): ${c.p0} бар
+• Минимальный расчетный объем бака: ${c.minNominalVolume} л
+
+СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ (ДЛЯ ЗАКУПКИ):
+1. Мембранный расширительный бак: ${c.tankModel}
+2. Сервисный отсечной клапан: ${c.serviceValveName}
+3. Предохранительный клапан безопасности: ${c.safetyValveName}
+
+🛡️ ЗОЛОТОЕ ПРАВИЛО МАСТЕРА:
+Давление в воздушной камере бака (P₀ = ${c.p0} бар) настраивается ДО подключения к системе при нулевом давлении теплоносителя. Наличие сервисного крана Reflex SU обязательно для ежегодного ТО без слива всей системы.
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        await this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет бака Reflex и клапана скопирован для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Расчет бака Reflex сформирован!');
+    }
+  }
+
+  async addCalculatedTankToMaterials() {
+    const calc = this.currentCalculatedTank;
+    if (!calc) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [
+      {
+        category: 'boiler',
+        name: `Расширительный мембранный бак: ${calc.tankModel}`,
+        qty: '1 шт',
+        price: calc.tankPrice,
+        isPurchased: false
+      },
+      {
+        category: 'fittings',
+        name: `Сервисный кран расширительного бака: ${calc.serviceValveName}`,
+        qty: '1 шт',
+        price: calc.serviceValvePrice,
+        isPurchased: false
+      },
+      {
+        category: 'fittings',
+        name: `Предохранительный клапан: ${calc.safetyValveName}`,
+        qty: '1 шт',
+        price: calc.safetyValvePrice,
+        isPurchased: false
+      }
+    ];
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-expansion-tank-calculator');
+    this.showToast('✓ Добавлено 3 позиции безопасности котельной (Reflex / Caleffi) на склад!');
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -5434,7 +5744,7 @@ ${loopsText}
         desc: 'Открываю расчет радиаторов, лучевой разводки Rehau и узлов нижнего подключения...'
       };
     }
-    if ((lower.includes('бойлер') || lower.includes('водонагревател') || lower.includes('расширительн') || lower.includes('рециркуляци') || lower.includes('бак гвс')) && !lower.includes('купил')) {
+    if ((lower.includes('бойлер') || lower.includes('водонагревател') || (lower.includes('расширительн') && lower.includes('гвс')) || lower.includes('рециркуляци') || lower.includes('бак гвс')) && !lower.includes('купил')) {
       return {
         type: 'direct_func',
         target: 'openBoilerCalculator',
@@ -5456,6 +5766,14 @@ ${loopsText}
         target: 'openPumpCalculator',
         title: '🌀 Инструмент: Подбор циркуляционного насоса и магистралей',
         desc: 'Открываю расчет рабочей точки насоса (Q, H), скорости теплоносителя и диаметров Rehau...'
+      };
+    }
+    if ((lower.includes('расширительн') || lower.includes('reflex') || lower.includes('рефлекс') || (lower.includes('бак') && (lower.includes('отоплен') || lower.includes('мембран'))) || lower.includes('предохранительн') || lower.includes('сбросн') || lower.includes('caleffi')) && !lower.includes('гвс') && !lower.includes('бойлер') && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openExpansionTankCalculator',
+        title: '🛑 Инструмент: Расширительный бак Reflex и клапан DIN EN 12828',
+        desc: 'Открываю расчет объема бака Reflex, давления азота P₀ и сбросного клапана...'
       };
     }
 

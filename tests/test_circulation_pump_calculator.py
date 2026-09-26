@@ -127,13 +127,13 @@ def test_interactive_pump_and_pipe_calculation(http_server):
         assert "Grundfos UPS 25-60" in pump_text
 
         # Клик по пресету 12 кВт — труба должна переключиться на 25 мм
-        page.locator("button.btn-preset-est:has-text('12 кВт')").click()
+        page.locator("#modal-pump-calculator button.btn-preset-est:has-text('12 кВт')").click()
         assert page.locator("#pump-calc-power-input").input_value() == "12"
         pipe_12 = page.locator("#res-pump-pipe-dia").text_content()
         assert "25" in pipe_12
 
         # Клик по пресету 45 кВт — труба должна переключиться на 40 мм
-        page.locator("button.btn-preset-est:has-text('45 кВт')").click()
+        page.locator("#modal-pump-calculator button.btn-preset-est:has-text('45 кВт')").click()
         assert page.locator("#pump-calc-power-input").input_value() == "45"
         pipe_45 = page.locator("#res-pump-pipe-dia").text_content()
         assert "40" in pipe_45
