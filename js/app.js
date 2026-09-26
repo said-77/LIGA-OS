@@ -4260,6 +4260,405 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций защиты от протечек в список закупки на склад!`);
   }
 
+  // ==========================================================================
+  // ГИДРАВЛИЧЕСКИЙ БАЛАНСИРОВЩИК КОЛЛЕКТОРА ТЕПЛОГО ПОЛА (v2.3.2)
+  // Точная уставка ротаметров FAR / Caleffi (л/мин), защита от перегрева/запирания
+  // ==========================================================================
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  openBalancingCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.balancingCalc) {
+      this.balancingCalc = {
+        loopsCount: 5,
+        loops: [
+          { name: 'Контур 1 • Гостиная (окно)', length: 75 },
+          { name: 'Контур 2 • Гостиная (центр)', length: 70 },
+          { name: 'Контур 3 • Кухня-столовая', length: 65 },
+          { name: 'Контур 4 • Спальня хозяев', length: 55 },
+          { name: 'Контур 5 • Ванная комната', length: 35 }
+        ]
+      };
+    }
+    const countEl = document.getElementById('balancing-loops-count-val');
+    if (countEl) countEl.innerText = this.balancingCalc.loopsCount;
+
+    this.renderBalancingLoopsList();
+    this.recalculateBalancing();
+    this.openModal('modal-balancing-calculator');
+  }
+
+  setBalancingLoopsCount(count) {
+    const validCount = Math.max(2, Math.min(12, parseInt(count, 10) || 5));
+    if (!this.balancingCalc) {
+      this.balancingCalc = { loopsCount: validCount, loops: [] };
+    }
+    this.balancingCalc.loopsCount = validCount;
+
+    const defaultNames = [
+      'Контур 1 • Гостиная (окно)',
+      'Контур 2 • Гостиная (центр)',
+      'Контур 3 • Кухня-столовая',
+      'Контур 4 • Спальня хозяев',
+      'Контур 5 • Ванная комната',
+      'Контур 6 • Детская комната',
+      'Контур 7 • Коридор / Холл',
+      'Контур 8 • Санузел гостевой',
+      'Контур 9 • Гардеробная',
+      'Контур 10 • Кабинет',
+      'Контур 11 • Прачечная',
+      'Контур 12 • Лоджия / Терраса'
+    ];
+    const defaultLengths = [75, 70, 65, 55, 35, 60, 45, 30, 40, 50, 35, 40];
+
+    if (!Array.isArray(this.balancingCalc.loops)) {
+      this.balancingCalc.loops = [];
+    }
+    while (this.balancingCalc.loops.length < validCount) {
+      const idx = this.balancingCalc.loops.length;
+      this.balancingCalc.loops.push({
+        name: defaultNames[idx] || `Контур ${idx + 1}`,
+        length: defaultLengths[idx] || 50
+      });
+    }
+    if (this.balancingCalc.loops.length > validCount) {
+      this.balancingCalc.loops = this.balancingCalc.loops.slice(0, validCount);
+    }
+
+    const countEl = document.getElementById('balancing-loops-count-val');
+    if (countEl) countEl.innerText = validCount;
+
+    this.renderBalancingLoopsList();
+    this.recalculateBalancing();
+  }
+
+  adjustBalancingLoops(delta) {
+    const current = (this.balancingCalc && this.balancingCalc.loopsCount) ? this.balancingCalc.loopsCount : 5;
+    this.setBalancingLoopsCount(current + delta);
+  }
+
+  updateLoopName(idx, name) {
+    if (!this.balancingCalc || !this.balancingCalc.loops || !this.balancingCalc.loops[idx]) return;
+    this.balancingCalc.loops[idx].name = name.trim() || `Контур ${idx + 1}`;
+    this.recalculateBalancing();
+  }
+
+  updateLoopLength(idx, len) {
+    if (!this.balancingCalc || !this.balancingCalc.loops || !this.balancingCalc.loops[idx]) return;
+    const parsed = parseFloat(len);
+    const val = isNaN(parsed) ? 50 : Math.max(10, Math.min(120, Math.round(parsed)));
+    this.balancingCalc.loops[idx].length = val;
+    this.recalculateBalancing();
+  }
+
+  adjustLoopLength(idx, delta) {
+    if (!this.balancingCalc || !this.balancingCalc.loops || !this.balancingCalc.loops[idx]) return;
+    const current = this.balancingCalc.loops[idx].length || 50;
+    const nextVal = Math.max(10, Math.min(120, current + delta));
+    this.balancingCalc.loops[idx].length = nextVal;
+    
+    const inpEl = document.getElementById(`loop-len-input-${idx}`);
+    if (inpEl) inpEl.value = nextVal;
+
+    this.recalculateBalancing();
+  }
+
+  renderBalancingLoopsList() {
+    const container = document.getElementById('balancing-loops-list');
+    if (!container || !this.balancingCalc || !this.balancingCalc.loops) return;
+
+    let html = '';
+    this.balancingCalc.loops.forEach((loop, idx) => {
+      html += `
+        <div class="balancing-loop-card" style="background:rgba(255,255,255,0.03); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <input type="text" id="loop-name-input-${idx}" value="${this.escapeHtml(loop.name)}" oninput="window.app.updateLoopName(${idx}, this.value)" 
+              placeholder="Название петли (комната)" 
+              style="background:rgba(0,0,0,0.25); border:1px solid var(--glass-border-subtle); border-radius:6px; color:var(--text-main); font-size:12px; font-weight:700; padding:4px 8px; flex:1;" />
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:10px; color:var(--text-muted); font-weight:600;">№${idx + 1}</span>
+              <div class="rotameter-visual-tube" title="Шкала ротаметра 0.5–5.0 л/мин">
+                <div id="loop-rotameter-fill-${idx}" class="rotameter-level-fill" style="height:48%;"></div>
+                <div id="loop-rotameter-float-${idx}" class="rotameter-float" style="bottom:48%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:11px; color:var(--text-muted);">Длина:</span>
+              <button type="button" class="btn-counter" onclick="window.app.adjustLoopLength(${idx}, -5)" style="width:26px; height:26px; font-size:14px;">-5</button>
+              <div style="display:flex; align-items:center;">
+                <input type="number" id="loop-len-input-${idx}" value="${loop.length}" min="10" max="120" step="1" 
+                  onchange="window.app.updateLoopLength(${idx}, this.value)" 
+                  style="width:48px; height:26px; text-align:center; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border-subtle); border-radius:4px; color:var(--text-main); font-size:12px; font-weight:800;" />
+                <span style="font-size:11px; color:var(--text-muted); margin-left:3px;">м</span>
+              </div>
+              <button type="button" class="btn-counter" onclick="window.app.adjustLoopLength(${idx}, 5)" style="width:26px; height:26px; font-size:14px;">+5</button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:6px; background:rgba(192, 132, 252, 0.1); border:1px solid rgba(192, 132, 252, 0.25); border-radius:6px; padding:3px 8px;">
+              <span style="font-size:10px; color:#c084fc; font-weight:700; text-transform:uppercase;">Уставка:</span>
+              <span id="loop-flow-val-${idx}" style="font-size:12.5px; font-weight:900; color:var(--neon-cyan);">2.4 л/мин</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  recalculateBalancing() {
+    if (!this.balancingCalc || !this.balancingCalc.loops) return;
+
+    let totalPipe = 0;
+    let totalFlowLpm = 0;
+    const calculatedLoops = [];
+
+    this.balancingCalc.loops.forEach((loop, idx) => {
+      const len = Math.max(10, Math.min(120, loop.length || 50));
+      totalPipe += len;
+
+      // Физическая модель: удельный теплосъем ~11 Вт/м при дельта T = 5°C
+      // V (л/мин) = (L * 11 * 60) / (4187 * 5) ≈ L * 0.0315
+      let rawFlow = len * 0.03152;
+      // Ограничение шкалы ротаметра FAR / Caleffi: от 0.5 до 5.0 л/мин
+      let flowLpm = Math.max(0.5, Math.min(5.0, Math.round(rawFlow * 10) / 10));
+      totalFlowLpm += flowLpm;
+
+      // Процент положения поплавка (0.5 л/мин -> 10%, 5.0 л/мин -> 100%)
+      const pct = Math.max(10, Math.min(100, Math.round((flowLpm / 5.0) * 100)));
+
+      calculatedLoops.push({
+        idx: idx + 1,
+        name: loop.name,
+        length: len,
+        flowLpm: flowLpm,
+        pct: pct
+      });
+
+      // Обновляем визуализацию строки контура
+      const flowEl = document.getElementById(`loop-flow-val-${idx}`);
+      const fillEl = document.getElementById(`loop-rotameter-fill-${idx}`);
+      const floatEl = document.getElementById(`loop-rotameter-float-${idx}`);
+
+      if (flowEl) flowEl.innerText = `${flowLpm.toFixed(1)} л/мин`;
+      if (fillEl) fillEl.style.height = `${pct}%`;
+      if (floatEl) floatEl.style.bottom = `${pct}%`;
+    });
+
+    const totalFlowM3h = (totalFlowLpm * 60) / 1000;
+    // Тепловая мощность Q (кВт) = totalPipe * 11 / 1000 кВт (при ΔT=5°C)
+    const totalPowerKw = (totalPipe * 11) / 1000;
+
+    // Рекомендация для циркуляционного насоса Grundfos 25-60 / Wilo Para
+    let pumpMode = 'Grundfos 25-60 • Скорость II (Оптимально)';
+    if (totalFlowLpm <= 6.5) {
+      pumpMode = 'Grundfos 25-60 • Скорость I (Энергоэффективно)';
+    } else if (totalFlowLpm > 15.0) {
+      pumpMode = 'Grundfos 25-60 • Скорость III (Максимальный напор)';
+    }
+
+    this.currentCalculatedBalancing = {
+      loops: calculatedLoops,
+      totalPipe,
+      totalFlowLpm: Math.round(totalFlowLpm * 10) / 10,
+      totalFlowM3h: Math.round(totalFlowM3h * 100) / 100,
+      totalPowerKw: Math.round(totalPowerKw * 10) / 10,
+      pumpMode
+    };
+
+    // Обновляем сводный блок
+    const pipeResEl = document.getElementById('res-balancing-total-pipe');
+    const flowResEl = document.getElementById('res-balancing-total-flow');
+    const pwrResEl = document.getElementById('res-balancing-total-power');
+    const pumpResEl = document.getElementById('res-balancing-pump-mode');
+
+    if (pipeResEl) pipeResEl.innerText = `${totalPipe} м`;
+    if (flowResEl) flowResEl.innerText = `${totalFlowLpm.toFixed(1)} л/мин (${totalFlowM3h.toFixed(2)} м³/ч)`;
+    if (pwrResEl) pwrResEl.innerText = `${totalPowerKw.toFixed(1)} кВт`;
+    if (pumpResEl) pumpResEl.innerText = pumpMode;
+  }
+
+  async copyBalancingCheatSheet() {
+    const b = this.currentCalculatedBalancing;
+    if (!b || !b.loops || !b.loops.length) {
+      this.recalculateBalancing();
+    }
+    const calc = this.currentCalculatedBalancing;
+    if (!calc) return;
+
+    const siteName = this.currentSite ? this.currentSite.title : 'Объект LIGA OS';
+
+    let loopsText = '';
+    calc.loops.forEach(l => {
+      loopsText += `  ${l.idx}. ${l.name}: ${l.length} м ➔ ${l.flowLpm.toFixed(1)} л/мин\n`;
+    });
+
+    const report = `⚖️ ГИДРАВЛИЧЕСКАЯ НАСТРОЙКА РОТАМЕТРОВ КОЛЛЕКТОРА
+«Лига Опытных Мастеров» • Стандарт 16 бар (Ташкент)
+Ведущий инженер: Улугбек Хакимов
+📍 Объект: ${siteName}
+📅 Дата: ${new Date().toLocaleDateString('ru-RU')}
+
+ТАБЛИЦА УСТАВОК РОТАМЕТРОВ FAR / CALEFFI (ТЕПЛЫЙ ПОЛ):
+${loopsText}
+ИТОГОВЫЙ ГИДРАВЛИЧЕСКИЙ БАЛАНС:
+• Общая труба Rehau Rautitan 16: ${calc.totalPipe} м
+• Суммарный расход теплоносителя: ${calc.totalFlowLpm.toFixed(1)} л/мин (${calc.totalFlowM3h.toFixed(2)} м³/ч)
+• Расчетная тепловая мощность (ΔT=5°C): ${calc.totalPowerKw.toFixed(1)} кВт
+• Режим насоса смесительного узла: ${calc.pumpMode}
+
+📌 ИНСТРУКЦИЯ МАСТЕРА ПО РЕГУЛИРОВКЕ:
+1. Выполнять настройку на рабочей температуре теплоносителя (38-42°C).
+2. Снять защитные красные колпачки ротаметров.
+3. Вращением гильзы выставить поплавок точно на расчетное деление.
+4. Зафиксировать стопорное кольцо ротаметра.
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        await this.copyToClipboard(report);
+      }
+      this.showToast('✓ Шпаргалка настройки ротаметров скопирована для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Шпаргалка сформирована!');
+    }
+  }
+
+  printBalancingSticker() {
+    const b = this.currentCalculatedBalancing;
+    if (!b || !b.loops || !b.loops.length) {
+      this.recalculateBalancing();
+    }
+    const calc = this.currentCalculatedBalancing;
+    if (!calc) return;
+
+    const siteName = this.currentSite ? this.currentSite.title : 'Элитный объект';
+    const siteAddr = this.currentSite ? (this.currentSite.address || 'Ташкент') : 'г. Ташкент';
+    const dateStr = new Date().toLocaleDateString('ru-RU');
+
+    let rowsHtml = '';
+    calc.loops.forEach(l => {
+      rowsHtml += `
+        <tr style="border-bottom:1px solid #cbd5e1;">
+          <td style="padding:6px 8px; text-align:center; font-weight:800; font-size:12px;">№${l.idx}</td>
+          <td style="padding:6px 8px; font-weight:700; font-size:12px;">${this.escapeHtml(l.name)}</td>
+          <td style="padding:6px 8px; text-align:center; font-size:12px;">${l.length} м</td>
+          <td style="padding:6px 8px; text-align:center; font-weight:900; font-size:13px; color:#1e293b; background:#f1f5f9;">
+            ${l.flowLpm.toFixed(1)} л/мин
+          </td>
+        </tr>
+      `;
+    });
+
+    let printContainer = document.getElementById('balancing-print-sticker-container');
+    if (!printContainer) {
+      printContainer = document.createElement('div');
+      printContainer.id = 'balancing-print-sticker-container';
+      document.body.appendChild(printContainer);
+    }
+
+    printContainer.innerHTML = `
+      <div style="max-width:680px; margin:0 auto; border:3px solid #0f172a; border-radius:8px; padding:18px; font-family:'Segoe UI', Arial, sans-serif; color:#0f172a; background:#ffffff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:14px;">
+          <div>
+            <div style="font-size:18px; font-weight:900; text-transform:uppercase; letter-spacing:1px; color:#0f172a;">
+              Лига Опытных Мастеров
+            </div>
+            <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
+              Инженерная группа Улугбека Хакимова • Стандарт 16 бар
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="display:inline-block; border:1.5px solid #0f172a; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:800; text-transform:uppercase; background:#f8fafc;">
+              Коллекторный шкаф ШРВ
+            </div>
+            <div style="font-size:10px; color:#64748b; margin-top:3px;">
+              Дата настройки: ${dateStr}
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 12px; display:flex; justify-content:space-between; font-size:12px;">
+          <div><strong>Объект:</strong> ${this.escapeHtml(siteName)}</div>
+          <div><strong>Локация:</strong> ${this.escapeHtml(siteAddr)}</div>
+        </div>
+
+        <div style="font-size:13px; font-weight:800; text-transform:uppercase; margin-bottom:8px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+          <span>⚖️ ПАСПОРТ НАСТРОЙКИ РОТАМЕТРОВ (ГИДРАВЛИЧЕСКИЙ БАЛАНС)</span>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+          <thead>
+            <tr style="background:#0f172a; color:#ffffff;">
+              <th style="padding:6px 8px; font-size:11px; text-transform:uppercase; width:45px;">Контур</th>
+              <th style="padding:6px 8px; font-size:11px; text-transform:uppercase; text-align:left;">Назначение петли / Помещение</th>
+              <th style="padding:6px 8px; font-size:11px; text-transform:uppercase; width:90px;">Длина трубы</th>
+              <th style="padding:6px 8px; font-size:11px; text-transform:uppercase; width:120px;">Уставка расхода</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:6px; padding:10px 14px; margin-bottom:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+          <div>
+            <div style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Суммарная длина контуров:</div>
+            <div style="font-weight:800; font-size:14px; color:#0f172a;">${calc.totalPipe} м (Rehau Rautitan 16)</div>
+          </div>
+          <div>
+            <div style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Общий расход коллектора:</div>
+            <div style="font-weight:900; font-size:14px; color:#0284c7;">${calc.totalFlowLpm.toFixed(1)} л/мин (${calc.totalFlowM3h.toFixed(2)} м³/ч)</div>
+          </div>
+          <div>
+            <div style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Тепловая мощность (ΔT=5°C):</div>
+            <div style="font-weight:800; font-size:14px; color:#b45309;">${calc.totalPowerKw.toFixed(1)} кВт</div>
+          </div>
+          <div>
+            <div style="color:#64748b; font-size:10px; text-transform:uppercase; font-weight:700;">Режим насоса смесителя:</div>
+            <div style="font-weight:800; font-size:12px; color:#15803d;">${calc.pumpMode}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1.5px solid #e2e8f0; padding-top:10px; font-size:10px; color:#64748b;">
+          <div>
+            🔒 Гарантия 10 лет • Опрессовано поверенным манометром 16 бар
+          </div>
+          <div style="font-weight:700; color:#0f172a;">
+            Лига Опытных Мастеров • Ташкент
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.classList.add('printing-balancing-sticker');
+    window.print();
+
+    const cleanup = () => {
+      document.body.classList.remove('printing-balancing-sticker');
+      if (printContainer && printContainer.parentNode) {
+        printContainer.parentNode.removeChild(printContainer);
+      }
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(cleanup, 2000);
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -4704,7 +5103,15 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         desc: 'Запускаю проверку по швейцарским стандартам надежности...'
       };
     }
-    if (lower.includes('калькулятор труб') || lower.includes('расчет труб') || lower.includes('расчет коллектор') || lower.includes('подбор труб') || lower.includes('подбор far') || lower.includes('диаметр труб') || lower.includes('диаметр ввод') || lower.includes('посчитай диаметр') || lower.includes('гребенк')) {
+    if ((lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер') || (lower.includes('настро') && (lower.includes('коллектор') || lower.includes('гребенк'))) || (lower.includes('баланс') && (lower.includes('коллектор') || lower.includes('пол')))) && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openBalancingCalculator',
+        title: '⚖️ Инструмент: Балансировка ротаметров коллектора',
+        desc: 'Открываю расчет точных уставок ротаметров FAR / Caleffi и гидравлики петель теплого пола...'
+      };
+    }
+    if ((lower.includes('калькулятор труб') || lower.includes('расчет труб') || lower.includes('расчет коллектор') || lower.includes('подбор труб') || lower.includes('подбор far') || lower.includes('диаметр труб') || lower.includes('диаметр ввод') || lower.includes('посчитай диаметр') || lower.includes('гребенк')) && !lower.includes('ротаметр') && !lower.includes('расходомер') && !lower.includes('балансировк')) {
       return {
         type: 'direct_func',
         target: 'openPipeCalculator',
