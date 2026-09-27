@@ -247,6 +247,20 @@ class LigaAIConcierge {
         modal.classList.add('open');
       }
       this._updateNetworkIndicator();
+
+      // Отображение активного объекта в шапке чата LIGA AI (v2.4.1)
+      const badge = document.getElementById('ai-active-site-badge');
+      const nameEl = document.getElementById('ai-active-site-name');
+      if (badge && nameEl) {
+        if (window.app && window.app.currentSite) {
+          const s = window.app.currentSite;
+          nameEl.textContent = `${s.title || s.address || 'Активный объект'} (${s.clientName || 'Заказчик'})`;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
       if (!this.apiKey) {
         this._addSystemMessage('⚙️ Для работы LIGA AI укажите бесплатный Google AI API ключ в Настройках (кнопка ⚙️ вверху).');
       }
@@ -399,13 +413,26 @@ class LigaAIConcierge {
     const MODEL = 'gemini-2.5-flash-preview-05-20';
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${this.apiKey}`;
 
+    // Формируем системный промпт с учетом контекста активного объекта мастера (v2.4.1)
+    let activePrompt = this.SYSTEM_PROMPT;
+    if (window.app && window.app.currentSite) {
+      const s = window.app.currentSite;
+      activePrompt += `\n\nТЕКУЩИЙ АКТИВНЫЙ ОБЪЕКТ МАСТЕРА:
+- Название/ЖК: ${s.title || s.address || 'Не указано'}
+- Заказчик: ${s.clientName || 'Не указан'} (${s.clientPhone || 'без телефона'})
+- Адрес: ${s.address || 'Ташкент'}
+- Этап работ: ${s.status || 1} из 5
+- Опрессовка 16 бар: ${s.pressureTest?.passed ? `ПРОЙДЕНА (${s.pressureTest.pressureBar || 16} бар)` : 'Не зафиксирована'}
+- Договорная стоимость: ${s.contractSum ? s.contractSum.toLocaleString('ru-RU') + ' сум' : 'Не утверждена'}`;
+    }
+
     // Формируем контекст: системный промпт + история + новый вопрос
     const contents = [];
 
     // Системный промпт как первое user-сообщение (Gemini v1beta формат)
     contents.push({
       role: 'user',
-      parts: [{ text: this.SYSTEM_PROMPT }]
+      parts: [{ text: activePrompt }]
     });
     contents.push({
       role: 'model',

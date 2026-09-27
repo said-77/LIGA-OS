@@ -3631,10 +3631,18 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
       });
     }
 
+    // Сквозная авто-синхронизация объема работ в смете (v2.4.1)
+    if (this.estimate && f.area) {
+      this.estimate.floorHeatingSqM = f.area;
+      const elFloor = document.getElementById('val-floorHeatingSqM');
+      if (elFloor) elFloor.innerText = f.area;
+      this.calculateEstimate();
+    }
+
     await this.renderMaterials();
     this.updateNavBadges();
     this.closeModal('modal-floor-calculator');
-    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций теплого пола в список закупки на склад!`);
+    this.showToast(`✓ Добавлено ${itemsToAdd.length} позиций теплого пола на склад! Объем в смете обновлен (${f.area} м²).`);
   }
 
   // ==========================================================================
