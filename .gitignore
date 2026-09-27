@@ -20,6 +20,7 @@ $RECYCLE.BIN/
 # Local test scratch and screenshots
 scratch/
 screenshot_*.png
+screenshots/
 .playwright-cli/
 __pycache__/
 .pytest_cache/
