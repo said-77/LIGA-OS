@@ -169,6 +169,13 @@
               <div class="more-menu-desc">Расчет Reflex N по DIN EN 12828, давление P₀ и клапан 3 бар</div>
             </div>
           </button>
+          <button id="menu-item-hydraulic-separator-calc" class="more-menu-item" type="button" onclick="window.app.openSeparatorCalculator()">
+            <span class="more-menu-icon">⚗️</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Гидрострелка (разделитель)</div>
+              <div class="more-menu-desc">Первичное кольцо котельной, правило 3d/3v и защита котла</div>
+            </div>
+          </button>
         </div>
 
         <!-- КАТЕГОРИЯ 2: НАДЕЖНОСТЬ, АУДИТ И ДИАЛОГИ -->
@@ -1143,6 +1150,11 @@
         <!-- Кнопка перехода в калькулятор мембранного расширительного бака Reflex (v2.3.4) -->
         <button id="btn-open-expansion-tank-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #f97316; color:var(--text-main);" onclick="window.app.openExpansionTankCalculator()">
           <span>🛑</span> Подбор расширительного бака Reflex и клапана безопасности
+        </button>
+
+        <!-- Кнопка перехода в калькулятор гидрострелки и первичного кольца (v2.3.6) -->
+        <button id="btn-open-separator-calc" type="button" class="btn-flagship-gold" style="margin-top:8px; height:50px; font-size:13px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid #06b6d4; color:var(--text-main);" onclick="window.app.openSeparatorCalculator()">
+          <span>⚗️</span> Расчет гидрострелки (первичное кольцо котельной)
         </button>
       </div>
     </section>
@@ -2938,6 +2950,142 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: КАЛЬКУЛЯТОР ГИДРАВЛИЧЕСКОГО РАЗДЕЛИТЕЛЯ (v2.3.6)
+         Первичное кольцо котельной: правило 3d/3v, расход G1/G2, Север/Termojet
+         ==================================================================== -->
+    <div id="modal-hydraulic-separator-calculator" class="modal-overlay">
+      <div class="modal-sheet" style="max-height:88vh; overflow-y:auto;">
+        <div class="modal-title">
+          <div>
+            <span style="font-size:10px; font-weight:800; color:#06b6d4; text-transform:uppercase; letter-spacing:0.8px; display:block;">Сердце котельной (DIN EN 12828 / 3d-правило)</span>
+            <span>⚗️ Гидравлический разделитель (гидрострелка)</span>
+          </div>
+          <button onclick="window.app.closeModal('modal-hydraulic-separator-calculator')" class="btn-close-modal">&times;</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
+          Согласование расходов котлового и вторичных контуров (теплый пол, радиаторы, бойлер БКН), защита котла от термоудара и удаление шлама/воздуха.
+        </p>
+
+        <!-- 1. Тепловая мощность котельной / котла -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase;">
+              1. Мощность котла (или каскада):
+            </label>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="btn-counter" onclick="window.app.adjustSeparatorPower(-5)" style="width:32px; height:32px; font-size:16px;">-5</button>
+              <div style="display:flex; align-items:center;">
+                <input type="number" id="sep-calc-power-input" value="32" min="10" max="250" step="1"
+                  onchange="window.app.updateSeparatorPower(this.value)"
+                  style="width:52px; height:32px; text-align:center; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border-subtle); border-radius:6px; color:var(--text-main); font-size:15px; font-weight:900;" />
+                <span style="font-size:12px; color:var(--text-muted); margin-left:4px; font-weight:700;">кВт</span>
+              </div>
+              <button type="button" class="btn-counter" onclick="window.app.adjustSeparatorPower(5)" style="width:32px; height:32px; font-size:16px;">+5</button>
+            </div>
+          </div>
+
+          <!-- Быстрые пресеты мощности -->
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+            <button type="button" class="btn-preset-est btn-preset-sep" onclick="window.app.setSeparatorPower(24)" style="padding:4px 8px; font-size:10px;">24 кВт (~200 м²)</button>
+            <button type="button" class="btn-preset-est btn-preset-sep" onclick="window.app.setSeparatorPower(32)" style="padding:4px 8px; font-size:10px;">32 кВт (~300 м²)</button>
+            <button type="button" class="btn-preset-est btn-preset-sep" onclick="window.app.setSeparatorPower(45)" style="padding:4px 8px; font-size:10px;">45 кВт (~450 м²)</button>
+            <button type="button" class="btn-preset-est btn-preset-sep" onclick="window.app.setSeparatorPower(65)" style="padding:4px 8px; font-size:10px;">65 кВт (~650 м²)</button>
+            <button type="button" class="btn-preset-est btn-preset-sep" onclick="window.app.setSeparatorPower(90)" style="padding:4px 8px; font-size:10px;">90 кВт (Каскад)</button>
+          </div>
+        </div>
+
+        <!-- 2. Вторичные отопительные контуры объекта -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
+          <label style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; display:block; margin-bottom:8px;">
+            2. Подключенные контуры со своими насосами:
+          </label>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <label style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; cursor:pointer;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-main);">♨️ Водяной теплый пол (НСУ со своим насосом)</span>
+              <input type="checkbox" id="sep-circuit-floor" checked onchange="window.app.toggleSeparatorCircuit('floor')" style="width:18px; height:18px; accent-color:var(--gold-primary); cursor:pointer;">
+            </label>
+            <label style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; cursor:pointer;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-main);">🔥 Радиаторная сеть (насос радиаторного контура)</span>
+              <input type="checkbox" id="sep-circuit-radiators" checked onchange="window.app.toggleSeparatorCircuit('radiators')" style="width:18px; height:18px; accent-color:var(--gold-primary); cursor:pointer;">
+            </label>
+            <label style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; cursor:pointer;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-main);">⚡ Бойлер косвенного нагрева БКН (загрузочный насос ГВС)</span>
+              <input type="checkbox" id="sep-circuit-boiler" onchange="window.app.toggleSeparatorCircuit('boiler')" style="width:18px; height:18px; accent-color:var(--gold-primary); cursor:pointer;">
+            </label>
+            <label style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; cursor:pointer;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-main);">🌀 Вентиляция / Бассейн / Теплообменник</span>
+              <input type="checkbox" id="sep-circuit-vent" onchange="window.app.toggleSeparatorCircuit('vent')" style="width:18px; height:18px; accent-color:var(--gold-primary); cursor:pointer;">
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Карточка необходимости гидрострелки (Честность мастера) -->
+        <div id="sep-necessity-card" style="padding:10px 12px; border-radius:var(--radius-md); margin-bottom:12px; font-size:11.5px; line-height:1.4; border:1px solid #06b6d4; background:rgba(6,182,212,0.08);">
+          <div id="sep-necessity-title" style="font-weight:900; color:#06b6d4; text-transform:uppercase; margin-bottom:3px;">
+            🛡️ Гидрострелка обязательна
+          </div>
+          <div id="sep-necessity-desc" style="color:var(--text-main); font-size:11px;">
+            В системе работают 2 или более насосов. Без разделителя насосы перетягивают поток, снижают КПД котла и вызывают шум в приборах.
+          </div>
+        </div>
+
+        <!-- 4. Сводный результат расчета DIN EN 12828 и правила 3d -->
+        <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:8px;">
+            3. Результаты расчета гидравлического разделителя:
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Расход котлового контура (G₁):</span>
+              <span id="res-sep-boiler-flow" style="font-weight:900; color:var(--neon-cyan);">1.38 м³/ч (23.0 л/мин)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Расход вторичных контуров (G₂):</span>
+              <span id="res-sep-system-flow" style="font-weight:900; color:var(--neon-emerald);">1.72 м³/ч (28.7 л/мин)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Баланс потоков (G₁ vs G₂):</span>
+              <span id="res-sep-mode" style="font-weight:800; color:var(--gold-primary); text-align:right;">G₂ > G₁ (подмес из обратки)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Диаметр корпуса разделителя (D):</span>
+              <span id="res-sep-body-diam" style="font-weight:900; color:var(--text-main);">Ø 76 мм / 80×80 мм (v ≤ 0.15 м/с)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Патрубки подключения (d = D/3):</span>
+              <span id="res-sep-nozzles" style="font-weight:900; color:#06b6d4;">1 1/4" ВР (ДУ 32)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Рекомендуемая модель:</span>
+              <span id="res-sep-model" style="font-weight:900; color:#f97316; text-align:right;">Север-60 / Termojet 1 1/4" (до 60 кВт)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+              <span style="color:var(--text-muted);">Воздухоотделение (сверху):</span>
+              <span id="res-sep-air-vent" style="font-weight:800; color:var(--text-main); text-align:right;">Caleffi 1/2" с отсечным клапаном</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Шламоудаление (снизу):</span>
+              <span id="res-sep-drain" style="font-weight:800; color:var(--text-main); text-align:right;">Кран со штуцером 1/2" + магнитная колба</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопки действий мастера -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-copy-separator-calc" onclick="window.app.copySeparatorCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
+            📋 Скопировать расчет гидрострелки для Telegram
+          </button>
+          <button id="btn-add-separator-to-materials" onclick="window.app.addCalculatedSeparatorToMaterials()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:46px;">
+            📦 Добавить гидрострелку и воздухоотводчик на склад
+          </button>
+          <button onclick="window.app.closeModal('modal-hydraulic-separator-calculator')" class="btn-submit-modal" style="background:rgba(255,255,255,0.08); color:var(--text-main); height:40px; margin-top:2px;">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО 9: ПАМЯТКА МАСТЕРА (ДИАЛОГИ С ДИЗАЙНЕРАМИ И КЛИЕНТАМИ)
          ==================================================================== -->
     <div id="modal-master-guide" class="modal-overlay">
@@ -3621,11 +3769,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.3.5: Гибкие стандарты опрессовки и региональные реалии Ташкента) -->
-  <script src="./js/image_processor.js?v=2.3.5"></script>
-  <script src="./js/db.js?v=2.3.5"></script>
-  <script src="./js/pdf_engine.js?v=2.3.5"></script>
-  <script src="./js/ai_concierge.js?v=2.3.5"></script>
-  <script src="./js/app.js?v=2.3.5"></script>
+  <!-- Скрипты LIGA OS (Версия 2.3.6: Инженерный калькулятор гидравлического разделителя и первичного кольца DIN EN 12828) -->
+  <script src="./js/image_processor.js?v=2.3.6"></script>
+  <script src="./js/db.js?v=2.3.6"></script>
+  <script src="./js/pdf_engine.js?v=2.3.6"></script>
+  <script src="./js/ai_concierge.js?v=2.3.6"></script>
+  <script src="./js/app.js?v=2.3.6"></script>
 </body>
 </html>

@@ -5397,6 +5397,343 @@ ${loopsText}
     this.showToast('✓ Добавлено 3 позиции безопасности котельной (Reflex / Caleffi) на склад!');
   }
 
+  // ==========================================================================
+  // КАЛЬКУЛЯТОР ГИДРАВЛИЧЕСКОГО РАЗДЕЛИТЕЛЯ (ГИДРОСТРЕЛКИ) v2.3.6
+  // Первичное кольцо котельной: правило 3d/3v, расходы G1/G2, Север / Termojet
+  // ==========================================================================
+  openSeparatorCalculator() {
+    this.closeModal('modal-more-menu');
+    if (!this.separatorCalc) {
+      this.separatorCalc = {
+        powerKw: 32,
+        circuits: {
+          floor: true,
+          radiators: true,
+          boiler: false,
+          vent: false
+        }
+      };
+    }
+
+    const pwrEl = document.getElementById('sep-calc-power-input');
+    if (pwrEl) pwrEl.value = this.separatorCalc.powerKw;
+
+    const floorEl = document.getElementById('sep-circuit-floor');
+    const radEl = document.getElementById('sep-circuit-radiators');
+    const blrEl = document.getElementById('sep-circuit-boiler');
+    const ventEl = document.getElementById('sep-circuit-vent');
+
+    if (floorEl) floorEl.checked = Boolean(this.separatorCalc.circuits.floor);
+    if (radEl) radEl.checked = Boolean(this.separatorCalc.circuits.radiators);
+    if (blrEl) blrEl.checked = Boolean(this.separatorCalc.circuits.boiler);
+    if (ventEl) ventEl.checked = Boolean(this.separatorCalc.circuits.vent);
+
+    this.recalculateSeparator();
+    this.openModal('modal-hydraulic-separator-calculator');
+  }
+
+  setSeparatorPower(kw) {
+    if (!this.separatorCalc) {
+      this.separatorCalc = { powerKw: 32, circuits: { floor: true, radiators: true, boiler: false, vent: false } };
+    }
+    const val = Math.max(10, Math.min(250, parseFloat(kw) || 32));
+    this.separatorCalc.powerKw = val;
+    const pwrEl = document.getElementById('sep-calc-power-input');
+    if (pwrEl) pwrEl.value = val;
+    this.recalculateSeparator();
+  }
+
+  adjustSeparatorPower(delta) {
+    if (!this.separatorCalc) {
+      this.separatorCalc = { powerKw: 32, circuits: { floor: true, radiators: true, boiler: false, vent: false } };
+    }
+    this.setSeparatorPower((this.separatorCalc.powerKw || 32) + delta);
+  }
+
+  updateSeparatorPower(kw) {
+    this.setSeparatorPower(kw);
+  }
+
+  toggleSeparatorCircuit(circuitName) {
+    if (!this.separatorCalc) {
+      this.separatorCalc = { powerKw: 32, circuits: { floor: true, radiators: true, boiler: false, vent: false } };
+    }
+    const el = document.getElementById(`sep-circuit-${circuitName}`);
+    if (el) {
+      this.separatorCalc.circuits[circuitName] = Boolean(el.checked);
+    }
+    this.recalculateSeparator();
+  }
+
+  recalculateSeparator() {
+    if (!this.separatorCalc) {
+      this.separatorCalc = { powerKw: 32, circuits: { floor: true, radiators: true, boiler: false, vent: false } };
+    }
+
+    const powerKw = Math.max(10, Math.min(250, this.separatorCalc.powerKw || 32));
+    const circuits = this.separatorCalc.circuits || { floor: true, radiators: true, boiler: false, vent: false };
+
+    // 1. Расход котлового контура G1 (м³/ч) при Delta T = 20°C:
+    const boilerDeltaT = 20.0;
+    const boilerFlowM3h = (powerKw * 0.86) / boilerDeltaT;
+    const boilerFlowLmin = (boilerFlowM3h * 1000) / 60.0;
+
+    // 2. Расход вторичных отопительных контуров G2 (м³/ч):
+    let activeCount = 0;
+    if (circuits.floor) activeCount++;
+    if (circuits.radiators) activeCount++;
+    if (circuits.boiler) activeCount++;
+    if (circuits.vent) activeCount++;
+
+    let systemFlowM3h = 0;
+    let circuitDetails = [];
+
+    if (activeCount === 0) {
+      systemFlowM3h = boilerFlowM3h;
+      circuitDetails.push('Прямой контур без дополнительных насосов');
+    } else {
+      let weights = {};
+      if (circuits.floor) weights.floor = 0.45;
+      if (circuits.radiators) weights.radiators = 0.40;
+      if (circuits.boiler) weights.boiler = 0.35;
+      if (circuits.vent) weights.vent = 0.25;
+
+      let sumWeights = 0;
+      for (const k in weights) sumWeights += weights[k];
+
+      if (circuits.floor) {
+        const qF = (weights.floor / sumWeights) * powerKw;
+        const gF = (qF * 0.86) / 7.0; // Дельта 7°C (высокий объемный расход теплого пола)
+        systemFlowM3h += gF;
+        circuitDetails.push(`Водяной теплый пол (${Math.round(qF)} кВт, ${gF.toFixed(2)} м³/ч)`);
+      }
+      if (circuits.radiators) {
+        const qR = (weights.radiators / sumWeights) * powerKw;
+        const gR = (qR * 0.86) / 15.0; // Дельта 15°C
+        systemFlowM3h += gR;
+        circuitDetails.push(`Радиаторная сеть (${Math.round(qR)} кВт, ${gR.toFixed(2)} м³/ч)`);
+      }
+      if (circuits.boiler) {
+        const qB = (weights.boiler / sumWeights) * powerKw;
+        const gB = (qB * 0.86) / 20.0; // Дельта 20°C
+        systemFlowM3h += gB;
+        circuitDetails.push(`Бойлер косвенного нагрева БКН (${Math.round(qB)} кВт, ${gB.toFixed(2)} м³/ч)`);
+      }
+      if (circuits.vent) {
+        const qV = (weights.vent / sumWeights) * powerKw;
+        const gV = (qV * 0.86) / 20.0;
+        systemFlowM3h += gV;
+        circuitDetails.push(`Вентиляция/бассейн (${Math.round(qV)} кВт, ${gV.toFixed(2)} м³/ч)`);
+      }
+    }
+
+    const systemFlowLmin = (systemFlowM3h * 1000) / 60.0;
+
+    // 3. Честный статус необходимости гидрострелки:
+    const isRequired = activeCount >= 2;
+    const cardEl = document.getElementById('sep-necessity-card');
+    const titleEl = document.getElementById('sep-necessity-title');
+    const descEl = document.getElementById('sep-necessity-desc');
+
+    if (cardEl && titleEl && descEl) {
+      if (isRequired) {
+        cardEl.style.borderColor = '#06b6d4';
+        cardEl.style.background = 'rgba(6,182,212,0.08)';
+        titleEl.style.color = '#06b6d4';
+        titleEl.innerText = '🛡️ Гидрострелка обязательна для котельной';
+        descEl.innerText = `В системе ${activeCount} контура со своими насосами. Без разделителя насосы перетягивают поток, снижают КПД котла и вызывают шум в радиаторах.`;
+      } else {
+        cardEl.style.borderColor = 'rgba(16,185,129,0.4)';
+        cardEl.style.background = 'rgba(16,185,129,0.08)';
+        titleEl.style.color = 'var(--neon-emerald)';
+        titleEl.innerText = '🟢 Встроенного насоса котла достаточно';
+        descEl.innerText = 'При одном отопительном контуре без дополнительных насосов гидрострелка не требуется. Прямое подключение к котлу экономит бюджет клиента.';
+      }
+    }
+
+    // 4. Определение максимального расхода и баланса:
+    const maxFlowM3h = Math.max(boilerFlowM3h, systemFlowM3h);
+    let balanceMode = '';
+    if (Math.abs(boilerFlowM3h - systemFlowM3h) < 0.1) {
+      balanceMode = 'G₁ ≈ G₂ (полный гидравлический баланс)';
+    } else if (boilerFlowM3h > systemFlowM3h) {
+      balanceMode = 'G₁ > G₂ (котел греет с запасом, возврат в котел)';
+    } else {
+      balanceMode = 'G₂ > G₁ (высокий разбор контуров, подмес из обратки)';
+    }
+
+    // 5. Расчет диаметра корпуса D по правилу предельной вертикальной скорости v0 <= 0.15 м/с:
+    const v0 = 0.15; // м/с
+    const calcDiameterMm = Math.round(18.8 * Math.sqrt(maxFlowM3h / v0));
+
+    // Подбор стандартного заводского профиля и заводской модели:
+    let standardProfile = '';
+    let nozzleSize = '';
+    let modelName = '';
+    let modelPrice = 0;
+
+    if (powerKw <= 35 && maxFlowM3h <= 2.2) {
+      standardProfile = 'Ø 76 мм / 60×60 мм (v ≤ 0.13 м/с)';
+      nozzleSize = '1" ВР (ДУ 25)';
+      modelName = 'Север-M3 / Termojet Compact 1" (до 35 кВт)';
+      modelPrice = 1450000;
+    } else if (powerKw <= 60 && maxFlowM3h <= 3.8) {
+      standardProfile = 'Ø 89 мм / 80×80 мм (v ≤ 0.14 м/с)';
+      nozzleSize = '1 1/4" ВР (ДУ 32)';
+      modelName = 'Север-60 / Termojet 1 1/4" (до 60 кВт)';
+      modelPrice = 2150000;
+    } else if (powerKw <= 100 && maxFlowM3h <= 6.0) {
+      standardProfile = 'Ø 108 мм / 100×100 мм (v ≤ 0.15 м/с)';
+      nozzleSize = '1 1/2" ВР (ДУ 40)';
+      modelName = 'Север-100 / Meibes MHK 32 (до 100 кВт)';
+      modelPrice = 3450000;
+    } else {
+      standardProfile = 'Ø 133 мм / 120×120 мм (v ≤ 0.16 м/с)';
+      nozzleSize = '2" ВР (ДУ 50)';
+      modelName = 'Север-160 / Termojet Pro 2" (до 160 кВт каскад)';
+      modelPrice = 5200000;
+    }
+
+    const airVentName = 'Caleffi Robocal 1/2" (автоматический воздухоотводчик с отсечным клапаном)';
+    const drainValveName = 'Кран дренажный шаровой со штуцером 1/2" (для промывки шлама)';
+
+    this.currentCalculatedSeparator = {
+      powerKw,
+      boilerFlowM3h: Math.round(boilerFlowM3h * 100) / 100,
+      boilerFlowLmin: Math.round(boilerFlowLmin * 10) / 10,
+      systemFlowM3h: Math.round(systemFlowM3h * 100) / 100,
+      systemFlowLmin: Math.round(systemFlowLmin * 10) / 10,
+      balanceMode,
+      calcDiameterMm,
+      standardProfile,
+      nozzleSize,
+      modelName,
+      modelPrice,
+      isRequired,
+      circuitDetails,
+      airVentName,
+      drainValveName
+    };
+
+    // Обновляем DOM
+    const bFlowEl = document.getElementById('res-sep-boiler-flow');
+    const sFlowEl = document.getElementById('res-sep-system-flow');
+    const modeEl = document.getElementById('res-sep-mode');
+    const bodyEl = document.getElementById('res-sep-body-diam');
+    const nozzEl = document.getElementById('res-sep-nozzles');
+    const modEl = document.getElementById('res-sep-model');
+    const ventEl = document.getElementById('res-sep-air-vent');
+    const drainEl = document.getElementById('res-sep-drain');
+
+    if (bFlowEl) bFlowEl.innerText = `${this.currentCalculatedSeparator.boilerFlowM3h} м³/ч (${this.currentCalculatedSeparator.boilerFlowLmin} л/мин)`;
+    if (sFlowEl) sFlowEl.innerText = `${this.currentCalculatedSeparator.systemFlowM3h} м³/ч (${this.currentCalculatedSeparator.systemFlowLmin} л/мин)`;
+    if (modeEl) modeEl.innerText = balanceMode;
+    if (bodyEl) bodyEl.innerText = standardProfile;
+    if (nozzEl) nozzEl.innerText = nozzleSize;
+    if (modEl) modEl.innerText = modelName;
+    if (ventEl) ventEl.innerText = airVentName;
+    if (drainEl) drainEl.innerText = drainValveName;
+  }
+
+  async copySeparatorCalculation() {
+    if (!this.currentCalculatedSeparator) {
+      this.recalculateSeparator();
+    }
+    const s = this.currentCalculatedSeparator;
+    if (!s) return;
+
+    const siteName = this.currentSite ? this.currentSite.title : 'Объект LIGA OS';
+
+    const report = `⚗️ ИНЖЕНЕРНЫЙ РАСЧЕТ ГИДРАВЛИЧЕСКОГО РАЗДЕЛИТЕЛЯ (ГИДРОСТРЕЛКИ)
+«Лига Опытных Мастеров» • Европейский стандарт DIN EN 12828 / Правило 3d
+Ведущий инженер: Улугбек Хакимов
+📍 Объект: ${siteName}
+📅 Дата: ${new Date().toLocaleDateString('ru-RU')}
+
+ИСХОДНЫЕ ПАРАМЕТРЫ КОТЕЛЬНОЙ:
+• Мощность котла: ${s.powerKw} кВт
+• Статус разделителя: ${s.isRequired ? '🛡️ ОБЯЗАТЕЛЕН (2+ контура с насосами)' : '🟢 Встроенного насоса котла достаточно'}
+• Подключенные контуры:
+  - ${s.circuitDetails.join('\n  - ')}
+
+ГИДРАВЛИЧЕСКИЙ БАЛАНС И РАСХОДЫ:
+• Расход котлового контура (G₁): ${s.boilerFlowM3h} м³/ч (${s.boilerFlowLmin} л/мин)
+• Расход вторичных контуров (G₂): ${s.systemFlowM3h} м³/ч (${s.systemFlowLmin} л/мин)
+• Режим баланса: ${s.balanceMode}
+
+ГЕОМЕТРИЯ И ПРАВИЛО 3d / 3v:
+• Расчетный диаметр корпуса (D): ${s.standardProfile}
+• Патрубки подключения (d = D/3): ${s.nozzleSize}
+• Рекомендуемая заводская модель: ${s.modelName}
+• Воздухоотделение (верх): ${s.airVentName}
+• Шламоудаление (низ): ${s.drainValveName}
+
+🛡️ ИНЖЕНЕРНАЯ ГАРАНТИЯ МАСТЕРА:
+Разделитель исключает паразитное перетягивание теплоносителя между насосами контуров, снижает шум в радиаторах, защищает теплообменник котла от температурного шока и удаляет микропузырьки воздуха и шлам до попадания в котел.
+
+Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        await this.copyToClipboard(report);
+      }
+      this.showToast('✓ Расчет гидрострелки скопирован для Telegram!');
+    } catch (e) {
+      this.showToast('✓ Расчет гидрострелки сформирован!');
+    }
+  }
+
+  async addCalculatedSeparatorToMaterials() {
+    const calc = this.currentCalculatedSeparator;
+    if (!calc) return;
+    if (!window.ligaDB) {
+      this.showToast('База данных недоступна');
+      return;
+    }
+
+    const itemsToAdd = [
+      {
+        category: 'boiler',
+        name: `Гидравлический разделитель (гидрострелка): ${calc.modelName}`,
+        qty: '1 шт',
+        price: calc.modelPrice,
+        isPurchased: false
+      },
+      {
+        category: 'fittings',
+        name: `Автоматический воздухоотводчик: ${calc.airVentName}`,
+        qty: '1 шт',
+        price: 185000,
+        isPurchased: false
+      },
+      {
+        category: 'fittings',
+        name: `Дренажный кран промывки шлама: ${calc.drainValveName}`,
+        qty: '1 шт',
+        price: 120000,
+        isPurchased: false
+      }
+    ];
+
+    for (const item of itemsToAdd) {
+      await window.ligaDB.add('materials', {
+        siteId: this.currentSiteId || 1,
+        category: item.category,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        isPurchased: false
+      });
+    }
+
+    await this.renderMaterials();
+    this.updateNavBadges();
+    this.closeModal('modal-hydraulic-separator-calculator');
+    this.showToast('✓ Добавлено 3 позиции первичного кольца котельной (Север / Caleffi) на склад!');
+  }
+
   // Переключение статуса материала (Куплено / Не куплено) — P0-audit fix
   async toggleMaterialStatus(id) {
     const item = await window.ligaDB.get('materials', id);
@@ -5903,6 +6240,14 @@ ${loopsText}
         target: 'openExpansionTankCalculator',
         title: '🛑 Инструмент: Расширительный бак Reflex и клапан DIN EN 12828',
         desc: 'Открываю расчет объема бака Reflex, давления азота P₀ и сбросного клапана...'
+      };
+    }
+    if ((lower.includes('гидрострелк') || lower.includes('гидравлический разделител') || lower.includes('первичное кольц') || (lower.includes('стрелк') && lower.includes('котельн')) || lower.includes('разделитель котельн')) && !lower.includes('купил')) {
+      return {
+        type: 'direct_func',
+        target: 'openSeparatorCalculator',
+        title: '🛡️ Инструмент: Гидрострелка и первичное кольцо котельной',
+        desc: 'Открываю расчет гидравлического разделителя, правила 3d и баланса контуров...'
       };
     }
 
