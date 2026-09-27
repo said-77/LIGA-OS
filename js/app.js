@@ -124,6 +124,7 @@ class LigaApp {
       this.calculateEstimate();
       await this.updateNavBadges();
       this.checkOnboardingHint();
+      this.initVideoTour();
     } catch (renderErr) {
       console.error('[LIGA OS] Ошибка первичного рендеринга:', renderErr);
     }
@@ -7899,6 +7900,14 @@ ${shareUrl}
       clearTimeout(this.voiceNavTimeout);
       this.voiceNavTimeout = null;
     }
+    if (modalId === 'modal-video-tour' && this.videoTourState) {
+      this.videoTourState.isOpen = false;
+      this.videoTourState.isPlaying = false;
+      if (this.videoTourState.timer) {
+        clearInterval(this.videoTourState.timer);
+        this.videoTourState.timer = null;
+      }
+    }
     const m = document.getElementById(modalId);
     if (m) m.classList.remove('open');
     if (modalId === 'modal-more-menu') {
@@ -8641,6 +8650,709 @@ ${shareUrl}
       window.open(shareUrl, '_blank');
     } catch (err) {
       console.warn('Telegram share window error:', err);
+    }
+  }
+
+  // ==========================================================================
+  // ИНТЕРАКТИВНЫЙ ВИДЕОГИД, ШОУРУМ И SPOTLIGHT-ТУР v2.4.2
+  // Swiss High-End Luxury Engineering Engine
+  // ==========================================================================
+
+  initVideoTour() {
+    this.videoTourState = {
+      isOpen: false,
+      isPlaying: false,
+      mode: 'master', // 'master' | 'client'
+      currentChapter: 0,
+      timer: null,
+      chapterDuration: 25,
+      currentSeconds: 0
+    };
+
+    this.videoChaptersMaster = [
+      {
+        id: 'beacon',
+        title: 'Световой маяк и безопасность мастера',
+        shortTitle: 'Маяк и приватность',
+        duration: '0:45',
+        speaker: 'ИНЖЕНЕРНЫЙ ИНСТРУКТОР:',
+        subtitle: 'Световой маяк вверху экрана — ваш щит безопасности. Коснитесь его — и все служебные цены, прибыль и касса скроются. Заказчик увидит только надежность и статус 16 бар.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>👑</span> РЕЖИМ БЕЗОПАСНОСТИ МАСТЕРА</div>
+              <div class="scene-hero-status">МГНОВЕННАЯ ЗАЩИТА 0.1 СЕК</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:#10b981;">👑 МАСТЕР</div>
+                <div class="scene-feature-label">Полный доступ мастера</div>
+                <div class="scene-feature-desc">Видны закупочные цены, остаток кассы на Джами, прибыль и маржа объекта.</div>
+              </div>
+              <div class="scene-feature-box" style="border-color:var(--gold-primary);">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">👁️ КЛИЕНТ</div>
+                <div class="scene-feature-label">Режим показа заказчику</div>
+                <div class="scene-feature-desc">Служебные цифры замаскированы. Клиент видит технический прогресс и качество.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
+              💡 <b>Совет:</b> Держите телефон в режиме «Клиент», когда заказчик или дизайнер стоят рядом с вами на объекте.
+            </div>
+          </div>
+        `,
+        cursor: { top: '15%', left: '85%' }
+      },
+      {
+        id: 'estimate',
+        title: 'Экспресс-смета за 15 секунд',
+        shortTitle: 'Смета за 15 сек',
+        duration: '0:45',
+        speaker: 'ШВЕЙЦАРСКИЙ СТАНДАРТ:',
+        subtitle: 'Больше никаких расчетов на клочках бумаги. Выберите готовый пресет (Коттедж 350 м² или Новостройка) — система автоматически рассчитает диаметры DIN 1988, насос и спецификацию.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>📐</span> ИНЖЕНЕРНЫЕ ПРЕСЕТЫ ОБЪЕКТОВ</div>
+              <div class="scene-hero-status">DIN 1988 / СНиП</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num">15 сек</div>
+                <div class="scene-feature-label">Пресет «Коттедж 350 м²»</div>
+                <div class="scene-feature-desc">Трубы Rehau 20/25/32, коллекторы FAR 6 отводов, насос Grundfos Magna, бойлер 200л.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#60a5fa;">0 ошибок</div>
+                <div class="scene-feature-label">Скорость потока v ≤ 1.5 м/с</div>
+                <div class="scene-feature-desc">Автоматическая проверка гидравлики исключает шумы в трубах и заужения стояков.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid #3b82f6;">
+              ⚡ <b>Результат:</b> Готовая спецификация материалов сразу синхронизируется с чек-листом закупок для рынка Джами.
+            </div>
+          </div>
+        `,
+        cursor: { top: '35%', left: '40%' }
+      },
+      {
+        id: 'bazaar',
+        title: 'Базар Джами и чеки голосом',
+        shortTitle: 'Базар Джами и чеки',
+        duration: '0:45',
+        speaker: 'ОФЛАЙН-РЕЖИМ:',
+        subtitle: 'На рынке Джами или в подвале без интернета нажмите микрофон и скажите: «Купил коллектор FAR за 1.8 млн». Система моментально учтет расход и обновит остаток аванса.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>🎙️</span> ГОЛОСОВОЙ УЧЕТ БЕЗ РУК</div>
+              <div class="scene-hero-status">100% ОФФЛАЙН</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num">4 сек</div>
+                <div class="scene-feature-label">«Купил коллектор FAR 1.8 млн»</div>
+                <div class="scene-feature-desc">Распознавание речи прямо на устройстве. Никаких записей в мятых блокнотах.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#34d399;">Касса UZS</div>
+                <div class="scene-feature-label">Остаток аванса в кармане</div>
+                <div class="scene-feature-desc">Точный баланс наличных в сумах и долларах. Чеки фотографируются в память объекта.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid #10b981;">
+              📦 <b>Закупка без забытых мелочей:</b> Вычеркивайте купленные фитинги в мобильном списке одним касанием пальца.
+            </div>
+          </div>
+        `,
+        cursor: { top: '50%', left: '70%' }
+      },
+      {
+        id: 'pressure',
+        title: 'Опрессовка 16 бар на 24 часа',
+        shortTitle: 'Опрессовка 16 бар',
+        duration: '0:45',
+        speaker: 'СТАНДАРТ БЕЗОПАСНОСТИ:',
+        subtitle: 'Стандарт Улугбека — гидроиспытания 16.0 бар в течение 24 часов (в 4 раза строже СНиП). Фото манометра на старте и финише гарантируют, что стяжку никогда не придется долбить.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>🛡️</span> СУТОЧНЫЕ ГИДРОИСПЫТАНИЯ</div>
+              <div class="scene-hero-status" style="background:rgba(212,175,55,0.2); color:var(--gold-primary); border-color:rgba(212,175,55,0.4);">ЭЛИТНЫЙ КЛАСС</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">16.0 БАР</div>
+                <div class="scene-feature-label">Давление опрессовки</div>
+                <div class="scene-feature-desc">В 4 раза выше рабочего давления водопровода. Проверка соединений на разрыв.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#ef4444;">24 ЧАСА</div>
+                <div class="scene-feature-label">Таймер с фотофиксацией</div>
+                <div class="scene-feature-desc">Фото манометра при накачке и через сутки. Автоматическое составление Акта.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
+              🔒 <b>Железная защита мастера:</b> Заказчик и плиточники подписывают акт опрессовки ДО заливки чистового пола.
+            </div>
+          </div>
+        `,
+        cursor: { top: '65%', left: '30%' }
+      },
+      {
+        id: 'passport',
+        title: 'VIP Паспорт и сдача заказчику',
+        shortTitle: 'VIP Паспорт объекта',
+        duration: '0:45',
+        speaker: 'ПРИЕМКА РАБОТ:',
+        subtitle: 'Сформируйте официальный Исполнительный Инженерный Паспорт со всеми скрытыми трассами и опрессовкой. Экспортируйте в PDF или отправьте заказчику в Telegram в один клик.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>📋</span> ЦИФРОВОЙ ПАСПОРТ А4</div>
+              <div class="scene-hero-status">PDF & ПЕЧАТЬ</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:#38bdf8;">100%</div>
+                <div class="scene-feature-label">Трассы с фотопривязкой</div>
+                <div class="scene-feature-desc">Заказчик точно видит, где проложены трубы в стяжке. Исключен риск пробить трубу при монтаже мебели.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">VIP ЧЕК</div>
+                <div class="scene-feature-label">Обоснование премиум-цены</div>
+                <div class="scene-feature-desc">Уровень швейцарской корпорации. Клиент видит, за что платит высокий гонорар.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid #38bdf8;">
+              🖨️ <b>Готов к печати:</b> Нажмите «Печать / Экспорт в PDF» — документ с золотой печатью готов к передаче.
+            </div>
+          </div>
+        `,
+        cursor: { top: '75%', left: '80%' }
+      }
+    ];
+
+    this.videoChaptersClient = [
+      {
+        id: 'client-16bar',
+        title: 'Стандарт 16 БАР: Надежность на 50 лет',
+        shortTitle: 'Стандарт 16 БАР',
+        duration: '0:45',
+        speaker: 'СТАНДАРТ КАЧЕСТВА LIGA:',
+        subtitle: 'Обычные монтажники проверяют трубы давлением 4–6 бар. Мы опрессовываем систему на 16.0 бар в течение 24 часов. Это гарантирует отсутствие протечек в стяжке на весь срок службы дома.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>🛡️</span> ПОЧЕМУ 16 БАР — ЭТО БЕЗОПАСНОСТЬ</div>
+              <div class="scene-hero-status">СТАНДАРТ ТАШКЕНТА №1</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#94a3b8;">4–6 БАР</div>
+                <div class="scene-feature-label">Обычный СНиП</div>
+                <div class="scene-feature-desc">Скрытый микробрак не виден и может дать течь через 1–2 года прямо в стяжке.</div>
+              </div>
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">16.0 БАР</div>
+                <div class="scene-feature-label">Стандарт Улугбека Хакимова</div>
+                <div class="scene-feature-desc">Выдерживает даже экстремальные гидроудары городского водоканала. Полное спокойствие.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
+              🏛️ <b>Официальный Акт:</b> По завершении опрессовки заказчику выдается официальный протокол гидроиспытаний.
+            </div>
+          </div>
+        `,
+        cursor: { top: '40%', left: '60%' }
+      },
+      {
+        id: 'client-materials',
+        title: 'Оригинальные материалы Rehau & FAR',
+        shortTitle: 'Rehau & FAR',
+        duration: '0:45',
+        speaker: 'МАТЕРИАЛЫ ВЫСШЕГО КЛАССА:',
+        subtitle: 'Только оригинальные сшитые полиэтилены Rehau с надвижными неразъемными гильзами и итальянские коллекторы FAR. Никаких спаек полипропилена в стяжке пола.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>💎</span> ЗАЩИТА ОТ КОНТРАФАКТА</div>
+              <div class="scene-hero-status">ЕВРОПЕЙСКИЙ DIN</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:#38bdf8;">Лучевая сеть</div>
+                <div class="scene-feature-label">Без тройников в стяжке</div>
+                <div class="scene-feature-desc">Цельная труба от гребенки до каждого смесителя и радиатора. Протечка в полу физически невозможна.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">FAR & Rehau</div>
+                <div class="scene-feature-label">Оригинал из Европы</div>
+                <div class="scene-feature-desc">Латунь CW617N, стойкая к агрессивной воде Ташкента, и защита от вымывания цинка.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid #38bdf8;">
+              📜 <b>Проверенные поставщики:</b> Каждая партия материалов закупается у сертифицированных дистрибьюторов.
+            </div>
+          </div>
+        `,
+        cursor: { top: '50%', left: '40%' }
+      },
+      {
+        id: 'client-passport',
+        title: 'Цифровой паспорт скрытых трасс',
+        shortTitle: 'Паспорт скрытых трасс',
+        duration: '0:45',
+        speaker: 'ПРОЗРАЧНОСТЬ И ДОКУМЕНТЫ:',
+        subtitle: 'Каждый сантиметр труб под стяжкой фотографируется с привязкой к стенам. Вы в любой момент через 10 лет сможете посмотреть, где именно проходят трубы.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>📍</span> ТОЧНАЯ КАРТА ВАШИХ ТРУБ</div>
+              <div class="scene-hero-status">ЦИФРОВОЙ АРХИВ</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:#10b981;">HD ФОТО</div>
+                <div class="scene-feature-label">Привязка к лазерным осям</div>
+                <div class="scene-feature-desc">Сверлите плинтусы и монтируйте двери без малейшего страха задеть водяную магистраль.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#f59e0b;">QR-КОД</div>
+                <div class="scene-feature-label">Доступ со смартфона</div>
+                <div class="scene-feature-desc">QR-код наносится на коллекторный шкаф. Доступ к чертежам и контактам мастера 24/7.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid #10b981;">
+              📑 <b>Швейцарский подход:</b> Инженерная система вашего дома получает официальный технический паспорт.
+            </div>
+          </div>
+        `,
+        cursor: { top: '60%', left: '70%' }
+      },
+      {
+        id: 'client-finance',
+        title: 'Прозрачный финансовый расчет',
+        shortTitle: 'Прозрачный расчет',
+        duration: '0:45',
+        speaker: 'ЧЕСТНЫЙ БАЛАНС:',
+        subtitle: 'Все чеки, закупки и этапы оплат фиксируются в системе LIGA OS. Вы получаете детализированную отчетность без скрытых наценок и неожиданных переплат.',
+        render: () => `
+          <div class="scene-interactive-card">
+            <div class="scene-hero-header">
+              <div class="scene-hero-title"><span>💰</span> ПОЛНЫЙ ФИНАНСОВЫЙ ПОРЯДОК</div>
+              <div class="scene-hero-status">БЕЗ СКРЫТЫХ ДОПЛАТ</div>
+            </div>
+            <div class="scene-visual-canvas">
+              <div class="scene-feature-box highlighted">
+                <div class="scene-feature-num" style="color:var(--gold-primary);">0 сум</div>
+                <div class="scene-feature-label">Необоснованных расходов</div>
+                <div class="scene-feature-desc">Каждый потраченный сум подтвержден фото чека из строительного магазина или рынка.</div>
+              </div>
+              <div class="scene-feature-box">
+                <div class="scene-feature-num" style="color:#60a5fa;">Telegram</div>
+                <div class="scene-feature-label">Мгновенный отчет заказчику</div>
+                <div class="scene-feature-desc">Мастер отправляет актуальную финансовую сводку в мессенджер одним нажатием.</div>
+              </div>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
+              🤝 <b>Доверие и статус:</b> Отношения строятся на абсолютной прозрачности и инженерной честности.
+            </div>
+          </div>
+        `,
+        cursor: { top: '70%', left: '50%' }
+      }
+    ];
+
+    window.addEventListener('resize', () => {
+      if (this.spotlightState && this.spotlightState.isActive) {
+        this.renderSpotlightStep(this.spotlightState.currentStep);
+      }
+    });
+  }
+
+  openVideoTour() {
+    this.closeModal('modal-more-menu');
+    if (!this.videoTourState) this.initVideoTour();
+    this.videoTourState.isOpen = true;
+    this.videoTourState.currentChapter = 0;
+    this.videoTourState.currentSeconds = 0;
+    this.videoTourState.isPlaying = true;
+
+    this.renderVideoChaptersList();
+    this.renderVideoChapter(0);
+    this.openModal('modal-video-tour');
+    this.startVideoTimer();
+  }
+
+  closeVideoTour() {
+    if (this.videoTourState) {
+      this.videoTourState.isOpen = false;
+      this.videoTourState.isPlaying = false;
+      if (this.videoTourState.timer) {
+        clearInterval(this.videoTourState.timer);
+        this.videoTourState.timer = null;
+      }
+    }
+    this.closeModal('modal-video-tour');
+  }
+
+  switchVideoTourMode(mode) {
+    if (!this.videoTourState) this.initVideoTour();
+    this.videoTourState.mode = mode;
+    this.videoTourState.currentChapter = 0;
+    this.videoTourState.currentSeconds = 0;
+
+    const btnMaster = document.getElementById('tab-video-mode-master');
+    const btnClient = document.getElementById('tab-video-mode-client');
+    const mainTitle = document.getElementById('video-tour-main-title');
+
+    if (mode === 'master') {
+      if (btnMaster) btnMaster.classList.add('active');
+      if (btnClient) btnClient.classList.remove('active');
+      if (mainTitle) mainTitle.innerText = '🎬 Интерактивная Видеоинструкция LIGA OS';
+    } else {
+      if (btnMaster) btnMaster.classList.remove('active');
+      if (btnClient) btnClient.classList.add('active');
+      if (mainTitle) mainTitle.innerText = '👑 VIP Презентация стандартов для Заказчика';
+    }
+
+    this.renderVideoChaptersList();
+    this.renderVideoChapter(0);
+  }
+
+  getCurrentVideoChapters() {
+    return this.videoTourState && this.videoTourState.mode === 'client'
+      ? this.videoChaptersClient
+      : this.videoChaptersMaster;
+  }
+
+  renderVideoChaptersList() {
+    const listEl = document.getElementById('video-chapters-list');
+    if (!listEl) return;
+    const chapters = this.getCurrentVideoChapters();
+
+    listEl.innerHTML = chapters.map((ch, idx) => `
+      <div class="video-chapter-chip ${idx === this.videoTourState.currentChapter ? 'active' : ''}" 
+           id="video-chip-${idx}" onclick="window.app.selectVideoChapter(${idx})">
+        <span class="chip-num">Урок ${idx + 1}</span>
+        <span class="chip-title">${ch.shortTitle}</span>
+        <span class="chip-duration">⏱ ${ch.duration}</span>
+      </div>
+    `).join('');
+  }
+
+  selectVideoChapter(idx) {
+    if (!this.videoTourState) this.initVideoTour();
+    const chapters = this.getCurrentVideoChapters();
+    if (idx >= 0 && idx < chapters.length) {
+      this.videoTourState.currentChapter = idx;
+      this.videoTourState.currentSeconds = 0;
+      this.renderVideoChapter(idx);
+    }
+  }
+
+  renderVideoChapter(idx) {
+    const chapters = this.getCurrentVideoChapters();
+    if (!chapters || !chapters[idx]) return;
+    const ch = chapters[idx];
+
+    const badgeEl = document.getElementById('video-chapter-num-badge');
+    const nameEl = document.getElementById('video-chapter-name-text');
+    if (badgeEl) badgeEl.innerText = `Глава ${idx + 1}/${chapters.length}`;
+    if (nameEl) nameEl.innerText = ch.title;
+
+    const stageContent = document.getElementById('video-scene-content');
+    if (stageContent) {
+      stageContent.innerHTML = ch.render();
+    }
+
+    const speakerEl = document.getElementById('video-subtitles-label');
+    const subtitleEl = document.getElementById('video-subtitles-text');
+    if (speakerEl) speakerEl.innerText = ch.speaker;
+    if (subtitleEl) subtitleEl.innerText = ch.subtitle;
+
+    const cursorEl = document.getElementById('video-virtual-cursor');
+    if (cursorEl && ch.cursor) {
+      cursorEl.style.top = ch.cursor.top;
+      cursorEl.style.left = ch.cursor.left;
+    }
+
+    chapters.forEach((_, i) => {
+      const chip = document.getElementById(`video-chip-${i}`);
+      if (chip) {
+        if (i === idx) chip.classList.add('active');
+        else chip.classList.remove('active');
+      }
+    });
+
+    this.updateVideoProgress();
+  }
+
+  toggleVideoPlayPause() {
+    if (!this.videoTourState) this.initVideoTour();
+    this.videoTourState.isPlaying = !this.videoTourState.isPlaying;
+
+    const playIcon = document.getElementById('video-play-icon');
+    if (playIcon) {
+      playIcon.innerText = this.videoTourState.isPlaying ? '⏸' : '▶';
+    }
+
+    if (this.videoTourState.isPlaying) {
+      this.startVideoTimer();
+    } else {
+      if (this.videoTourState.timer) {
+        clearInterval(this.videoTourState.timer);
+        this.videoTourState.timer = null;
+      }
+    }
+  }
+
+  startVideoTimer() {
+    if (!this.videoTourState) return;
+    if (this.videoTourState.timer) clearInterval(this.videoTourState.timer);
+
+    const playIcon = document.getElementById('video-play-icon');
+    if (playIcon) playIcon.innerText = '⏸';
+
+    this.videoTourState.timer = setInterval(() => {
+      if (!this.videoTourState.isPlaying) return;
+      this.videoTourState.currentSeconds += 1;
+
+      if (this.videoTourState.currentSeconds >= this.videoTourState.chapterDuration) {
+        this.videoTourState.currentSeconds = 0;
+        const chapters = this.getCurrentVideoChapters();
+        if (this.videoTourState.currentChapter < chapters.length - 1) {
+          this.nextVideoChapter();
+        } else {
+          this.videoTourState.isPlaying = false;
+          if (playIcon) playIcon.innerText = '▶';
+          clearInterval(this.videoTourState.timer);
+          this.videoTourState.timer = null;
+        }
+      } else {
+        this.updateVideoProgress();
+      }
+    }, 1000);
+  }
+
+  updateVideoProgress() {
+    const chapters = this.getCurrentVideoChapters();
+    const totalChapters = chapters.length;
+    const curIdx = this.videoTourState.currentChapter;
+    const curSec = this.videoTourState.currentSeconds;
+    const chDur = this.videoTourState.chapterDuration;
+
+    const progressPct = ((curIdx * chDur + curSec) / (totalChapters * chDur)) * 100;
+    const progressEl = document.getElementById('video-timeline-progress');
+    if (progressEl) {
+      progressEl.style.width = `${Math.min(100, Math.max(0, progressPct))}%`;
+    }
+
+    const curTimeEl = document.getElementById('video-current-time');
+    const totTimeEl = document.getElementById('video-total-time');
+    const totalSec = totalChapters * chDur;
+    const passedSec = curIdx * chDur + curSec;
+
+    if (curTimeEl) {
+      const m = Math.floor(passedSec / 60);
+      const s = passedSec % 60;
+      curTimeEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+    if (totTimeEl) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      totTimeEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+  }
+
+  nextVideoChapter() {
+    if (!this.videoTourState) this.initVideoTour();
+    const chapters = this.getCurrentVideoChapters();
+    if (this.videoTourState.currentChapter < chapters.length - 1) {
+      this.videoTourState.currentChapter++;
+      this.videoTourState.currentSeconds = 0;
+      this.renderVideoChapter(this.videoTourState.currentChapter);
+    }
+  }
+
+  prevVideoChapter() {
+    if (!this.videoTourState) this.initVideoTour();
+    if (this.videoTourState.currentChapter > 0) {
+      this.videoTourState.currentChapter--;
+      this.videoTourState.currentSeconds = 0;
+      this.renderVideoChapter(this.videoTourState.currentChapter);
+    }
+  }
+
+  seekVideoTimeline(e) {
+    const track = document.getElementById('video-timeline-track');
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+
+    const chapters = this.getCurrentVideoChapters();
+    const totalSec = chapters.length * this.videoTourState.chapterDuration;
+    const targetSec = Math.floor(pct * totalSec);
+
+    const chIdx = Math.min(chapters.length - 1, Math.floor(targetSec / this.videoTourState.chapterDuration));
+    const secInCh = targetSec % this.videoTourState.chapterDuration;
+
+    this.videoTourState.currentChapter = chIdx;
+    this.videoTourState.currentSeconds = secInCh;
+    this.renderVideoChapter(chIdx);
+  }
+
+  // ==========================================================================
+  // ЖИВОЙ SPOTLIGHT-ТУР ПО РЕАЛЬНОМУ ИНТЕРФЕЙСУ
+  // ==========================================================================
+
+  startSpotlightFromVideo() {
+    this.closeVideoTour();
+    setTimeout(() => {
+      this.startSpotlightTour();
+    }, 200);
+  }
+
+  startSpotlightTour() {
+    this.closeModal('modal-more-menu');
+    this.spotlightState = {
+      isActive: true,
+      currentStep: 0,
+      steps: [
+        {
+          selector: '#header-safety-beacon',
+          title: 'Световой маяк безопасности',
+          body: 'Это ваш главный щит приватности на объекте. Нажмите сюда — и интерфейс переключится в безопасный режим для клиента: замаскируются ваши цены, прибыль и касса.',
+          placement: 'bottom'
+        },
+        {
+          selector: 'button[data-tab="tab-estimates"]',
+          title: 'Инженерная смета за 15 секунд',
+          body: 'Здесь рассчитывается спецификация труб, радиаторов, теплого пола и котельной. Доступны готовые пресеты по нормам DIN 1988 в один клик.',
+          placement: 'top'
+        },
+        {
+          selector: 'button[data-tab="tab-materials"]',
+          title: 'Чек-лист для рынка Джами',
+          body: 'Ваш мобильный чек-лист закупки. Вычеркивайте купленные трубы и фитинги прямо на рынке. Работает автономно в подвале без интернета.',
+          placement: 'top'
+        },
+        {
+          selector: '#btn-voice-input',
+          title: 'Голосовой ввод «Свободные руки»',
+          body: 'Диктуйте расходы без набора на клавиатуре: «Купил коллектор FAR за 1.8 млн» — система автоматически привяжет чек к объекту.',
+          placement: 'bottom'
+        },
+        {
+          selector: '#btn-more-menu-toggle',
+          title: 'Швейцарский пульт мастера',
+          body: 'Единый центр: 9 инженерных калькуляторов котельных (гидрострелка, мембранные баки Reflex, Grundfos, FAR, ротаметры) и памятка ведения переговоров.',
+          placement: 'bottom'
+        }
+      ]
+    };
+
+    const overlay = document.getElementById('spotlight-tour-overlay');
+    if (overlay) {
+      overlay.style.display = 'block';
+      this.renderSpotlightStep(0);
+    }
+  }
+
+  stopSpotlightTour() {
+    if (this.spotlightState) {
+      this.spotlightState.isActive = false;
+    }
+    const overlay = document.getElementById('spotlight-tour-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+    this.showToast('Инженерный тур завершен. Видеогид всегда доступен в шапке и меню!');
+  }
+
+  renderSpotlightStep(stepIdx) {
+    if (!this.spotlightState || !this.spotlightState.isActive) return;
+    const step = this.spotlightState.steps[stepIdx];
+    if (!step) return;
+
+    this.spotlightState.currentStep = stepIdx;
+
+    let targetEl = document.querySelector(step.selector);
+    if (!targetEl) {
+      targetEl = document.querySelector('.top-header');
+    }
+    if (!targetEl) return;
+
+    try {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (_) {}
+
+    const rect = targetEl.getBoundingClientRect();
+    const box = document.getElementById('spotlight-highlight-box');
+    const card = document.getElementById('spotlight-tooltip-card');
+
+    if (box) {
+      const pad = 6;
+      box.style.top = `${rect.top - pad}px`;
+      box.style.left = `${rect.left - pad}px`;
+      box.style.width = `${rect.width + pad * 2}px`;
+      box.style.height = `${rect.height + pad * 2}px`;
+    }
+
+    if (card) {
+      const badge = document.getElementById('spotlight-badge-step');
+      const title = document.getElementById('spotlight-title-text');
+      const body = document.getElementById('spotlight-body-text');
+
+      if (badge) badge.innerText = `ШАГ ${stepIdx + 1} ИЗ ${this.spotlightState.steps.length}`;
+      if (title) title.innerText = step.title;
+      if (body) body.innerText = step.body;
+
+      const dots = document.querySelectorAll('.spotlight-dot');
+      dots.forEach((dot, idx) => {
+        if (idx === stepIdx) dot.classList.add('active');
+        else dot.classList.remove('active');
+      });
+
+      const cardWidth = 320;
+      const cardHeight = 180;
+      let cardTop = 0;
+      let cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, rect.left + rect.width / 2 - cardWidth / 2));
+
+      if (rect.top > window.innerHeight / 2) {
+        cardTop = Math.max(12, rect.top - cardHeight - 16);
+      } else {
+        cardTop = Math.min(window.innerHeight - cardHeight - 12, rect.bottom + 16);
+      }
+
+      card.style.top = `${cardTop}px`;
+      card.style.left = `${cardLeft}px`;
+
+      const prevBtn = document.getElementById('btn-spotlight-prev');
+      const nextBtn = document.getElementById('btn-spotlight-next');
+      if (prevBtn) {
+        prevBtn.style.display = stepIdx === 0 ? 'none' : 'block';
+      }
+      if (nextBtn) {
+        nextBtn.innerText = stepIdx === this.spotlightState.steps.length - 1 ? 'Завершить ✓' : 'Далее →';
+      }
+    }
+  }
+
+  nextSpotlightStep() {
+    if (!this.spotlightState || !this.spotlightState.isActive) return;
+    if (this.spotlightState.currentStep < this.spotlightState.steps.length - 1) {
+      this.renderSpotlightStep(this.spotlightState.currentStep + 1);
+    } else {
+      this.stopSpotlightTour();
+    }
+  }
+
+  prevSpotlightStep() {
+    if (!this.spotlightState || !this.spotlightState.isActive) return;
+    if (this.spotlightState.currentStep > 0) {
+      this.renderSpotlightStep(this.spotlightState.currentStep - 1);
     }
   }
 }

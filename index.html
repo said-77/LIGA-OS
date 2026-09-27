@@ -56,6 +56,10 @@
           </div>
         </div>
         <div class="header-main-actions">
+          <button id="btn-video-tour-open" class="btn-video-tour-header" title="Интерактивная видеоинструкция и VIP-презентация для заказчика" type="button" onclick="window.app.openVideoTour()">
+            <span class="btn-video-pulse-dot"></span>
+            <span class="btn-video-label">🎬 ВИДЕОГИД</span>
+          </button>
           <button id="btn-ai-concierge-open" class="liga-ai-indicator" title="LIGA AI • Инженерный Консьерж" type="button">
             <span class="ai-dot"></span>
             <span class="ai-label">AI</span>
@@ -111,6 +115,19 @@
         <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
           Единый центр управления: 5 инженерных калькуляторов, контроль опрессовки 16 бар, скрипты диалогов и настройки системы мастера.
         </p>
+
+        <!-- БАННЕР ИНТЕРАКТИВНОГО ВИДЕОГИДА И ШОУРУМА v2.4.2 -->
+        <div class="video-tour-banner-card" id="banner-video-tour-menu" onclick="window.app.openVideoTour()">
+          <div class="video-tour-badge-pulse">
+            <span class="video-play-triangle">▶</span>
+          </div>
+          <div class="video-tour-content">
+            <div class="video-tour-tag">LIGA MASTER CLASS • 4K ИНТЕРАКТИВ</div>
+            <div class="video-tour-heading">Интерактивный Видеогид & VIP-Шоурум</div>
+            <div class="video-tour-subtext">5 живых видеоуроков: Световой маяк, Смета за 15 сек, Базар Джами, 16 бар + VIP-презентация для заказчика</div>
+          </div>
+          <div class="video-tour-cta-btn">Смотреть</div>
+        </div>
 
         <!-- КАТЕГОРИЯ 1: ИНЖЕНЕРНЫЕ КАЛЬКУЛЯТОРЫ -->
         <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin:12px 0 8px 0; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
@@ -206,6 +223,13 @@
             <div class="more-menu-info">
               <div class="more-menu-label">Режим показа клиенту</div>
               <div class="more-menu-desc">Мгновенная маскировка служебных цен и кассы</div>
+            </div>
+          </button>
+          <button id="menu-item-video-tour" class="more-menu-item" type="button" onclick="window.app.openVideoTour()">
+            <span class="more-menu-icon">🎬</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label">Видеогид & Шоурум</div>
+              <div class="more-menu-desc">5 интерактивных уроков и презентация заказчику</div>
             </div>
           </button>
           <button id="menu-item-restore-hint" class="more-menu-item" type="button">
@@ -337,6 +361,16 @@
               <b>Нажмите 🖨️ «Печать / Экспорт в PDF»</b> для выдачи швейцарского паспорта клиенту.
             </div>
           </div>
+        </div>
+
+        <!-- Кнопки быстрого запуска интерактивного видеогида и живого тура (v2.4.2) -->
+        <div class="onboarding-video-cta" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(212,175,55,0.2); display:flex; gap:8px;">
+          <button type="button" id="btn-onboarding-start-video" class="btn-video-guide-banner" onclick="window.app.openVideoTour()" style="flex:1;">
+            🎬 <b>Видеоинструкция</b> (3 мин)
+          </button>
+          <button type="button" id="btn-onboarding-start-tour" class="btn-live-tour-banner" onclick="window.app.startSpotlightTour()" style="flex:1;">
+            ✨ <b>Живой тур по кнопкам</b>
+          </button>
         </div>
       </div>
 
@@ -3978,11 +4012,155 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.1: Сквозная связка сметы, контекст LIGA AI и Sticky-футеры калькуляторов) -->
-  <script src="./js/image_processor.js?v=2.4.1"></script>
-  <script src="./js/db.js?v=2.4.1"></script>
-  <script src="./js/pdf_engine.js?v=2.4.1"></script>
-  <script src="./js/ai_concierge.js?v=2.4.1"></script>
-  <script src="./js/app.js?v=2.4.1"></script>
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: 🎬 ИНТЕРАКТИВНЫЙ ВИДЕОГИД & VIP-ШОУРУМ (v2.4.2)
+         ==================================================================== -->
+    <div id="modal-video-tour" class="modal-overlay">
+      <div class="modal-sheet modal-video-tour-sheet">
+        <div class="modal-drag-handle"></div>
+        
+        <!-- Заголовок видеоплеера -->
+        <div class="video-modal-header">
+          <div class="video-header-left">
+            <div class="video-edition-badge">
+              <span class="video-badge-dot"></span>
+              <span>4K INTERACTIVE ENGINE • LIGA MASTER CLASS</span>
+            </div>
+            <div class="video-modal-title" id="video-tour-main-title">🎬 Интерактивная Видеоинструкция LIGA OS</div>
+          </div>
+          <div class="video-header-right">
+            <!-- Переключатель режима: Обучение мастера / VIP Презентация заказчику -->
+            <div class="video-mode-switch">
+              <button type="button" id="tab-video-mode-master" class="video-mode-btn active" onclick="window.app.switchVideoTourMode('master')">
+                👷 Для мастера
+              </button>
+              <button type="button" id="tab-video-mode-client" class="video-mode-btn" onclick="window.app.switchVideoTourMode('client')">
+                👑 Для заказчика (VIP)
+              </button>
+            </div>
+            <button class="btn-close-modal" id="btn-close-video-tour" title="Закрыть видеоинструкцию" onclick="window.app.closeVideoTour()">✕</button>
+          </div>
+        </div>
+
+        <!-- Кинематографический экран 16:9 (Сцена живой интерактивной симуляции) -->
+        <div class="video-cinema-viewport">
+          <div id="video-cinema-stage" class="video-cinema-stage">
+            <!-- Динамическое интерактивное полотно сцены -->
+            <div class="video-scene-watermark">LIGA OS • SWISS MASTER</div>
+            <div id="video-scene-content" class="video-scene-content">
+              <!-- Сюда JS рендерит кадры соответствующей главы -->
+            </div>
+            <!-- Виртуальный курсор-указка с золотым ореолом -->
+            <div id="video-virtual-cursor" class="video-virtual-cursor">
+              <div class="cursor-pointer"></div>
+              <div class="cursor-pulse"></div>
+            </div>
+          </div>
+
+          <!-- Нижняя плашка дикторских субтитров -->
+          <div class="video-subtitles-bar">
+            <div class="video-subtitles-speaker">
+              <span id="video-subtitles-icon">🛡️</span>
+              <span id="video-subtitles-label">ИНЖЕНЕРНЫЙ ИНСТРУКТОР:</span>
+            </div>
+            <div id="video-subtitles-text" class="video-subtitles-text">
+              Добро пожаловать в LIGA OS. Система создана, чтобы убрать 90% рутины и защитить ваш статус мастера высшей категории.
+            </div>
+          </div>
+        </div>
+
+        <!-- Панель управления плеером (Scrubber, Controls, Live Button) -->
+        <div class="video-player-controls">
+          <!-- Временная шкала (Timeline Scrubber) -->
+          <div class="video-timeline-wrapper">
+            <div class="video-timeline-track" id="video-timeline-track" onclick="window.app.seekVideoTimeline(event)">
+              <div class="video-timeline-progress" id="video-timeline-progress" style="width: 0%;"></div>
+              <div class="video-timeline-chapters-markers" id="video-timeline-markers">
+                <span class="timeline-marker" style="left: 0%;"></span>
+                <span class="timeline-marker" style="left: 20%;"></span>
+                <span class="timeline-marker" style="left: 40%;"></span>
+                <span class="timeline-marker" style="left: 60%;"></span>
+                <span class="timeline-marker" style="left: 80%;"></span>
+              </div>
+            </div>
+            <div class="video-timeline-time">
+              <span id="video-current-time">0:00</span> / <span id="video-total-time">3:45</span>
+            </div>
+          </div>
+
+          <!-- Кнопки управления воспроизведением -->
+          <div class="video-buttons-bar">
+            <div class="video-playback-buttons">
+              <button type="button" class="video-ctrl-btn" id="btn-video-prev" onclick="window.app.prevVideoChapter()" title="Предыдущая глава">⏮</button>
+              <button type="button" class="video-ctrl-btn-play" id="btn-video-play-pause" onclick="window.app.toggleVideoPlayPause()" title="Воспроизведение / Пауза">
+                <span id="video-play-icon">▶</span>
+              </button>
+              <button type="button" class="video-ctrl-btn" id="btn-video-next" onclick="window.app.nextVideoChapter()" title="Следующая глава">⏭</button>
+              <div class="video-chapter-title-display">
+                <span id="video-chapter-num-badge">Глава 1/5</span>
+                <span id="video-chapter-name-text">Световой маяк и безопасность мастера</span>
+              </div>
+            </div>
+
+            <div class="video-action-buttons">
+              <button type="button" class="btn-try-live-interface" id="btn-try-live-tour" onclick="window.app.startSpotlightFromVideo()">
+                <span class="btn-try-sparkle">✨</span>
+                <span>Попробовать на живом экране</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Горизонтальная прокрутка глав (Interactive Chapters Accordion) -->
+        <div class="video-chapters-scroll">
+          <div class="video-chapters-container" id="video-chapters-list">
+            <!-- Генерируется из JS при инициализации -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         ОМНИ-ОВЕРЛЕЙ: ✨ ЖИВОЙ SPOTLIGHT-ТУР ПО РЕАЛЬНОМУ ИНТЕРФЕЙСУ
+         ==================================================================== -->
+    <div id="spotlight-tour-overlay" class="spotlight-overlay" style="display:none;">
+      <!-- Подсвечивающая рамка-вырез вокруг элемента -->
+      <div id="spotlight-highlight-box" class="spotlight-highlight-box">
+        <div class="spotlight-target-pulse"></div>
+      </div>
+
+      <!-- Всплывающая карточка подсказки -->
+      <div id="spotlight-tooltip-card" class="spotlight-tooltip-card">
+        <div class="spotlight-card-header">
+          <div class="spotlight-badge" id="spotlight-badge-step">ШАГ 1 ИЗ 5</div>
+          <button type="button" class="btn-spotlight-close" onclick="window.app.stopSpotlightTour()" title="Завершить тур">✕</button>
+        </div>
+        <div class="spotlight-title" id="spotlight-title-text">Световой маяк безопасности</div>
+        <div class="spotlight-body" id="spotlight-body-text">
+          Это ваш главный щит приватности. Нажмите сюда — и интерфейс переключится в безопасный режим для клиента: замаскируются ваши цены, прибыль и касса.
+        </div>
+        <div class="spotlight-footer">
+          <div class="spotlight-dots" id="spotlight-dots-indicator">
+            <span class="spotlight-dot active"></span>
+            <span class="spotlight-dot"></span>
+            <span class="spotlight-dot"></span>
+            <span class="spotlight-dot"></span>
+            <span class="spotlight-dot"></span>
+          </div>
+          <div class="spotlight-nav-actions">
+            <button type="button" class="btn-spotlight-nav" id="btn-spotlight-prev" onclick="window.app.prevSpotlightStep()">← Назад</button>
+            <button type="button" class="btn-spotlight-nav-next" id="btn-spotlight-next" onclick="window.app.nextSpotlightStep()">Далее →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Скрипты LIGA OS (Версия 2.4.2: Интерактивный видеогид и живой шоурум) -->
+  <script src="./js/image_processor.js?v=2.4.2"></script>
+  <script src="./js/db.js?v=2.4.2"></script>
+  <script src="./js/pdf_engine.js?v=2.4.2"></script>
+  <script src="./js/ai_concierge.js?v=2.4.2"></script>
+  <script src="./js/app.js?v=2.4.2"></script>
 </body>
 </html>
