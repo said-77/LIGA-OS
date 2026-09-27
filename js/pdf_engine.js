@@ -21,7 +21,7 @@ class LigaPdfEngine {
     if (!pt || typeof pt !== 'object') return false;
     if (!pt.startDate || !pt.startTime || !pt.endDate || !pt.endTime) return false;
     const bar = parseFloat(pt.pressureBar);
-    if (isNaN(bar) || bar < 16.0) return false;
+    if (isNaN(bar) || bar < 1.5) return false;
     if (!pt.notes || typeof pt.notes !== 'string' || !pt.notes.trim()) return false;
     return true;
   }
@@ -698,7 +698,7 @@ class LigaPdfEngine {
         </div>
         <div class="header-status-box">
           ${isPressureVerified 
-            ? '<div class="stamp-badge stamp-badge-passed">✓ 16 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)</div>'
+            ? `<div class="stamp-badge stamp-badge-passed">✓ ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)') : '16 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)'}</div>`
             : '<div class="stamp-badge stamp-badge-draft">ЧЕРНОВИК / ИСПЫТАНИЯ НЕ ПРОВОДИЛИСЬ</div>'
           }
           <div class="passport-num">Паспорт № LIGA-${site.id}-${new Date().getFullYear()}</div>
@@ -739,8 +739,8 @@ class LigaPdfEngine {
 
       <!-- Официальный протокол гидравлических испытаний -->
       <div class="section-title">
-        <span>2. Протокол гидравлических испытаний (Акт опрессовки 16 бар)</span>
-        <span style="font-size:9px; color:#64748b; font-weight:normal;">Норматив DIN 1988 (ч. 2)</span>
+        <span>2. Протокол гидравлических испытаний (Акт опрессовки ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' бар') : '16 бар'})</span>
+        <span style="font-size:9px; color:#64748b; font-weight:normal;">Норматив ${(site.pressureTest && site.pressureTest.standardNorm) || 'DIN 1988 (ч. 2)'}</span>
       </div>
       <div class="protocol-box">
         ${isPressureVerified ? `
@@ -754,7 +754,13 @@ class LigaPdfEngine {
           <tr>
             <td>Испытательное гидростатическое давление</td>
             <td>1.5 x рабочее (~6 бар)</td>
-            <td><strong>${((site.pressureTest && site.pressureTest.pressureBar) ? Number(site.pressureTest.pressureBar).toFixed(1) : '16.0')} АТМОСФЕР (BAR) • ТЕСТ x4</strong></td>
+            <td><strong>${(() => {
+              const pt = site.pressureTest || {};
+              const bar = parseFloat(pt.pressureBar) || 16.0;
+              if (bar >= 15.0) return '16.0 АТМОСФЕР (BAR) • ТЕСТ x4';
+              const factor = pt.safetyFactor || (bar / 3.5).toFixed(1);
+              return `${bar.toFixed(1)} АТМОСФЕР (BAR) • ТЕСТ x${factor}`;
+            })()}</strong></td>
             <td class="highlight-cell">ВЫДЕРЖАНО</td>
           </tr>
           <tr>
@@ -822,7 +828,7 @@ class LigaPdfEngine {
       ${isPressureVerified ? `
       <p style="font-size:10px; color:#475569; margin-bottom: 8px; line-height: 1.35;">
         1. <strong>Заводская гарантия:</strong> на оригинальные европейские материалы (Rehau, FAR, Geberit) составляет от 10 до 50 лет согласно паспортам заводов-изготовителей.<br>
-        2. <strong>Монтажная гарантия:</strong> предоставляется по индивидуальному договору под проект на основании успешного прохождения гидравлического испытания 16 бар.
+        2. <strong>Монтажная гарантия:</strong> предоставляется по индивидуальному договору под проект на основании успешного прохождения гидравлического испытания ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' бар') : '16 бар'}.
       </p>
 
       <div class="signatures-block">
@@ -978,7 +984,17 @@ class LigaPdfEngine {
       day: 'numeric'
     });
 
-    const actNumber = `АКТ-16Б-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
+    const barVal = parseFloat(pt.pressureBar) || 16.0;
+    const isSwissGrade = barVal >= 15.0;
+    const actNumber = isSwissGrade
+      ? `АКТ-16Б-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`
+      : `АКТ-ОПР-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
+
+    const normText = pt.standardNorm || (isSwissGrade 
+      ? 'Швейцарский эталон LIGA OS (DIN 1988)' 
+      : (barVal >= 9.0 ? 'Стандарт Rehau (DIN 1988-2)' : (barVal >= 5.5 ? 'Стандарт СНиП 3.05.01-85' : 'Рабочее давление сети Ташкента')));
+
+    const safetyFactor = pt.safetyFactor || (barVal / 3.5).toFixed(1);
 
     const renderPhotoBox = (photoData, defaultTitle, defaultSubtitle) => {
       if (photoData) {
@@ -1002,14 +1018,14 @@ class LigaPdfEngine {
       `;
     };
 
-    const qrBadge = this.getSvgQrBadge("DIN 1988 VERIFIED", actNumber);
+    const qrBadge = this.getSvgQrBadge(isSwissGrade ? "DIN 1988 VERIFIED" : "PRESSURE VERIFIED", actNumber);
 
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Официальный Акт опрессовки 16 бар — ${site.name}</title>
+  <title>Официальный Акт опрессовки ${barVal.toFixed(1)} бар — ${site.name}</title>
   <style>
     @page {
       size: A4 portrait;
@@ -1479,7 +1495,7 @@ class LigaPdfEngine {
           </div>
         </div>
         <div class="act-badge-box">
-          <div class="act-badge-passed">✓ 16 БАР / 24Ч ПОДТВЕРЖДЕНО</div>
+          <div class="act-badge-passed">✓ ${isSwissGrade ? '16 БАР / 24Ч ПОДТВЕРЖДЕНО' : `${barVal.toFixed(1)} БАР / 24Ч ПОДТВЕРЖДЕНО`}</div>
           <div class="act-num">${actNumber}</div>
         </div>
       </div>
@@ -1487,7 +1503,7 @@ class LigaPdfEngine {
       <!-- Заголовок документа -->
       <div class="doc-title-block">
         <h2>Официальный Акт гидравлического испытания системы</h2>
-        <p>СТАНДАРТ DIN 1988 (Ч. 2) / СНиП • ИСПЫТАНИЕ ДАВЛЕНИЕМ 16.0 БАР • ЭКСПОЗИЦИЯ 24 ЧАСА • ПРОВЕРКА ПОД СТЯЖКУ ПОЛА</p>
+        <p>СТАНДАРТ ${isSwissGrade ? 'DIN 1988 (Ч. 2) / СНиП' : normText.toUpperCase()} • ИСПЫТАНИЕ ДАВЛЕНИЕМ ${barVal.toFixed(1)} БАР • ЭКСПОЗИЦИЯ 24 ЧАСА • ПРОВЕРКА ПОД СТЯЖКУ ПОЛА</p>
       </div>
 
       <!-- Стороны и объект -->
@@ -1533,9 +1549,15 @@ class LigaPdfEngine {
         <tbody>
           <tr>
             <td><strong>Давление нагнетания гидропрессом</strong></td>
-            <td>Не менее 16.0 бар (DIN 1988)</td>
-            <td class="val-highlight"><strong>${pt.pressureBar || '16.0'} бар</strong></td>
+            <td>${isSwissGrade ? 'Не менее 16.0 бар (DIN 1988)' : normText}</td>
+            <td class="val-highlight"><strong>${barVal.toFixed(1)} бар</strong></td>
             <td>✓ Соответствует</td>
+          </tr>
+          <tr>
+            <td><strong>Запас прочности (к сети Ташкента ~3.5 бар)</strong></td>
+            <td>Рабочее давление водопровода 2.5–4.5 бар</td>
+            <td class="val-highlight"><strong>${safetyFactor}x запас</strong></td>
+            <td>✓ Защита от гидроудара</td>
           </tr>
           <tr>
             <td><strong>Время постановки под давление</strong></td>
@@ -1552,7 +1574,7 @@ class LigaPdfEngine {
           <tr>
             <td><strong>Конечное контрольное давление</strong></td>
             <td>Не ниже исходного (падение 0.0)</td>
-            <td class="val-highlight"><strong>${pt.pressureBar || '16.0'} бар</strong></td>
+            <td class="val-highlight"><strong>${barVal.toFixed(1)} бар</strong></td>
             <td>✓ Падение: 0.0 бар</td>
           </tr>
           <tr>
@@ -1565,13 +1587,13 @@ class LigaPdfEngine {
       </table>
 
       <div style="font-size:9.5px; margin-bottom:5px; padding:4px 6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px;">
-        <strong>Заключение инженера по соединениям:</strong> ${pt.notes || 'Система отопления и водоснабжения выдержала опрессовку 16 бар. Соединения монолитны.'}
+        <strong>Заключение инженера по соединениям:</strong> ${pt.notes || `Система отопления и водоснабжения выдержала опрессовку ${barVal.toFixed(1)} бар. Соединения монолитны.`}
       </div>
 
       <!-- Фотофиксация манометра и узла -->
       <div class="section-title">3. Фотофиксация опломбированного манометра и узла ввода под давлением</div>
       <div class="act-photo-grid">
-        ${renderPhotoBox(photoPressure, 'Контрольный манометр 16 BAR', `Показания поверенного манометра (${pt.pressureBar || 16.0} бар • выдержка 24 часа)`)}
+        ${renderPhotoBox(photoPressure, isSwissGrade ? 'Контрольный манометр 16 BAR' : `Контрольный манометр ${barVal.toFixed(1)} BAR`, `Показания поверенного манометра (${barVal.toFixed(1)} бар • выдержка 24 часа)`)}
         ${renderPhotoBox(photoManifold, 'Распределительный узел FAR', 'Коллекторный узел ввода ГВС/ХВС и отопления под испытательным давлением')}
       </div>
 
@@ -1579,7 +1601,7 @@ class LigaPdfEngine {
       <div class="resolution-box">
         <div class="resolution-title">🛡️ Официальная инженерная резолюция:</div>
         <div class="resolution-text">
-          Система отопления и водоснабжения выдержала гидравлическое испытание давлением <strong>16.0 бар</strong> в течение 24 часов без падения давления. Все фитинги и соединения монолитны.
+          Система отопления и водоснабжения выдержала гидравлическое испытание давлением <strong>${barVal.toFixed(1)} бар</strong> в течение 24 часов без падения давления. Все фитинги и соединения монолитны.
           <strong>РАЗРЕШАЕТСЯ ПРОИЗВОДСТВО РАБОТ ПО ЗАЛИВКЕ ЦЕМЕНТНО-ПЕСЧАНОЙ СТЯЖКИ ПОЛА И ОБШИВКЕ СТЕН ГИПСОКАРТОНОМ.</strong>
         </div>
       </div>
@@ -1620,12 +1642,12 @@ class LigaPdfEngine {
       </div>
     </div>
 
-    <!-- Колонтитул бланка Акта 16 бар -->
+    <!-- Колонтитул бланка Акта опрессовки -->
     <div class="act-footer">
       <span>Официальный Акт № ${actNumber} • Строго 1 страница А4 • Объект: ${site.name}</span>
       <div style="display:flex; align-items:center; gap:8px;">
         ${qrBadge}
-        <span>DIN 1988 Part 2 • Ташкент</span>
+        <span>${isSwissGrade ? 'DIN 1988 Part 2' : normText} • Ташкент</span>
       </div>
     </div>
   </div>

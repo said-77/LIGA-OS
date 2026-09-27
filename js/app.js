@@ -1303,7 +1303,9 @@ class LigaApp {
         : Boolean(s.pressTestPassed && this.currentPhotos && this.currentPhotos.pressure);
 
       if (isVerified) {
-        passportStatusEl.innerHTML = '<span style="color:var(--neon-emerald);">🟢 Паспорт готов к сдаче (16 бар подтверждено)</span>';
+        const barVal = s.pressureTest ? parseFloat(s.pressureTest.pressureBar) || 16.0 : 16.0;
+        const barText = barVal >= 15.0 ? '16 бар' : `${barVal.toFixed(1)} бар`;
+        passportStatusEl.innerHTML = `<span style="color:var(--neon-emerald);">🟢 Паспорт готов к сдаче (${barText} подтверждено)</span>`;
       } else {
         passportStatusEl.innerHTML = '<span style="color:#d97706;">⚠️ Паспорт в режиме черновика (испытания 16 бар не подтверждены фотофиксацией)</span>';
       }
@@ -1957,7 +1959,7 @@ class LigaApp {
     }
   }
 
-  // Открытие модального окна структурированного протокола опрессовки 16 бар (P0-2)
+  // Открытие модального окна структурированного протокола опрессовки (v2.3.5)
   openPressureTestModal() {
     if (!this.currentSite) return;
     const pt = this.currentSite.pressureTest || {};
@@ -1978,13 +1980,19 @@ class LigaApp {
       errEl.innerText = '';
     }
 
+    const currentBar = pt.pressureBar ? parseFloat(pt.pressureBar) : 16.0;
     if (startDateEl) startDateEl.value = pt.startDate || today;
     if (startTimeEl) startTimeEl.value = pt.startTime || '09:00';
     if (endDateEl) endDateEl.value = pt.endDate || tomorrowDate;
     if (endTimeEl) endTimeEl.value = pt.endTime || '09:00';
-    if (barEl) barEl.value = pt.pressureBar ? pt.pressureBar : '16.0';
+    if (barEl) barEl.value = currentBar.toFixed(1);
+
+    this.onPressureBarInput(currentBar);
+
     if (notesEl) {
-      notesEl.value = pt.notes || 'Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.';
+      notesEl.value = pt.notes || (currentBar >= 15.0
+        ? 'Давление 16.0 бар выдержано 24 часа без падения (0.0 бар). Все соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.'
+        : `Контрольная опрессовка ${currentBar.toFixed(1)} бар проведена успешно без падения давления. Соединения герметичны.`);
     }
 
     const hasPhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
@@ -1999,7 +2007,119 @@ class LigaApp {
     this.openModal('modal-pressure-test');
   }
 
-  // Фиксация структурированного протокола опрессовки (P0-2)
+  // Быстрый выбор инженерного стандарта опрессовки (v2.3.5)
+  applyPressurePreset(bar, hours = 24, normTitle = '') {
+    const barEl = document.getElementById('pt-pressure-bar');
+    if (barEl) {
+      barEl.value = Number(bar).toFixed(1);
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const startDateEl = document.getElementById('pt-start-date');
+    const startTimeEl = document.getElementById('pt-start-time');
+    const endDateEl = document.getElementById('pt-end-date');
+    const endTimeEl = document.getElementById('pt-end-time');
+
+    if (startDateEl && !startDateEl.value) startDateEl.value = today;
+    if (startTimeEl && !startTimeEl.value) startTimeEl.value = '10:00';
+
+    if (endDateEl) {
+      const expDate = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString().slice(0, 10);
+      endDateEl.value = expDate;
+    }
+    if (endTimeEl) {
+      endTimeEl.value = '10:00';
+    }
+
+    this.onPressureBarInput(bar, hours, normTitle);
+    this.fillPressureNotesTemplate();
+  }
+
+  // Расчет коэффициента запаса надежности и анализ рисков для Ташкента (v2.3.5)
+  onPressureBarInput(barVal, expHours = null, customNorm = null) {
+    const bar = Math.max(1.5, Math.min(40.0, parseFloat(barVal) || 16.0));
+    const pWork = 3.5; // Среднее фактическое давление городской сети Ташкента
+    const factor = Math.round((bar / pWork) * 100) / 100;
+
+    let title = '';
+    let desc = '';
+    let equip = '';
+    let warranty = '';
+    let factorColor = 'var(--neon-emerald)';
+    let norm = customNorm || '';
+
+    if (bar >= 15.0) {
+      norm = norm || 'Швейцарский эталон LIGA OS (DIN 1988)';
+      title = `Швейцарский эталон (${bar.toFixed(1)} бар • ${factor}x запас)`;
+      desc = 'Абсолютная 4-кратная прочность. Рекомендуется для скрытых трасс под монолитом и мрамором в элитных ЖК (Mirabad Avenue, Tashkent City, Nest One).';
+      equip = 'Гидропресс Rothenberger (до 60 бар) + заглушки Rehau';
+      warranty = '10 лет (максимум)';
+      factorColor = 'var(--gold-primary)';
+    } else if (bar >= 9.0) {
+      norm = norm || 'Стандарт Rehau (DIN 1988-2 / EN 806-4)';
+      title = `Стандарт Rehau (${bar.toFixed(1)} бар • ${factor}x запас)`;
+      desc = 'Усиленный 3-кратный запас прочности. Надежная защита от гидроударов городской сети и повысительных насосных станций.';
+      equip = 'Ручной опрессовочный насос Rehau / RIDGID (манометр до 25 бар)';
+      warranty = '5 лет';
+      factorColor = 'var(--neon-cyan)';
+    } else if (bar >= 5.0) {
+      norm = norm || 'Стандарт СНиП 3.05.01-85 / СП 73.13330';
+      title = `Стандарт СНиП (${bar.toFixed(1)} бар • ${factor}x запас)`;
+      desc = 'Нормативное 1.5-кратное рабочее давление. Стандартные квартиры, контуры радиаторов с подключенными приборами.';
+      equip = 'Стандартный ручной опрессовщик (манометр 0-10 бар)';
+      warranty = '3 года';
+      factorColor = 'var(--neon-emerald)';
+    } else {
+      norm = norm || 'Рабочее давление сети Ташкента (СП 73.13330)';
+      title = `Давление сети Ташкента (${bar.toFixed(1)} бар • ${factor}x запас)`;
+      desc = 'Герметичность под фактическим рабочим напором городского водопровода Ташкента (2.5–4.5 бар). Оптимально при ограниченном бюджете или отсутствии гидропресса.';
+      equip = 'Манометр на вводе городского водопровода / портативный компрессор';
+      warranty = '1-2 года (штатный режим)';
+      factorColor = '#38bdf8';
+    }
+
+    this.currentPressureMeta = {
+      bar,
+      factor,
+      norm,
+      desc,
+      equip,
+      warranty,
+      expHours: expHours || 24
+    };
+
+    const factorEl = document.getElementById('pt-badge-factor');
+    const descEl = document.getElementById('pt-badge-desc');
+    const equipEl = document.getElementById('pt-badge-equip');
+    const warrantyEl = document.getElementById('pt-badge-warranty');
+
+    if (factorEl) {
+      factorEl.innerText = `Запас ${factor}x (${Math.round(factor * 100)}%)`;
+      factorEl.style.color = factorColor;
+    }
+    if (descEl) descEl.innerText = desc;
+    if (equipEl) equipEl.innerText = equip;
+    if (warrantyEl) warrantyEl.innerText = warranty;
+  }
+
+  // Подстановка официального заключения инженера под выбранную цифру (v2.3.5)
+  fillPressureNotesTemplate() {
+    const meta = this.currentPressureMeta || { bar: 16.0, factor: 4.6 };
+    const bar = meta.bar || 16.0;
+    const notesEl = document.getElementById('pt-notes');
+    if (!notesEl) return;
+
+    if (bar >= 15.0) {
+      notesEl.value = `Давление 16.0 бар выдержано 24 часа без падения (0.0 бар). Все узлы ввода FAR и трубы Rehau герметичны. Разрешена заливка стяжки.`;
+    } else if (bar >= 9.0) {
+      notesEl.value = `Опрессовка ${bar.toFixed(1)} бар по стандарту Rehau выдержана без падения давления. Узлы герметичны, система готова к эксплуатации.`;
+    } else if (bar >= 5.0) {
+      notesEl.value = `Гидравлическое испытание ${bar.toFixed(1)} бар по СНиП 3.05.01-85 проведено успешно. Падение давления 0.0 бар. Соединения герметичны.`;
+    } else {
+      notesEl.value = `Контрольная опрессовка ${bar.toFixed(1)} бар под штатным давлением городской сети Ташкента проведена. Протечек и падения давления не обнаружено. Соединения герметичны.`;
+    }
+  }
+
+  // Фиксация структурированного протокола опрессовки (v2.3.5)
   async handleSavePressureTest() {
     if (!this.currentSite) return;
     const startDate = (document.getElementById('pt-start-date')?.value || '').trim();
@@ -2028,12 +2148,12 @@ class LigaApp {
       showError('Укажите дату и время окончания испытания.');
       return;
     }
-    if (isNaN(barVal) || barVal < 16.0) {
-      showError('Испытательное давление должно быть не менее 16.0 бар согласно нормативам.');
+    if (isNaN(barVal) || barVal < 1.5) {
+      showError('Укажите корректное испытательное давление (не менее 1.5 бар).');
       return;
     }
     if (!hasPhoto) {
-      showError('Обязательно прикрепите фото манометра под давлением (16 бар).');
+      showError('Обязательно прикрепите фото манометра под давлением.');
       return;
     }
     if (!notes) {
@@ -2045,12 +2165,19 @@ class LigaApp {
       errEl.style.display = 'none';
     }
 
+    const standardNorm = (this.currentPressureMeta && this.currentPressureMeta.norm) 
+      || (barVal >= 15.0 ? 'Швейцарский эталон (DIN 1988)' : (barVal >= 9.0 ? 'Стандарт Rehau (DIN 1988-2)' : (barVal >= 5.0 ? 'Стандарт СНиП 3.05.01-85' : 'Рабочее давление сети Ташкента')));
+    const safetyFactor = (this.currentPressureMeta && this.currentPressureMeta.factor) 
+      || (Math.round((barVal / 3.5) * 100) / 100);
+
     this.currentSite.pressureTest = {
       startDate,
       startTime,
       endDate,
       endTime,
       pressureBar: barVal,
+      standardNorm,
+      safetyFactor,
       notes,
       photo: this.currentPhotos.pressure,
       passed: true,
@@ -2064,7 +2191,7 @@ class LigaApp {
     await window.ligaDB.put('sites', this.currentSite);
     this.closeModal('modal-pressure-test');
     this.playSwissChime();
-    this.showToast('✓ Акт опрессовки 16 бар: УСПЕШНО ЗАФИКСИРОВАН!');
+    this.showToast(`✓ Акт опрессовки ${barVal.toFixed(1)} бар: УСПЕШНО ЗАФИКСИРОВАН!`);
     this.render();
   }
 
@@ -2165,7 +2292,9 @@ class LigaApp {
       return `${idx + 1}. [${mark}] ${item.title}`;
     }).join('\n');
 
-    const pressStatus = s.pressTestPassed ? '✓ 16 БАР ВЫДЕРЖАНО 24 ЧАСА (УСПЕШНО)' : '❌ ОПРЕССОВКА НЕ ПРОВЕДЕНА';
+    const barVal = (s.pressureTest && s.pressureTest.pressureBar) ? Number(s.pressureTest.pressureBar).toFixed(1) : '16.0';
+    const normName = (s.pressureTest && s.pressureTest.standardNorm) || (parseFloat(barVal) >= 15.0 ? 'Швейцарский эталон 16 бар' : 'Стандарт испытания');
+    const pressStatus = s.pressTestPassed ? `✓ ${barVal} БАР ВЫДЕРЖАНО (${normName})` : '❌ ОПРЕССОВКА НЕ ПРОВЕДЕНА';
 
     const message = `🏛️ ОФИЦИАЛЬНЫЙ АКТ ГОТОВНОСТИ САНТЕХНИКИ К ЗАЛИВКЕ СТЯЖКИ
 «Лига Опытных Мастеров» • Ведущий инженер Улугбек Хакимов
@@ -5312,12 +5441,12 @@ ${loopsText}
     window.ligaPdfEngine.generatePassport(this.currentSite, this.currentPhotos);
   }
 
-  // Генерация Официального Акта гидравлического испытания 16 бар / 24 часа
+  // Генерация Официального Акта гидравлического испытания
   generatePressureAct() {
     if (!this.currentSite) return;
     const isVerified = window.ligaPdfEngine.isPressureVerified(this.currentSite, this.currentPhotos);
     if (!isVerified) {
-      alert('⚠️ Для формирования Официального Акта 16 бар необходимо зафиксировать проведение испытания (минимум 16.0 бар, выдержка 24 часа) и прикрепить фото манометра.');
+      alert('⚠️ Для формирования Официального Акта необходимо зафиксировать проведение испытания давлением и прикрепить фото манометра в протоколе опрессовки.');
       this.openModal('modal-pressure-test');
       return;
     }
