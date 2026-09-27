@@ -125,6 +125,7 @@ class LigaApp {
       await this.updateNavBadges();
       this.checkOnboardingHint();
       this.initVideoTour();
+      this.initMasterSealSettings();
     } catch (renderErr) {
       console.error('[LIGA OS] Ошибка первичного рендеринга:', renderErr);
     }
@@ -8066,6 +8067,9 @@ ${shareUrl}
     }
     const m = document.getElementById(modalId);
     if (m) m.classList.add('open');
+    if (modalId === 'modal-settings') {
+      this.loadMasterSealSettings();
+    }
     if (modalId === 'modal-more-menu') {
       document.body.classList.add('more-menu-open');
       const btn = document.getElementById('btn-more-menu-toggle');
@@ -8806,7 +8810,9 @@ ${shareUrl}
 
     const debt = Math.max(0, (site.contractSum || 0) - (site.advanceSum || 0));
 
-    const report = `🏛️ ИНЖЕНЕРНЫЙ ОТЧЕТ ОБЪЕКТА
+    const report = window.ligaSealEngine
+      ? window.ligaSealEngine.formatTelegramDiplomaticManifest(site)
+      : `🏛️ ИНЖЕНЕРНЫЙ ОТЧЕТ ОБЪЕКТА
 «Лига Опытных Мастеров» • Ташкент
 Ведущий инженер: Улугбек Хакимов
 
@@ -8821,9 +8827,9 @@ ${shareUrl}
 Сайт мастера: https://liga-masterov.vercel.app/`;
 
     this.copyToClipboard(report).then(() => {
-      this.showToast('✓ Отчет скопирован в буфер обмена!');
+      this.showToast('✓ Официальный отчет с гербовой печатью скопирован!');
     }).catch(() => {
-      this.showToast('✓ Отчет сформирован!');
+      this.showToast('✓ Официальный отчет сформирован!');
     });
 
     try {
@@ -9151,6 +9157,11 @@ ${shareUrl}
     });
   }
 
+  openSystemGuideModal() {
+    this.closeModal('modal-more-menu');
+    this.openModal('modal-system-guide');
+  }
+
   openVideoTour() {
     this.closeModal('modal-more-menu');
     if (!this.videoTourState) this.initVideoTour();
@@ -9388,6 +9399,61 @@ ${shareUrl}
   // ЖИВОЙ SPOTLIGHT-ТУР ПО РЕАЛЬНОМУ ИНТЕРФЕЙСУ
   // ==========================================================================
 
+  // ==========================================================================
+  // DRILL-DOWN НАВИГАЦИЯ С ДАШБОРДА (LIGA OS v2.4.4)
+  // Прямой переход с дашборда на целевой экран с подсветкой источника данных
+  // ==========================================================================
+  drillDownToFinance(targetType = 'debt') {
+    this.switchScreen('finances');
+    let targetId = 'page-fin-debt';
+    let message = 'Открыта финансовая ведомость объекта';
+    if (targetType === 'contract') {
+      targetId = 'page-fin-contract';
+      message = 'Сметная стоимость работ по договору';
+    } else if (targetType === 'advance') {
+      targetId = 'page-fin-advance';
+      message = 'Внесенные авансы и поступления';
+    } else if (targetType === 'brigade') {
+      targetId = 'page-fin-brigade';
+      message = 'Начисления помощникам бригады';
+    } else if (targetType === 'designer') {
+      targetId = 'page-fin-contract';
+      message = 'Бонусное вознаграждение дизайнеру (10%)';
+    }
+
+    setTimeout(() => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        const container = el.closest('.item-row') || el;
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        this.pulseElement(container.id || targetId);
+      }
+    }, 150);
+    this.showToast(message);
+  }
+
+  drillDownToMaterials() {
+    this.switchScreen('materials');
+    setTimeout(() => {
+      const el = document.getElementById('materials-search-input') || document.querySelector('.table-container');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        this.pulseElement(el.id || 'materials-search-input');
+      }
+    }, 150);
+    this.showToast('Открыто снабжение: чеки и смета для рынка Джами');
+  }
+
+  drillDownToPressure() {
+    this.openModal('modal-pressure-test');
+    this.showToast('Открыт протокол гидравлических испытаний 16 бар');
+  }
+
+  // ==========================================================================
+  // ЖИВОЙ SPOTLIGHT-ТУР ПО РЕАЛЬНОМУ ИНТЕРФЕЙСУ (LIGA OS v2.4.4)
+  // Наглядный интерактивный тур по реальным элементам без медленных видеослайдов
+  // ==========================================================================
+
   startSpotlightFromVideo() {
     this.closeVideoTour();
     setTimeout(() => {
@@ -9397,39 +9463,47 @@ ${shareUrl}
 
   startSpotlightTour() {
     this.closeModal('modal-more-menu');
+    this.closeModal('modal-video-tour');
+    this.switchScreen('dashboard');
+
     this.spotlightState = {
       isActive: true,
       currentStep: 0,
       steps: [
         {
+          selector: '#dashboard-site-card',
+          title: '🏢 Текущий объект мастера',
+          body: 'Здесь показана активная квартира или коттедж (ЖК Mirabad Avenue, кв. 142), контакты заказчика и дизайнера. Нажмите на выпадающий список сверху, чтобы переключить объект в 1 клик.'
+        },
+        {
+          selector: '#card-fin-debt',
+          title: '💰 Остаток к получению от клиента',
+          body: 'Главная финансовая цифра объекта: сумма договора минус внесенные авансы. Нажмите прямо на эту плашку — и система откроет полную ведомость оплат с подсветкой расчета!'
+        },
+        {
+          selector: '#btn-open-payment',
+          title: '💳 Кнопка «+ Платеж»',
+          body: 'Клиент перевел аванс на карту или отдал наличными? Нажмите эту объемную изумрудную кнопку — баланс пересчитается мгновенно без ручной бухгалтерии.'
+        },
+        {
+          selector: '#fin-bazaar-pocket-banner',
+          title: '🛒 Базарный карман мастера (Джами / Урикзор)',
+          body: 'Свободные деньги заказчика у вас на руках для закупки труб и фитингов (аванс минус чеки). Нажмите сюда, чтобы открыть чек-лист покупок на рынке.'
+        },
+        {
+          selector: '#site-status-badge',
+          title: '🛡️ Двойная опрессовка 16 бар / 24ч',
+          body: 'Швейцарский стандарт качества Лиги (в 4 раза строже СНиП). Нажмите на статус, чтобы открыть официальный Акт испытаний перед заливкой стяжки.'
+        },
+        {
           selector: '#header-safety-beacon',
-          title: 'Световой маяк безопасности',
-          body: 'Это ваш главный щит приватности на объекте. Нажмите сюда — и интерфейс переключится в безопасный режим для клиента: замаскируются ваши цены, прибыль и касса.',
-          placement: 'bottom'
-        },
-        {
-          selector: 'button[data-tab="tab-estimates"]',
-          title: 'Инженерная смета за 15 секунд',
-          body: 'Здесь рассчитывается спецификация труб, радиаторов, теплого пола и котельной. Доступны готовые пресеты по нормам DIN 1988 в один клик.',
-          placement: 'top'
-        },
-        {
-          selector: 'button[data-tab="tab-materials"]',
-          title: 'Чек-лист для рынка Джами',
-          body: 'Ваш мобильный чек-лист закупки. Вычеркивайте купленные трубы и фитинги прямо на рынке. Работает автономно в подвале без интернета.',
-          placement: 'top'
+          title: '👁️ Световой маяк безопасности',
+          body: 'Главный щит приватности мастера. Нажмите на маяк в шапке — интерфейс переключится в безопасный режим для клиента: замаскируются ваши цены, прибыль и касса.'
         },
         {
           selector: '#btn-voice-input',
-          title: 'Голосовой ввод «Свободные руки»',
-          body: 'Диктуйте расходы без набора на клавиатуре: «Купил коллектор FAR за 1.8 млн» — система автоматически привяжет чек к объекту.',
-          placement: 'bottom'
-        },
-        {
-          selector: '#btn-more-menu-toggle',
-          title: 'Швейцарский пульт мастера',
-          body: 'Единый центр: 9 инженерных калькуляторов котельных (гидрострелка, мембранные баки Reflex, Grundfos, FAR, ротаметры) и памятка ведения переговоров.',
-          placement: 'bottom'
+          title: '🎙️ Голосовой ввод «Свободные руки»',
+          body: 'Диктуйте закупки прямо на базаре с грязными руками: «Купил коллектор за 1.8 млн». Система запишет всё в смету и спишет деньги из кассы мастера!'
         }
       ]
     };
@@ -9449,7 +9523,7 @@ ${shareUrl}
     if (overlay) {
       overlay.style.display = 'none';
     }
-    this.showToast('Инженерный тур завершен. Видеогид всегда доступен в шапке и меню!');
+    this.showToast('Инженерный тур завершен. Гид всегда доступен в шапке!');
   }
 
   renderSpotlightStep(stepIdx) {
@@ -9459,66 +9533,73 @@ ${shareUrl}
 
     this.spotlightState.currentStep = stepIdx;
 
+    // Синхронно обновляем текст и бейджи
+    const badge = document.getElementById('spotlight-badge-step');
+    const title = document.getElementById('spotlight-title-text');
+    const body = document.getElementById('spotlight-body-text');
+
+    if (badge) badge.innerText = `ШАГ ${stepIdx + 1} ИЗ ${this.spotlightState.steps.length}`;
+    if (title) title.innerText = step.title;
+    if (body) body.innerText = step.body;
+
+    const dotsContainer = document.getElementById('spotlight-dots-indicator');
+    if (dotsContainer) {
+      dotsContainer.innerHTML = this.spotlightState.steps.map((_, idx) => 
+        `<span class="spotlight-dot ${idx === stepIdx ? 'active' : ''}"></span>`
+      ).join('');
+    }
+
     let targetEl = document.querySelector(step.selector);
     if (!targetEl) {
-      targetEl = document.querySelector('.top-header');
+      targetEl = document.querySelector('.top-header') || document.body;
     }
-    if (!targetEl) return;
 
     try {
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (_) {}
 
-    const rect = targetEl.getBoundingClientRect();
-    const box = document.getElementById('spotlight-highlight-box');
-    const card = document.getElementById('spotlight-tooltip-card');
+    const updateGeometry = () => {
+      const rect = targetEl.getBoundingClientRect();
+      const box = document.getElementById('spotlight-highlight-box');
+      const card = document.getElementById('spotlight-tooltip-card');
 
-    if (box) {
-      const pad = 6;
-      box.style.top = `${rect.top - pad}px`;
-      box.style.left = `${rect.left - pad}px`;
-      box.style.width = `${rect.width + pad * 2}px`;
-      box.style.height = `${rect.height + pad * 2}px`;
-    }
-
-    if (card) {
-      const badge = document.getElementById('spotlight-badge-step');
-      const title = document.getElementById('spotlight-title-text');
-      const body = document.getElementById('spotlight-body-text');
-
-      if (badge) badge.innerText = `ШАГ ${stepIdx + 1} ИЗ ${this.spotlightState.steps.length}`;
-      if (title) title.innerText = step.title;
-      if (body) body.innerText = step.body;
-
-      const dots = document.querySelectorAll('.spotlight-dot');
-      dots.forEach((dot, idx) => {
-        if (idx === stepIdx) dot.classList.add('active');
-        else dot.classList.remove('active');
-      });
-
-      const cardWidth = 320;
-      const cardHeight = 180;
-      let cardTop = 0;
-      let cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, rect.left + rect.width / 2 - cardWidth / 2));
-
-      if (rect.top > window.innerHeight / 2) {
-        cardTop = Math.max(12, rect.top - cardHeight - 16);
-      } else {
-        cardTop = Math.min(window.innerHeight - cardHeight - 12, rect.bottom + 16);
+      if (box) {
+        const pad = 8;
+        box.style.top = `${Math.max(0, rect.top - pad)}px`;
+        box.style.left = `${Math.max(0, rect.left - pad)}px`;
+        box.style.width = `${rect.width + pad * 2}px`;
+        box.style.height = `${rect.height + pad * 2}px`;
       }
 
-      card.style.top = `${cardTop}px`;
-      card.style.left = `${cardLeft}px`;
+      if (card) {
+        const cardWidth = Math.min(340, window.innerWidth - 24);
+        const cardHeight = 200;
+        let cardTop = 0;
+        let cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, rect.left + rect.width / 2 - cardWidth / 2));
 
-      const prevBtn = document.getElementById('btn-spotlight-prev');
-      const nextBtn = document.getElementById('btn-spotlight-next');
-      if (prevBtn) {
-        prevBtn.style.display = stepIdx === 0 ? 'none' : 'block';
+        if (rect.top > window.innerHeight / 2) {
+          cardTop = Math.max(12, rect.top - cardHeight - 16);
+        } else {
+          cardTop = Math.min(window.innerHeight - cardHeight - 12, rect.bottom + 16);
+        }
+
+        card.style.width = `${cardWidth}px`;
+        card.style.top = `${cardTop}px`;
+        card.style.left = `${cardLeft}px`;
+
+        const prevBtn = document.getElementById('btn-spotlight-prev');
+        const nextBtn = document.getElementById('btn-spotlight-next');
+        if (prevBtn) {
+          prevBtn.style.display = stepIdx === 0 ? 'none' : 'inline-block';
+        }
+        if (nextBtn) {
+          nextBtn.innerText = stepIdx === this.spotlightState.steps.length - 1 ? 'Завершить ✓' : 'Далее →';
+        }
       }
-      if (nextBtn) {
-        nextBtn.innerText = stepIdx === this.spotlightState.steps.length - 1 ? 'Завершить ✓' : 'Далее →';
-      }
-    }
+    };
+
+    updateGeometry();
+    setTimeout(updateGeometry, 80);
   }
 
   nextSpotlightStep() {
@@ -9534,6 +9615,114 @@ ${shareUrl}
     if (!this.spotlightState || !this.spotlightState.isActive) return;
     if (this.spotlightState.currentStep > 0) {
       this.renderSpotlightStep(this.spotlightState.currentStep - 1);
+    }
+  }
+
+  // ==========================================================================
+  // ВЕРИФИКАЦИЯ МАСТЕРА: ШВЕЙЦАРСКАЯ ГЕРБОВАЯ ПЕЧАТЬ И ЦИФРОВАЯ ПОДПИСЬ v2.4.5
+  // ==========================================================================
+  initMasterSealSettings() {
+    if (!window.ligaSealEngine) return;
+
+    const inputName = document.getElementById('input-master-stamp-name');
+    const inputCompany = document.getElementById('input-master-stamp-company');
+    const inputCert = document.getElementById('input-master-stamp-cert');
+    const inputTitle = document.getElementById('input-master-stamp-title');
+    const inputSign = document.getElementById('input-master-stamp-sign-text');
+    const selectStyle = document.getElementById('select-master-stamp-style');
+
+    const inputs = [inputName, inputCompany, inputCert, inputTitle, inputSign];
+    inputs.forEach(el => {
+      if (el) {
+        el.addEventListener('input', () => this.updateSealLivePreview());
+      }
+    });
+
+    if (selectStyle) {
+      selectStyle.addEventListener('change', () => this.updateSealLivePreview());
+    }
+
+    // Загрузка первичных значений в форму и превью
+    this.loadMasterSealSettings();
+  }
+
+  loadMasterSealSettings() {
+    if (!window.ligaSealEngine) return;
+    const s = window.ligaSealEngine.settings;
+
+    const inputName = document.getElementById('input-master-stamp-name');
+    const inputCompany = document.getElementById('input-master-stamp-company');
+    const inputCert = document.getElementById('input-master-stamp-cert');
+    const inputTitle = document.getElementById('input-master-stamp-title');
+    const inputSign = document.getElementById('input-master-stamp-sign-text');
+    const selectStyle = document.getElementById('select-master-stamp-style');
+
+    if (inputName && s.masterName !== undefined) inputName.value = s.masterName;
+    if (inputCompany && s.companyName !== undefined) inputCompany.value = s.companyName;
+    if (inputCert && s.licenseNumber !== undefined) inputCert.value = s.licenseNumber;
+    if (inputTitle && s.title !== undefined) inputTitle.value = s.title;
+    if (inputSign && s.signatureText !== undefined) inputSign.value = s.signatureText;
+    if (selectStyle && s.stampStyle !== undefined) selectStyle.value = s.stampStyle;
+
+    this.updateSealLivePreview();
+  }
+
+  updateSealLivePreview() {
+    if (!window.ligaSealEngine) return;
+    const box = document.getElementById('seal-live-preview-box');
+    if (!box) return;
+
+    const inputName = document.getElementById('input-master-stamp-name');
+    const inputCompany = document.getElementById('input-master-stamp-company');
+    const inputCert = document.getElementById('input-master-stamp-cert');
+    const inputTitle = document.getElementById('input-master-stamp-title');
+    const inputSign = document.getElementById('input-master-stamp-sign-text');
+    const selectStyle = document.getElementById('select-master-stamp-style');
+
+    const opt = {
+      masterName: (inputName && inputName.value.trim()) ? inputName.value.trim() : (window.ligaSealEngine.settings.masterName || 'Улугбек Хакимов'),
+      companyName: (inputCompany && inputCompany.value.trim()) ? inputCompany.value.trim() : (window.ligaSealEngine.settings.companyName || 'Лига Опытных Мастеров'),
+      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : (window.ligaSealEngine.settings.licenseNumber || 'LMO-UZ-2011/2026'),
+      title: (inputTitle && inputTitle.value.trim()) ? inputTitle.value.trim() : (window.ligaSealEngine.settings.title || 'Ведущий инженер сантехники и систем отопления'),
+      signatureText: (inputSign && inputSign.value.trim()) ? inputSign.value.trim() : (window.ligaSealEngine.settings.signatureText || 'Хакимов У.А.'),
+      stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : (window.ligaSealEngine.settings.stampStyle || 'blue_seal'),
+      timestamp: window.ligaSealEngine.getFormattedTimestamp()
+    };
+
+    box.innerHTML = window.ligaSealEngine.renderCombinedStampAndSignHTML(opt);
+
+    const clockEl = document.getElementById('seal-preview-clock');
+    if (clockEl) {
+      clockEl.innerText = opt.timestamp + ' (UTC+5)';
+    }
+  }
+
+  saveMasterSealSettings() {
+    if (!window.ligaSealEngine) return;
+
+    const inputName = document.getElementById('input-master-stamp-name');
+    const inputCompany = document.getElementById('input-master-stamp-company');
+    const inputCert = document.getElementById('input-master-stamp-cert');
+    const inputTitle = document.getElementById('input-master-stamp-title');
+    const inputSign = document.getElementById('input-master-stamp-sign-text');
+    const selectStyle = document.getElementById('select-master-stamp-style');
+
+    const newSettings = {
+      masterName: (inputName && inputName.value.trim()) ? inputName.value.trim() : 'Улугбек Хакимов',
+      companyName: (inputCompany && inputCompany.value.trim()) ? inputCompany.value.trim() : 'Лига Опытных Мастеров',
+      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : 'LMO-UZ-2011/2026',
+      title: (inputTitle && inputTitle.value.trim()) ? inputTitle.value.trim() : 'Ведущий инженер сантехники и систем отопления',
+      signatureText: (inputSign && inputSign.value.trim()) ? inputSign.value.trim() : 'Хакимов У.А.',
+      stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : 'blue_seal'
+    };
+
+    const ok = window.ligaSealEngine.saveSettings(newSettings);
+    if (ok) {
+      this.playSubtleClick();
+      this.updateSealLivePreview();
+      this.showToast('✓ Персональная печать и подпись мастера сохранены!');
+    } else {
+      this.showToast('⚠️ Ошибка сохранения настроек печати');
     }
   }
 }

@@ -4555,15 +4555,22 @@ body.client-mode .btn-floating-voice {
 }
 
 @media (max-width: 640px) {
-  .btn-video-tour-header .btn-video-label {
-    display: none;
-  }
   .btn-video-tour-header {
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    justify-content: center;
-    border-radius: 50%;
+    padding: 2px 8px;
+    height: 30px;
+    font-size: 10px;
+    border-radius: 15px;
+    gap: 4px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .btn-video-tour-header .btn-video-label {
+    display: inline-block !important;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .btn-video-tour-header .btn-video-pulse-dot {
+    display: none;
   }
 }
 
@@ -5342,4 +5349,248 @@ body.client-mode .btn-floating-voice {
   cursor: pointer;
   box-shadow: 0 0 10px rgba(212,175,55,0.4);
 }
+
+.btn-spotlight-nav-finish {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-spotlight-nav-finish:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   ИНТЕРАКТИВНЫЕ DRILL-DOWN КАРТОЧКИ ДАШБОРДА (LIGA OS v2.4.4)
+   Сквозной переход: карточка ➔ страница-источник данных с подсветкой
+   ========================================================================== */
+.clickable-drilldown {
+  cursor: pointer !important;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.2s ease, 
+              border-color 0.2s ease, 
+              background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.clickable-drilldown:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(212, 175, 55, 0.2) !important;
+}
+
+.clickable-drilldown:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+/* Бейдж-стрелочка для индикации перехода на карточках */
+.drilldown-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.clickable-drilldown:hover .drilldown-hint-badge {
+  background: rgba(212, 175, 55, 0.25);
+  transform: translateX(2px);
+}
+
+.drilldown-footer-caption {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.clickable-drilldown:hover .drilldown-footer-caption {
+  color: var(--gold-primary);
+}
+
+/* Подсветка статуса опрессовки при наведении */
+.site-badge-status.clickable-drilldown:hover {
+  border-color: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+
+/* ==========================================================================
+   МОБИЛЬНАЯ ЭРГОНОМИКА LIGA OS (Smart Mobile Viewport & Bottom Sheet)
+   Гарантирует 100% видимость и отсутствие элементов за пределами экрана
+   ========================================================================== */
+@media (max-width: 600px) {
+  /* Карточка гида на мобильном всегда внизу экрана как удобный Bottom Sheet */
+  .spotlight-tooltip-card {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 24px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 auto !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.95), 0 0 25px rgba(212, 175, 55, 0.35) !important;
+    z-index: 100002 !important;
+  }
+  
+  .spotlight-footer {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .spotlight-nav-actions {
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  /* Плавный свайп панели ситуаций на смартфонах */
+  .master-situations-bar {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    gap: 8px;
+  }
+  .master-situations-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .situation-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   LIGA OS v2.4.5: ШВЕЙЦАРСКАЯ ГЕРБОВАЯ ПЕЧАТЬ, ПОДПИСЬ И ВЕРИФИКАЦИЯ ЭЦП
+   ========================================================================== */
+
+.official-seal-svg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+  user-select: none;
+}
+
+.official-seal-svg:hover {
+  transform: scale(1.03) rotate(-1deg);
+}
+
+.official-seal-svg.gold_seal {
+  filter: drop-shadow(0 4px 16px rgba(212, 175, 55, 0.35));
+}
+
+.official-seal-svg.blue_seal {
+  filter: drop-shadow(0 4px 16px rgba(29, 78, 216, 0.3));
+}
+
+.official-seal-svg.titanium_seal {
+  filter: drop-shadow(0 4px 14px rgba(15, 23, 42, 0.4));
+}
+
+.master-signature-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  user-select: none;
+}
+
+.official-signature-svg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+  transition: transform 0.25s ease;
+}
+
+.official-signature-svg:hover {
+  transform: translateY(-1px);
+}
+
+.official-verification-block {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px dashed rgba(212, 175, 55, 0.25);
+  transition: all 0.25s ease;
+}
+
+.official-verification-block:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.seal-live-preview-box {
+  position: relative;
+  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
+  padding: 16px;
+  overflow: visible !important;
+}
+
+.seal-live-preview-box .official-verification-block {
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 12px 18px;
+}
+
+.seal-live-preview-box .sign-container-inner span {
+  color: #1e293b !important;
+}
+
+.btn-save-seal:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35) !important;
+}
+
+.btn-save-seal:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 600px) {
+  .official-verification-block {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .seal-container-inner {
+    margin-left: 0 !important;
+    margin-top: -15px !important;
+  }
+  .official-seal-svg {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+
 

@@ -111,6 +111,35 @@ class LigaPdfEngine {
 
     const passportNumber = `LIGA-ПСП-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
 
+    const masterSettings = window.ligaSealEngine ? window.ligaSealEngine.settings : { masterName: 'Улугбек Хакимов', signatureText: 'Хакимов У.А.' };
+    const sealBlockSheet1 = window.ligaSealEngine
+      ? window.ligaSealEngine.renderCombinedStampAndSignHTML({
+          masterName: masterSettings.masterName,
+          companyName: masterSettings.companyName,
+          licenseNumber: masterSettings.licenseNumber,
+          signatureText: masterSettings.signatureText,
+          stampStyle: masterSettings.stampStyle || 'blue_seal',
+          isDraft: !isPressureVerified,
+          isSheet2: false,
+          timestamp: isPressureVerified ? window.ligaSealEngine.getFormattedTimestamp() : 'ЧЕРНОВИК (БЕЗ ТЕСТА)'
+        })
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
+
+    const sealBlockSheet2 = window.ligaSealEngine
+      ? window.ligaSealEngine.renderCombinedStampAndSignHTML({
+          masterName: masterSettings.masterName,
+          companyName: masterSettings.companyName,
+          licenseNumber: masterSettings.licenseNumber,
+          signatureText: masterSettings.signatureText,
+          stampStyle: masterSettings.stampStyle || 'blue_seal',
+          isDraft: false,
+          isSheet2: true,
+          timestamp: window.ligaSealEngine.getFormattedTimestamp()
+        })
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="engineer-seal-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
+
+    const sealBlock = sealBlockSheet1;
+
     // Хелпер рендеринга блока фото
     const renderPhotoBox = (photoData, defaultTitle, defaultSubtitle, dimensionHint = '') => {
       if (photoData) {
@@ -485,6 +514,25 @@ class LigaPdfEngine {
       color: #b45309;
       border-color: #d97706;
     }
+    .official-verification-block {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 4px;
+      position: relative;
+    }
+    .official-seal-svg {
+      width: 95px !important;
+      height: 95px !important;
+    }
+    .official-signature-svg {
+      width: 88px !important;
+      height: 30px !important;
+    }
+    .seal-container-inner {
+      margin-left: -24px !important;
+      margin-bottom: -4px !important;
+      transform: rotate(-3.5deg);
+    }
 
     /* Нижний колонтитул */
     .sheet-footer {
@@ -832,15 +880,13 @@ class LigaPdfEngine {
       </p>
 
       <div class="signatures-block">
-        <div class="sign-col">
+        <div class="sign-col" style="flex:1.2;">
           <div class="sign-title">Ведущий инженер-монтажник:</div>
-          <div class="sign-line">
-            <span>Хакимов Улугбек</span>
-            <span>(подпись) _________________</span>
-            <div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>
+          <div class="sign-line" style="border-bottom:none;">
+            ${sealBlock}
           </div>
         </div>
-        <div class="sign-col">
+        <div class="sign-col" style="flex:0.8;">
           <div class="sign-title">Заказчик (Объект принят):</div>
           <div class="sign-line">
             <span>${site.client}</span>
@@ -855,15 +901,13 @@ class LigaPdfEngine {
       </p>
 
       <div class="signatures-block">
-        <div class="sign-col">
+        <div class="sign-col" style="flex:1.2;">
           <div class="sign-title">Ведущий инженер-монтажник:</div>
-          <div class="sign-line">
-            <span>Хакимов Улугбек</span>
-            <span>(подпись) _________________</span>
-            <div class="facsimile-stamp draft">ЧЕРНОВИК<br>БЕЗ ТЕСТА<br>16 BAR</div>
+          <div class="sign-line" style="border-bottom:none;">
+            ${sealBlock}
           </div>
         </div>
-        <div class="sign-col">
+        <div class="sign-col" style="flex:0.8;">
           <div class="sign-title">Заказчик (Ознакомлен со статусом черновика):</div>
           <div class="sign-line">
             <span>${site.client}</span>
@@ -920,15 +964,13 @@ class LigaPdfEngine {
 
       <!-- Повторное заверение листа инженером -->
       <div class="signatures-block" style="margin-top: 8px;">
-        <div class="sign-col" style="width: 48%;">
+        <div class="sign-col" style="width: 55%;">
           <div class="sign-title">Исполнительную схему и фотофиксацию заверил:</div>
-          <div class="sign-line">
-            <span>Хакимов Улугбек (Ведущий инженер)</span>
-            <span>(подпись) _________</span>
-            <div class="engineer-seal-stamp" style="position: absolute; right: 5px; bottom: -10px; color: #b8832a; border: 2px dashed #b8832a; border-radius: 50%; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 7px; font-weight: 900; text-transform: uppercase; transform: rotate(-10deg); opacity: 0.88; pointer-events: none;">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>
+          <div class="sign-line" style="border-bottom:none;">
+            ${sealBlockSheet2}
           </div>
         </div>
-        <div class="sign-col" style="width: 48%; display:flex; justify-content:flex-end; align-items:flex-end;">
+        <div class="sign-col" style="width: 42%; display:flex; justify-content:flex-end; align-items:flex-end;">
           ${qrBadge}
         </div>
       </div>
@@ -1019,6 +1061,18 @@ class LigaPdfEngine {
     };
 
     const qrBadge = this.getSvgQrBadge(isSwissGrade ? "DIN 1988 VERIFIED" : "PRESSURE VERIFIED", actNumber);
+
+    const masterSettings = window.ligaSealEngine ? window.ligaSealEngine.settings : { masterName: 'Улугбек Хакимов', signatureText: 'Хакимов У.А.' };
+    const sealBlock = window.ligaSealEngine
+      ? window.ligaSealEngine.renderCombinedStampAndSignHTML({
+          masterName: masterSettings.masterName,
+          companyName: masterSettings.companyName,
+          licenseNumber: masterSettings.licenseNumber,
+          signatureText: masterSettings.signatureText,
+          stampStyle: masterSettings.stampStyle || 'blue_seal',
+          timestamp: window.ligaSealEngine.getFormattedTimestamp()
+        })
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -1424,6 +1478,25 @@ class LigaPdfEngine {
       opacity: 0.88;
       pointer-events: none;
     }
+    .official-verification-block {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 4px;
+      position: relative;
+    }
+    .official-seal-svg {
+      width: 88px !important;
+      height: 88px !important;
+    }
+    .official-signature-svg {
+      width: 85px !important;
+      height: 30px !important;
+    }
+    .seal-container-inner {
+      margin-left: -22px !important;
+      margin-bottom: -4px !important;
+      transform: rotate(-3.5deg);
+    }
 
     /* Векторный QR бейдж */
     .qr-verify-badge {
@@ -1617,12 +1690,10 @@ class LigaPdfEngine {
 
       <!-- Подписи сторон -->
       <div class="signatures-block">
-        <div class="sign-col">
+        <div class="sign-col" style="flex:1.2;">
           <div class="sign-title">Ведущий инженер-испытатель:</div>
-          <div class="sign-line">
-            <span>Хакимов Улугбек</span>
-            <span>(подпись) ________</span>
-            <div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>
+          <div class="sign-line" style="border-bottom:none;">
+            ${sealBlock}
           </div>
         </div>
         <div class="sign-col">

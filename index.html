@@ -56,9 +56,9 @@
           </div>
         </div>
         <div class="header-main-actions">
-          <button id="btn-video-tour-open" class="btn-video-tour-header" title="Интерактивная видеоинструкция и VIP-презентация для заказчика" type="button" onclick="window.app.openVideoTour()">
-            <span class="btn-video-pulse-dot"></span>
-            <span class="btn-video-label">🎬 ВИДЕОГИД</span>
+          <button id="btn-video-tour-open" class="btn-video-tour-header" title="Инженерный гид и подсказки мастера" type="button" onclick="window.app.openSystemGuideModal()">
+            <span class="btn-video-icon">🎬</span>
+            <span class="btn-video-label">ГИД</span>
           </button>
           <button id="btn-ai-concierge-open" class="liga-ai-indicator" title="LIGA AI • Инженерный Консьерж" type="button">
             <span class="ai-dot"></span>
@@ -396,8 +396,10 @@
           <section class="glass-card" id="dashboard-site-card">
             <div class="card-header-flex">
               <div class="card-label">🏢 Текущий объект</div>
-          <div id="site-status-badge" class="site-badge-status">3. Опрессовка 16 бар</div>
-        </div>
+              <div id="site-status-badge" class="site-badge-status clickable-drilldown" onclick="window.app.drillDownToPressure()" title="Нажмите, чтобы открыть Акт и таймер опрессовки 16 бар">
+                3. Опрессовка 16 бар ›
+              </div>
+            </div>
 
         <h1 id="site-name-display" class="site-title">ЖК Mirabad Avenue, Блок B</h1>
         <div class="site-meta">
@@ -524,35 +526,54 @@
         </div>
 
         <div class="finance-grid">
-          <div class="finance-box">
-            <div class="finance-box-label">Сумма договора:</div>
+          <div class="finance-box clickable-drilldown" id="card-fin-contract" onclick="window.app.drillDownToFinance('contract')" title="Нажмите, чтобы открыть финансовую смету и расчет работ">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div class="finance-box-label" style="margin-bottom:0;">Сумма договора:</div>
+              <span class="drilldown-hint-badge">Смета ›</span>
+            </div>
             <div id="fin-contract-val" class="finance-box-val">18 500 000 сум</div>
           </div>
-          <div class="finance-box" style="border-color: var(--neon-emerald-glow);">
-            <div class="finance-box-label" style="color:var(--neon-emerald);">Аванс получен:</div>
+          <div class="finance-box clickable-drilldown" id="card-fin-advance" onclick="window.app.drillDownToFinance('advance')" style="border-color: var(--neon-emerald-glow);" title="Нажмите, чтобы открыть историю поступлений">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div class="finance-box-label" style="color:var(--neon-emerald); margin-bottom:0;">Аванс получен:</div>
+              <span class="drilldown-hint-badge" style="color:var(--neon-emerald); border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.12);">Чеки ›</span>
+            </div>
             <div id="fin-advance-val" class="finance-box-val" style="color:var(--neon-emerald);">12 000 000 сум</div>
           </div>
         </div>
 
-        <!-- ЗОЛОТАЯ ЦИФРА: ОСТАТОК ДОЛГА КЛИЕНТА -->
-        <div class="debt-banner">
-          <div class="debt-label">Остаток к получению от клиента:</div>
+        <!-- ЗОЛОТАЯ ЦИФРА: ОСТАТОК ДОЛГА КЛИЕНТА (СВЕРХУДОБНЫЙ DRILLDOWN) -->
+        <div class="debt-banner clickable-drilldown" id="card-fin-debt" onclick="window.app.drillDownToFinance('debt')" title="Нажмите, чтобы открыть детальную ведомость расчетов и долга">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div class="debt-label">Остаток к получению от клиента:</div>
+            <span class="drilldown-hint-badge">Ведомость ›</span>
+          </div>
           <div id="fin-debt-val" class="debt-amount">6 500 000 сум</div>
+          <div class="drilldown-footer-caption">
+            <span>💡</span> Нажмите для перехода в финансовую ведомость объекта
+          </div>
         </div>
 
         <!-- ОСТАТОК ДЕНЕГ НА ЗАКУПКУ НА РУКАХ (БАЗАРНЫЙ КАРМАН МАСТЕРА) -->
-        <div class="bazaar-pocket-banner master-only" id="fin-bazaar-pocket-banner">
+        <div class="bazaar-pocket-banner master-only clickable-drilldown" id="fin-bazaar-pocket-banner" onclick="window.app.drillDownToMaterials()" title="Нажмите, чтобы открыть чек-лист и смету материалов для рынка Джами">
           <div class="bazaar-pocket-left">
             <div class="bazaar-pocket-title">🛒 На руках на закупку (Базар):</div>
             <div class="bazaar-pocket-desc">Аванс клиента минус закупленные материалы</div>
           </div>
-          <div id="fin-bazaar-pocket-val" class="bazaar-pocket-amount">0 сум</div>
+          <div style="text-align:right;">
+            <div id="fin-bazaar-pocket-val" class="bazaar-pocket-amount">0 сум</div>
+            <span class="drilldown-hint-badge" style="margin-top:2px;">Материалы ›</span>
+          </div>
         </div>
 
         <!-- Внутренние обязательства мастера (скрыты в клиентском режиме) -->
         <div class="sub-finances-row master-only">
-          <div class="sub-fin-item">Бригаде к выдаче: <span id="fin-brigade-val">800 000 сум</span></div>
-          <div class="sub-fin-item">Дизайнеру (10%): <span id="fin-designer-val">1 850 000 сум</span></div>
+          <div class="sub-fin-item clickable-drilldown" onclick="window.app.drillDownToFinance('brigade')" title="Нажмите, чтобы открыть расчет бригады">
+            Бригаде к выдаче: <span id="fin-brigade-val">800 000 сум</span> <span class="drilldown-hint-badge" style="padding:1px 5px; font-size:9px;">›</span>
+          </div>
+          <div class="sub-fin-item clickable-drilldown" onclick="window.app.drillDownToFinance('designer')" title="Нажмите, чтобы открыть расчет бонуса дизайнера">
+            Дизайнеру (10%): <span id="fin-designer-val">1 850 000 сум</span> <span class="drilldown-hint-badge" style="padding:1px 5px; font-size:9px;">›</span>
+          </div>
         </div>
 
         <!-- Представительский блок доверия для заказчика -->
@@ -4002,6 +4023,77 @@
             </div>
           </div>
 
+          <!-- Секция: Гербовая печать и цифровая подпись мастера (v2.4.5) -->
+          <div class="settings-section" id="settings-section-seal">
+            <div class="settings-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>🏛️ Гербовая печать и цифровая подпись (ЭЦП)</span>
+              <span class="seal-standard-badge" style="font-size:10px; font-weight:800; background:rgba(212,175,55,0.15); color:var(--gold-primary); border:1px solid rgba(212,175,55,0.35); padding:2px 8px; border-radius:6px;">16 BAR CERTIFIED</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px; line-height:1.4;">
+              Персональный швейцарский гербовый оттиск и каллиграфическая подпись для автоматического заверения Актов опрессовки 16 бар, Инженерных Паспортов и отчетов в Telegram.
+            </div>
+
+            <div class="seal-form-group" style="display:flex; flex-direction:column; gap:10px;">
+              <div>
+                <label class="settings-input-label" for="input-master-stamp-name" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">ФИО Ведущего инженера:</label>
+                <input class="settings-input-field" type="text" id="input-master-stamp-name" placeholder="Улугбек Хакимов" autocomplete="name" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12.5px;">
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div>
+                  <label class="settings-input-label" for="input-master-stamp-company" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">Организация / Бренд:</label>
+                  <input class="settings-input-field" type="text" id="input-master-stamp-company" placeholder="Лига Опытных Мастеров" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12.5px;">
+                </div>
+                <div>
+                  <label class="settings-input-label" for="input-master-stamp-cert" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">№ Сертификата / Лицензии:</label>
+                  <input class="settings-input-field" type="text" id="input-master-stamp-cert" placeholder="LMO-UZ-2011/2026" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12.5px;">
+                </div>
+              </div>
+
+              <div>
+                <label class="settings-input-label" for="input-master-stamp-title" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">Квалификация и статус:</label>
+                <input class="settings-input-field" type="text" id="input-master-stamp-title" placeholder="Ведущий инженер сантехники и систем отопления" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12.5px;">
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div>
+                  <label class="settings-input-label" for="input-master-stamp-sign-text" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">Подпись (фамилия и инициалы):</label>
+                  <input class="settings-input-field" type="text" id="input-master-stamp-sign-text" placeholder="Хакимов У.А." style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12.5px;">
+                </div>
+                <div>
+                  <label class="settings-input-label" for="select-master-stamp-style" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">Стиль официального оттиска:</label>
+                  <select class="settings-input-field" id="select-master-stamp-style" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12px; cursor:pointer;">
+                    <option value="blue_seal">🔷 Синяя мастика (Классика)</option>
+                    <option value="gold_seal">👑 Золотое VIP-тиснение</option>
+                    <option value="titanium_seal">🛡️ Дипломатический титан</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Живой интерактивный предпросмотр оттиска -->
+            <div class="seal-live-preview-wrapper" style="margin-top:14px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:12px; padding:12px; text-align:center;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; letter-spacing:0.5px;">
+                  👁️ Живой оттиск в реальном времени:
+                </span>
+                <span id="seal-preview-clock" style="font-size:9.5px; font-family:'Courier New', monospace; color:var(--text-dim);">
+                  —
+                </span>
+              </div>
+              <div id="seal-live-preview-box" class="seal-live-preview-box" style="display:flex; justify-content:center; align-items:center; min-height:170px; background:radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, transparent 70%); border-radius:8px; overflow:hidden;">
+                <!-- Динамически заполняется window.ligaSealEngine -->
+              </div>
+            </div>
+
+            <button id="btn-save-master-seal" type="button" onclick="window.app.saveMasterSealSettings()"
+              style="margin-top:12px; width:100%; padding:11px; background:var(--gold-gradient);
+              border:none; border-radius:10px; color:var(--btn-gold-text); font-size:13px;
+              font-weight:800; cursor:pointer; font-family:var(--font-main); box-shadow:0 4px 14px rgba(212,175,55,0.25); display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>💾</span> Сохранить персональную печать и подпись
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
@@ -4161,6 +4253,73 @@
     </div>
 
     <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: 🎬 ИНЖЕНЕРНЫЙ ГИД LIGA OS (ВЫБОР ФОРМАТА v2.4.4)
+         Понятный экран выбора: живой обзор, видеоинструкция или скрипты
+         ==================================================================== -->
+    <div id="modal-system-guide" class="modal-overlay">
+      <div class="modal-sheet" style="max-width:440px; padding:20px; border-radius:20px;">
+        <div class="modal-title" style="margin-bottom:12px;">
+          <div>
+            <span style="font-size:10px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; letter-spacing:0.8px; display:block;">Обучение и подсказки</span>
+            <span style="font-size:16px; font-weight:900;">🎬 Инженерный Гид LIGA OS</span>
+          </div>
+          <button onclick="window.app.closeModal('modal-system-guide')" class="btn-close-modal">&times;</button>
+        </div>
+        
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px; line-height:1.4;">
+          Выберите удобный способ ознакомления с программой. Никаких сложных инструкций — всё наглядно и понятно за 1 минуту:
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+          <!-- Вариант 1: Живой обзор по экрану -->
+          <div class="clickable-drilldown" id="btn-guide-choice-tour" onclick="window.app.closeModal('modal-system-guide'); window.app.startSpotlightTour();" style="background:rgba(212,175,55,0.08); border:1.5px solid var(--gold-primary); border-radius:12px; padding:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <div style="font-weight:800; font-size:13px; color:var(--gold-primary); display:flex; align-items:center; gap:6px;">
+                <span>✨</span> 1. Живой обзор по экрану (1 мин)
+              </div>
+              <span class="badge badge-gold" style="font-size:9px;">Рекомендуем</span>
+            </div>
+            <div style="font-size:11.5px; color:#cbd5e1; line-height:1.35;">
+              Система подсветит прямо на этом экране 7 главных кнопок мастера: объект, смету, кассу, опрессовку 16 бар и маяк безопасности.
+            </div>
+          </div>
+
+          <!-- Вариант 2: Видеоинструкция -->
+          <div class="clickable-drilldown" id="btn-guide-choice-video" onclick="window.app.closeModal('modal-system-guide'); window.app.openVideoTour();" style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.3); border-radius:12px; padding:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <div style="font-weight:800; font-size:13px; color:var(--neon-cyan); display:flex; align-items:center; gap:6px;">
+                <span>🎬</span> 2. Видеоинструкция & Презентация (3 мин)
+              </div>
+              <span style="font-size:10px; color:var(--text-muted);">5 глав</span>
+            </div>
+            <div style="font-size:11.5px; color:#cbd5e1; line-height:1.35;">
+              Интерактивные видео-уроки: от быстрой сметы на объекте до сдачи официального паспорта заказчику.
+            </div>
+          </div>
+
+          <!-- Вариант 3: Памятка и скрипты -->
+          <div class="clickable-drilldown" id="btn-guide-choice-scripts" onclick="window.app.closeModal('modal-system-guide'); window.app.openModal('modal-guide');" style="background:rgba(255,255,255,0.04); border:1px solid var(--glass-border-subtle); border-radius:12px; padding:12px;">
+            <div style="font-weight:800; font-size:13px; color:var(--text-main); display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span>📖</span> 3. Памятка мастера и скрипты переговоров
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted); line-height:1.35;">
+              Готовые фразы и аргументы для диалогов с заказчиками, дизайнерами и прорабами.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-action-trigger btn-action-gold" onclick="window.app.closeModal('modal-system-guide'); window.app.startSpotlightTour();" style="flex:1; height:38px; font-size:12px;">
+            ✨ Начать живой тур
+          </button>
+          <button type="button" class="btn-spotlight-nav-finish" onclick="window.app.closeModal('modal-system-guide')" style="padding:0 14px; height:38px; font-size:12px;">
+            ✕ Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
          ОМНИ-ОВЕРЛЕЙ: ✨ ЖИВОЙ SPOTLIGHT-ТУР ПО РЕАЛЬНОМУ ИНТЕРФЕЙСУ
          ==================================================================== -->
     <div id="spotlight-tour-overlay" class="spotlight-overlay" style="display:none;">
@@ -4188,6 +4347,7 @@
             <span class="spotlight-dot"></span>
           </div>
           <div class="spotlight-nav-actions">
+            <button type="button" class="btn-spotlight-nav-finish" id="btn-spotlight-finish" onclick="window.app.stopSpotlightTour()">✕ Закрыть</button>
             <button type="button" class="btn-spotlight-nav" id="btn-spotlight-prev" onclick="window.app.prevSpotlightStep()">← Назад</button>
             <button type="button" class="btn-spotlight-nav-next" id="btn-spotlight-next" onclick="window.app.nextSpotlightStep()">Далее →</button>
           </div>
@@ -4195,11 +4355,12 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.3: Премиальные тогглы, живые кнопки, шелковистый скролл и голосовой консьерж) -->
-  <script src="./js/image_processor.js?v=2.4.3"></script>
-  <script src="./js/db.js?v=2.4.3"></script>
-  <script src="./js/pdf_engine.js?v=2.4.3"></script>
-  <script src="./js/ai_concierge.js?v=2.4.3"></script>
-  <script src="./js/app.js?v=2.4.3"></script>
+  <!-- Скрипты LIGA OS (Версия 2.4.5: Гербовая печать, цифровая подпись мастера и дипломатическая верификация) -->
+  <script src="./js/image_processor.js?v=2.4.5"></script>
+  <script src="./js/db.js?v=2.4.5"></script>
+  <script src="./js/seal_engine.js?v=2.4.5"></script>
+  <script src="./js/pdf_engine.js?v=2.4.5"></script>
+  <script src="./js/ai_concierge.js?v=2.4.5"></script>
+  <script src="./js/app.js?v=2.4.5"></script>
 </body>
 </html>
