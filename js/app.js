@@ -9263,6 +9263,11 @@ ${shareUrl}
     if (speakerEl) speakerEl.innerText = ch.speaker;
     if (subtitleEl) subtitleEl.innerText = ch.subtitle;
 
+    // Голосовая озвучка диктора в видеоплеере
+    if (ch.subtitle) {
+      this.speakTourNarrator(ch.subtitle);
+    }
+
     const cursorEl = document.getElementById('video-virtual-cursor');
     if (cursorEl && ch.cursor) {
       cursorEl.style.top = ch.cursor.top;
@@ -9454,6 +9459,57 @@ ${shareUrl}
   // Наглядный интерактивный тур по реальным элементам без медленных видеослайдов
   // ==========================================================================
 
+  // ==========================================================================
+  // ЖИВОЙ ИНТЕРАКТИВНЫЙ ТУР С ГОЛОСОМ ДИКТОРА И РЕАЛЬНЫМ ОТКРЫТИЕМ ОКОН (v2.4.6)
+  // Настоящие действия: окна РЕАЛЬНО открываются, диктор РЕАЛЬНО озвучивает вслух!
+  // ==========================================================================
+
+  toggleTourVoice() {
+    this.tourVoiceEnabled = !this.tourVoiceEnabled;
+    const btn = document.getElementById('btn-spotlight-voice-toggle');
+    if (btn) {
+      if (this.tourVoiceEnabled) {
+        btn.classList.remove('muted');
+        btn.innerText = '🔊 Диктор: ВКЛ';
+        this.showToast('Голос диктора включен');
+        // Озвучить текущий шаг заново
+        if (this.spotlightState && this.spotlightState.isActive) {
+          const step = this.spotlightState.steps[this.spotlightState.currentStep];
+          if (step && step.narrator) this.speakTourNarrator(step.narrator);
+        }
+      } else {
+        btn.classList.add('muted');
+        btn.innerText = '🔇 Диктор: ВЫКЛ';
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        this.showToast('Голос диктора выключен');
+      }
+    }
+  }
+
+  speakTourNarrator(text) {
+    if (this.tourVoiceEnabled === false || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/[*#`_~[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 320);
+      const utt = new SpeechSynthesisUtterance(clean);
+      utt.lang = 'ru-RU';
+      utt.rate = 1.0;
+      utt.pitch = 1.0;
+      utt.volume = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        v.lang.startsWith('ru') && (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Yandex') || v.name.includes('Premium'))
+      ) || voices.find(v => v.lang.startsWith('ru') && !v.localService)
+        || voices.find(v => v.lang.startsWith('ru'));
+
+      if (preferred) utt.voice = preferred;
+      window.speechSynthesis.speak(utt);
+    } catch (e) {
+      console.warn('[Tour Voice] Narrator error:', e);
+    }
+  }
+
   startSpotlightFromVideo() {
     this.closeVideoTour();
     setTimeout(() => {
@@ -9464,7 +9520,20 @@ ${shareUrl}
   startSpotlightTour() {
     this.closeModal('modal-more-menu');
     this.closeModal('modal-video-tour');
+    this.closeModal('modal-system-guide');
+    this.closeModal('modal-payment');
+    this.closeModal('modal-pressure-test');
+    this.closeModal('modal-settings');
     this.switchScreen('dashboard');
+
+    if (this.tourVoiceEnabled === undefined) {
+      this.tourVoiceEnabled = true;
+    }
+
+    // Разблокировка Web Speech API от жеста пользователя
+    if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
 
     this.spotlightState = {
       isActive: true,
@@ -9472,38 +9541,99 @@ ${shareUrl}
       steps: [
         {
           selector: '#dashboard-site-card',
-          title: '🏢 Текущий объект мастера',
-          body: 'Здесь показана активная квартира или коттедж (ЖК Mirabad Avenue, кв. 142), контакты заказчика и дизайнера. Нажмите на выпадающий список сверху, чтобы переключить объект в 1 клик.'
-        },
-        {
-          selector: '#card-fin-debt',
-          title: '💰 Остаток к получению от клиента',
-          body: 'Главная финансовая цифра объекта: сумма договора минус внесенные авансы. Нажмите прямо на эту плашку — и система откроет полную ведомость оплат с подсветкой расчета!'
+          title: '🏢 1. Главный пульт объекта',
+          body: 'Здесь показана активная квартира (ЖК Mirabad Avenue), контакты заказчика и дизайнера. Нажмите на выпадающий список сверху, чтобы переключить объект в 1 клик.',
+          narrator: 'Приветствую в LIGA OS! Это главный экран объекта. Здесь собраны контакты заказчика, дизайнера и статус готовности.',
+          action: () => {
+            this.closeModal('modal-payment');
+            this.closeModal('modal-pressure-test');
+            this.closeModal('modal-settings');
+            this.switchScreen('dashboard');
+          }
         },
         {
           selector: '#btn-open-payment',
-          title: '💳 Кнопка «+ Платеж»',
-          body: 'Клиент перевел аванс на карту или отдал наличными? Нажмите эту объемную изумрудную кнопку — баланс пересчитается мгновенно без ручной бухгалтерии.'
+          title: '💳 2. Касса объекта: Кнопка «+ ПЛАТЁЖ»',
+          body: 'Клиент перевел аванс на карту или отдал наличными? Нажимаем кнопку — и РЕАЛЬНО открывается окно кассы! Баланс пересчитается мгновенно.',
+          narrator: 'Шаг второй. Нажимаем кнопку Платёж — и открывается окно кассы. Вносим аванс клиента — баланс пересчитывается мгновенно!',
+          action: () => {
+            this.switchScreen('dashboard');
+            this.pulseElement('btn-open-payment');
+            // Реальное открытие модального окна кассы прямо на глазах мастера!
+            setTimeout(() => {
+              this.openModal('modal-payment');
+              const amtInput = document.getElementById('input-payment-amount');
+              if (amtInput) {
+                amtInput.value = '5 000 000';
+                this.pulseElement('input-payment-amount');
+              }
+            }, 350);
+          }
         },
         {
           selector: '#fin-bazaar-pocket-banner',
-          title: '🛒 Базарный карман мастера (Джами / Урикзор)',
-          body: 'Свободные деньги заказчика у вас на руках для закупки труб и фитингов (аванс минус чеки). Нажмите сюда, чтобы открыть чек-лист покупок на рынке.'
+          title: '🛒 3. Снабжение: Базарный карман мастера',
+          body: 'Свободные деньги клиента на закупку труб и фитингов на базаре Джами (аванс минус чеки). Нажимаем — и система переходит в снабжение!',
+          narrator: 'Шаг третий. Базарный карман мастера. Переходим в Склад и снабжение: здесь все чеки и смета для рынка Джами!',
+          action: () => {
+            this.closeModal('modal-payment');
+            // Реальный переход в раздел Склад и снабжение!
+            this.switchScreen('materials');
+            setTimeout(() => {
+              const el = document.getElementById('materials-search-input') || document.querySelector('.table-container');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                this.pulseElement(el.id || 'materials-search-input');
+              }
+            }, 300);
+          }
         },
         {
           selector: '#site-status-badge',
-          title: '🛡️ Двойная опрессовка 16 бар / 24ч',
-          body: 'Швейцарский стандарт качества Лиги (в 4 раза строже СНиП). Нажмите на статус, чтобы открыть официальный Акт испытаний перед заливкой стяжки.'
+          title: '🛡️ 4. Опрессовка 16 бар перед заливкой стяжки',
+          body: 'Швейцарский эталон надежности Лиги (в 4 раза строже СНиП). Нажимаем — и открывается официальный протокол испытаний!',
+          narrator: 'Шаг четвёртый. Опрессовка шестнадцать бар. Открываем официальный протокол испытаний перед заливкой стяжки!',
+          action: () => {
+            this.switchScreen('dashboard');
+            // Реальное открытие протокола гидроиспытаний 16 бар!
+            setTimeout(() => {
+              this.openModal('modal-pressure-test');
+            }, 300);
+          }
         },
         {
           selector: '#header-safety-beacon',
-          title: '👁️ Световой маяк безопасности',
-          body: 'Главный щит приватности мастера. Нажмите на маяк в шапке — интерфейс переключится в безопасный режим для клиента: замаскируются ваши цены, прибыль и касса.'
+          title: '👁️ 5. Световой маяк приватности (Режим клиента)',
+          body: 'Показываете экран заказчику? Нажимаем маяк в шапке — интерфейс моментально скрывает ваши цены, прибыль и кассу мастера!',
+          narrator: 'Шаг пятый. Маяк приватности. Нажимаем его — и все внутренние цены и прибыль скрыты от клиента!',
+          action: () => {
+            this.closeModal('modal-pressure-test');
+            this.switchScreen('dashboard');
+            // Реальное включение клиентского режима безопасности!
+            if (!this.isClientMode) {
+              this.toggleClientMode();
+              setTimeout(() => {
+                if (this.isClientMode) this.toggleClientMode();
+              }, 4000);
+            }
+          }
         },
         {
-          selector: '#btn-voice-input',
-          title: '🎙️ Голосовой ввод «Свободные руки»',
-          body: 'Диктуйте закупки прямо на базаре с грязными руками: «Купил коллектор за 1.8 млн». Система запишет всё в смету и спишет деньги из кассы мастера!'
+          selector: '#settings-section-seal',
+          title: '🏛️ 6. Гербовая печать и цифровая подпись мастера',
+          body: 'В Настройках задайте ваше имя, бренд и квалификацию. Все сметы, Акты 16 бар и паспорта заверяются именной швейцарской печатью!',
+          narrator: 'Шаг шестой. Именная гербовая печать и цифровая подпись мастера. Все ваши сметы и акты заверяются знаком высшей надежности!',
+          action: () => {
+            // Реальное открытие Настроек с плавной прокруткой к секции печати!
+            this.openModal('modal-settings');
+            setTimeout(() => {
+              const sealSec = document.getElementById('settings-section-seal');
+              if (sealSec) {
+                sealSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                this.pulseElement('seal-live-preview-box');
+              }
+            }, 350);
+          }
         }
       ]
     };
@@ -9523,7 +9653,14 @@ ${shareUrl}
     if (overlay) {
       overlay.style.display = 'none';
     }
-    this.showToast('Инженерный тур завершен. Гид всегда доступен в шапке!');
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    this.closeModal('modal-payment');
+    this.closeModal('modal-pressure-test');
+    this.closeModal('modal-settings');
+    this.switchScreen('dashboard');
+    this.showToast('Инженерный тур завершен. Все функции готовы к работе!');
   }
 
   renderSpotlightStep(stepIdx) {
@@ -9532,6 +9669,20 @@ ${shareUrl}
     if (!step) return;
 
     this.spotlightState.currentStep = stepIdx;
+
+    // Выполняем живое действие шага (открытие реального окна / переключение экрана)
+    if (typeof step.action === 'function') {
+      try {
+        step.action();
+      } catch (err) {
+        console.warn('[Tour Action Error]:', err);
+      }
+    }
+
+    // Запускаем голос диктора
+    if (step.narrator) {
+      this.speakTourNarrator(step.narrator);
+    }
 
     // Синхронно обновляем текст и бейджи
     const badge = document.getElementById('spotlight-badge-step');
@@ -9600,6 +9751,7 @@ ${shareUrl}
 
     updateGeometry();
     setTimeout(updateGeometry, 80);
+    setTimeout(updateGeometry, 250);
   }
 
   nextSpotlightStep() {

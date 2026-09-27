@@ -520,8 +520,9 @@
           <section class="glass-card" id="dashboard-finances-card">
         <div class="card-header-flex">
           <div class="card-label">💰 Финансовый пульс объекта</div>
-          <button id="btn-open-payment" class="btn-action-trigger btn-action-emerald master-only" style="padding:4px 12px; font-size:11px; height:28px;">
-            💳 + Платеж
+          <button id="btn-open-payment" class="btn-luxury-payment-pulse master-only" title="Внести аванс или платёж от заказчика">
+            <span class="btn-payment-icon">💳</span>
+            <span class="btn-payment-text">+ ПЛАТЁЖ</span>
           </button>
         </div>
 
@@ -4331,7 +4332,10 @@
       <!-- Всплывающая карточка подсказки -->
       <div id="spotlight-tooltip-card" class="spotlight-tooltip-card">
         <div class="spotlight-card-header">
-          <div class="spotlight-badge" id="spotlight-badge-step">ШАГ 1 ИЗ 5</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="spotlight-badge" id="spotlight-badge-step">ШАГ 1 ИЗ 6</div>
+            <button type="button" class="btn-spotlight-voice" id="btn-spotlight-voice-toggle" onclick="window.app.toggleTourVoice()" title="Включить / Выключить голос диктора">🔊 Диктор: ВКЛ</button>
+          </div>
           <button type="button" class="btn-spotlight-close" onclick="window.app.stopSpotlightTour()" title="Завершить тур">✕</button>
         </div>
         <div class="spotlight-title" id="spotlight-title-text">Световой маяк безопасности</div>
@@ -4355,12 +4359,12 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.5: Гербовая печать, цифровая подпись мастера и дипломатическая верификация) -->
-  <script src="./js/image_processor.js?v=2.4.5"></script>
-  <script src="./js/db.js?v=2.4.5"></script>
-  <script src="./js/seal_engine.js?v=2.4.5"></script>
-  <script src="./js/pdf_engine.js?v=2.4.5"></script>
-  <script src="./js/ai_concierge.js?v=2.4.5"></script>
-  <script src="./js/app.js?v=2.4.5"></script>
+  <!-- Скрипты LIGA OS (Версия 2.4.6: Живой тур с диктором, реальное открытие окон, швейцарские 3D-тумблеры и гербовая печать) -->
+  <script src="./js/image_processor.js?v=2.4.6"></script>
+  <script src="./js/db.js?v=2.4.6"></script>
+  <script src="./js/seal_engine.js?v=2.4.6"></script>
+  <script src="./js/pdf_engine.js?v=2.4.6"></script>
+  <script src="./js/ai_concierge.js?v=2.4.6"></script>
+  <script src="./js/app.js?v=2.4.6"></script>
 </body>
 </html>
