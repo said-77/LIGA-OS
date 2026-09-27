@@ -80,7 +80,7 @@
         <button id="btn-backup-top" class="btn-icon-top master-only" title="Сохранить резервную копию базы">💾</button>
       </div>
 
-      <!-- 3. НАВИГАЦИОННАЯ ЛЕНТА ТЕКУЩЕГО ЭКРАНА И ОБЪЕКТА (v2.3.1) -->
+      <!-- 3. НАВИГАЦИОННАЯ ЛЕНТА ТЕКУЩЕГО ЭКРАНА И ОБЪЕКТА (v2.4.0) -->
       <div id="header-screen-ribbon" class="header-screen-ribbon">
         <div class="screen-ribbon-badge">
           <span id="ribbon-screen-icon" class="ribbon-screen-icon">🏢</span>
@@ -89,6 +89,10 @@
         <div class="screen-ribbon-context" title="Текущий рабочий объект">
           <span class="ribbon-context-label">ОБЪЕКТ:</span>
           <span id="ribbon-site-name" class="ribbon-site-name">ЖК Mirabad Avenue</span>
+        </div>
+        <div id="header-safety-beacon" class="screen-ribbon-safety master-mode" onclick="window.app.toggleClientMode()" title="Режим безопасности: нажмите для быстрого переключения Мастер / Клиент">
+          <span id="safety-beacon-dot" class="safety-beacon-dot"></span>
+          <span id="safety-beacon-text" class="safety-beacon-text">👑 МАСТЕР</span>
         </div>
       </div>
     </header>
@@ -1968,6 +1972,19 @@
           Инженерный подбор диаметров Rehau Rautitan и отводов коллекторов FAR по стандарту DIN 1988. Защита от перепада температур в душе при включении других кранов.
         </p>
 
+        <!-- Экспресс-пресеты типовых объектов Ташкента -->
+        <div style="background:rgba(212,163,89,0.06); border:1px solid rgba(212,163,89,0.25); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
+          <div style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ Экспресс-пресеты объекта:</span>
+            <span style="font-size:9.5px; color:var(--text-muted);">1 тап для быстрой настройки</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyPipePreset('apt_small')" style="padding:4px 8px; font-size:10px;">🏢 2-3 комн. (6/4 точек)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyPipePreset('villa')" style="padding:4px 8px; font-size:10px;">🏰 Дом/Вилла (12/8 точек)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyPipePreset('residence')" style="padding:4px 8px; font-size:10px;">👑 Резиденция (18/12 точек)</button>
+          </div>
+        </div>
+
         <!-- Потребители ХВС и ГВС -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
           <div style="font-size:11px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px;">
@@ -2072,10 +2089,25 @@
             🛡️ <strong>Стабильность температуры в душе: 100%</strong><br>
             Коллекторная схема FAR исключает падение напора: при смыве унитаза или работе стиралки температура воды в душе не изменится ни на градус!
           </div>
+
+          <!-- Инженерная физика узла ввода -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Коллектор FAR 1" распределяет воду по независимым лучам Rehau: при смыве бачка или включении стиральной машины давление в душе не падает ни на 0.1 бар, а температура остается идеально стабильной.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Редуктор Caleffi настраивать строго на 3.5–4.0 бар. 2. Гасители FAR ставить вертикально в торец гребенок. 3. В полу — только цельная труба Rehau в гофре, фитинги в стяжке запрещены!
+          </div>
         </div>
 
         <!-- Кнопки действий -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-pipe-client-script" onclick="window.app.copyPipeClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-pipe-calc" onclick="window.app.copyPipeCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать спецификацию для Telegram / Базара
           </button>
@@ -2102,6 +2134,19 @@
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
           Швейцарский расчет гидравлической увязки контуров (макс. длина петли ≤ 75–80 м), числа бухт Rehau/Stout, коллекторов с расходомерами и насосно-смесительного узла.
         </p>
+
+        <!-- Экспресс-пресеты площади теплого пола -->
+        <div style="background:rgba(212,163,89,0.06); border:1px solid rgba(212,163,89,0.25); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
+          <div style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ Экспресс-пресеты площади:</span>
+            <span style="font-size:9.5px; color:var(--text-muted);">1 тап для быстрой укладки</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyFloorPreset(35)" style="padding:4px 8px; font-size:10px;">🏢 Санузел + кухня (35 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyFloorPreset(75)" style="padding:4px 8px; font-size:10px;">🏰 Этаж / Квартира (75 м²)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyFloorPreset(140)" style="padding:4px 8px; font-size:10px;">👑 Большой коттедж (140 м²)</button>
+          </div>
+        </div>
 
         <!-- Параметры площади и шага укладки -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
@@ -2189,10 +2234,25 @@
             🛡️ <strong>Гидравлическая увязка соблюдена: 100%</strong><br>
             Длина каждой петли менее 75–80 метров. Исключено завоздушивание и «запирание» теплоносителя.
           </div>
+
+          <!-- Инженерная физика теплого пола -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Труба 16 мм имеет физический предел: при петле длиннее 80 м сопротивление возрастает лавинообразно, насос НСУ не может продавить теплоноситель, и дальние комнаты замерзают. Шаг 150 мм дает комфортные 65–75 Вт/м² без полосатого эффекта «зебры».
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Длина петли СТРОГО ≤ 80 м! Если контур больше — делить на 2 ветки! 2. Демпферная лента 8 мм обязательна по всему периметру без разрывов. 3. Опрессовать воздухом 6 бар ДО заливки стяжки и держать под давлением!
+          </div>
         </div>
 
         <!-- Кнопки действий -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-floor-client-script" onclick="window.app.copyFloorClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-floor-calc" onclick="window.app.copyFloorCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать спецификацию для Telegram / Базара
           </button>
@@ -2219,6 +2279,19 @@
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
           Швейцарский расчет коллекторного радиаторного отопления: лучевая разводка трубой Rehau Rautitan Stabil без тройников в полу, подбор секций/панелей и узлов нижнего подключения.
         </p>
+
+        <!-- Экспресс-пресеты радиаторов объекта -->
+        <div style="background:rgba(212,163,89,0.06); border:1px solid rgba(212,163,89,0.25); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
+          <div style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ Экспресс-пресеты радиаторов:</span>
+            <span style="font-size:9.5px; color:var(--text-muted);">1 тап для быстрой расстановки</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyRadiatorPreset(4)" style="padding:4px 8px; font-size:10px;">🏢 Квартира (4 прибора)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyRadiatorPreset(8)" style="padding:4px 8px; font-size:10px;">🏰 Дом 2 этажа (8 приборов)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyRadiatorPreset(12)" style="padding:4px 8px; font-size:10px;">👑 Коттедж (12 приборов)</button>
+          </div>
+        </div>
 
         <!-- Параметры радиаторов и помещений -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
@@ -2317,10 +2390,25 @@
             🛡️ <strong>100% защита от протечек в стяжке:</strong><br>
             Лучевая схема Rehau исключает любые соединения и фитинги под полом. Каждая ветка цельная от коллектора до радиатора!
           </div>
+
+          <!-- Инженерная физика лучевой сети -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Лучевая схема подает теплоноситель к каждому радиатору независимо. В отличие от тройниковой разводки, первый и последний радиаторы нагреваются одинаково быстро и равномерно.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Подключение радиаторов строго трубками Rehau из стены — из пола не выводить! 2. Никаких тройников и гильз в стяжке — только цельная труба! 3. Термоголовки Danfoss монтировать горизонтально.
+          </div>
         </div>
 
         <!-- Кнопки действий -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-rad-client-script" onclick="window.app.copyRadClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-rad-calc" onclick="window.app.copyRadiatorCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать спецификацию для Telegram / Базара
           </button>
@@ -2347,6 +2435,19 @@
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
           Швейцарский инженерный подбор ГВС: расчет объема бойлера (БКН / Электро), мембранного расширительного бака Reflex Refix (защита от разрыва эмали бака) и насоса рециркуляции Grundfos PM.
         </p>
+
+        <!-- Экспресс-пресеты водопотребления объекта -->
+        <div style="background:rgba(212,163,89,0.06); border:1px solid rgba(212,163,89,0.25); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
+          <div style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ Экспресс-пресеты ГВС:</span>
+            <span style="font-size:9.5px; color:var(--text-muted);">1 тап для подбора бойлера</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyBoilerPreset(3, false)" style="padding:4px 8px; font-size:10px;">🏢 3 чел • Душ (160 л)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyBoilerPreset(5, true)" style="padding:4px 8px; font-size:10px;">🏰 5 чел • Ванна (200 л)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyBoilerPreset(7, true)" style="padding:4px 8px; font-size:10px;">👑 Резиденция 7+ чел (300 л)</button>
+          </div>
+        </div>
 
         <!-- Параметры водопотребления и нагревателя -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
@@ -2434,10 +2535,25 @@
               <span id="res-boiler-pipe-dia" style="font-weight:800; color:var(--text-main); text-align:right; max-width:60%;">Rehau Stabil 25 (3/4") / Рециркуляция 16/20</span>
             </div>
           </div>
+
+          <!-- Инженерная физика бойлера и бака Refix -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Вода при нагреве от 10°C до 65°C расширяется на ~3.8% (для 200 л это 7.6 литра). Вода несжимаема: без бака Reflex Refix давление мгновенно сорвет клапан безопасности и разорвет эмаль бойлера. Бак бережно поглощает излишек.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Бак Refix монтировать строго на холодной воде ДО бойлера ПОСЛЕ обратного клапана! 2. Давление азота в баке ГВС: на 0.2 бар ниже давления холодной воды. 3. Насос рециркуляции монтировать стрелкой К БОЙЛЕРУ.
+          </div>
         </div>
 
         <!-- Кнопки действий -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-boiler-client-script" onclick="window.app.copyBoilerClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-boiler-calc" onclick="window.app.copyBoilerCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать спецификацию для Telegram / Базара
           </button>
@@ -2464,6 +2580,19 @@
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
           Швейцарский стандарт защиты от затопления: электрокраны с металлическим редуктором (Bugatti/Bonomi 12V), радиодатчики по мокрым зонам и резервное питание LiFePO4 (до 72 часов автономности).
         </p>
+
+        <!-- Экспресс-пресеты защиты от протечек -->
+        <div style="background:rgba(212,163,89,0.06); border:1px solid rgba(212,163,89,0.25); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
+          <div style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ Экспресс-пресеты защиты:</span>
+            <span style="font-size:9.5px; color:var(--text-muted);">1 тап для подбора комплекта</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-preset-est" onclick="window.app.applyLeakPreset(2, 4, '3/4')" style="padding:4px 8px; font-size:10px;">🏢 Квартира (2 крана, 4 зоны)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyLeakPreset(2, 6, '3/4')" style="padding:4px 8px; font-size:10px;">🏰 Элитный ЖК (2 крана, 6 зон)</button>
+            <button type="button" class="btn-preset-est" onclick="window.app.applyLeakPreset(4, 10, '1')" style="padding:4px 8px; font-size:10px;">👑 Коттедж (4 крана, 10 зон)</button>
+          </div>
+        </div>
 
         <!-- Параметры стояков и зон -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:12px; margin-bottom:12px;">
@@ -2568,10 +2697,25 @@
               <span id="res-leak-fittings" style="font-weight:800; color:var(--text-main); text-align:right; max-width:60%;">Американки FAR 3/4" НР-ВР (2 компл)</span>
             </div>
           </div>
+
+          <!-- Инженерная физика защиты от затопления -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            При разрыве шланга смесителя за 15 минут выливается до 500 литров воды, уничтожая паркет и заливая соседей на 3 этажа вниз. Электропривод с латунными шестернями Bugatti закрывает стояк за 18 секунд.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Краны с электроприводом ставить СРАЗУ после коренных вентилей ДО фильтров и счетчиков! 2. Обязательно ставить американки FAR для легкого ТО. 3. Радиодатчики ставить в самых низких точках пола.
+          </div>
         </div>
 
         <!-- Кнопки действий -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-leak-client-script" onclick="window.app.copyLeakClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-leak-calc" onclick="window.app.copyLeakCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать спецификацию для Telegram / Базара
           </button>
@@ -2665,10 +2809,25 @@
               <span id="res-balancing-pump-mode" style="font-weight:800; color:var(--neon-emerald); text-align:right;">Grundfos 25-60 • Скорость II</span>
             </div>
           </div>
+
+          <!-- Инженерная физика ротаметров -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Теплоноситель течет по пути наименьшего сопротивления. Без балансировки короткие петли (санузел 25 м) перегреваются, а длинные (гостиная 75 м) остаются ледяными. Точная шкала л/мин выравнивает температуру во всех комнатах до градуса.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Крутить колпачки ротаметров ТОЛЬКО при работающем насосе на рабочей скорости! 2. Не пережимать пластиковый шток силой. 3. После балансировки опустить стопорные кольца и наклеить памятку на шкаф!
+          </div>
         </div>
 
         <!-- Кнопки действий мастера -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-balancing-client-script" onclick="window.app.copyBalancingClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-balancing-calc" onclick="window.app.copyBalancingCheatSheet()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать памятку настройки для Telegram
           </button>
@@ -2792,10 +2951,25 @@
               <span id="res-pump-speed-mode" style="font-weight:800; color:var(--neon-emerald); text-align:right;">Скорость II (постоянный напор CP2)</span>
             </div>
           </div>
+
+          <!-- Инженерная физика насоса и скорости потока -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Скорость теплоносителя должна быть строго 0.3–0.7 м/с. При скорости > 0.8 м/с термоклапаны в спальнях начинают свистеть и шуметь ночью. Насос Grundfos с правильно подобранным напором H обеспечивает тишину и 100% циркуляцию.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Вал насоса Grundfos/Wilo располагать СТРОГО ГОРИЗОНТАЛЬНО (иначе сгорит за 3 месяца)! 2. Клеммная коробка не должна быть снизу. 3. До пуска выкрутить центральный винт и стравить воздух!
+          </div>
         </div>
 
         <!-- Кнопки действий мастера -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-pump-client-script" onclick="window.app.copyPumpClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-pump-calc" onclick="window.app.copyPumpCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать расчет насоса для Telegram
           </button>
@@ -2932,10 +3106,25 @@
               <span id="res-exp-safety-valve" style="font-weight:800; color:var(--neon-emerald); text-align:right;">Caleffi 3.0 бар 1/2" мембранный</span>
             </div>
           </div>
+
+          <!-- Инженерная физика мембранного бака Reflex -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            Вода при нагреве от 10°C до 80°C расширяется на ~3.2% (для 384 л это 12.4 литра). Бак Reflex N 50 л поглощает этот объем, удерживая стабильное давление 1.5–1.8 бар. Без бака вода сорвет клапан, а при остывании система завоздушится.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Давление азота P₀ качать СТРОГО НА ПУСТОМ БАКЕ ДО ЗАЛИВКИ ВОДЫ! При накачке с водой манометр врет, а мембрана залипает. 2. Обязательно монтировать кран Reflex SU с пломбой для ежегодного ТО!
+          </div>
         </div>
 
         <!-- Кнопки действий мастера -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-expansion-client-script" onclick="window.app.copyExpansionTankClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-expansion-tank-calc" onclick="window.app.copyExpansionTankCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать расчет бака и клапана для Telegram
           </button>
@@ -3068,10 +3257,25 @@
               <span id="res-sep-drain" style="font-weight:800; color:var(--text-main); text-align:right;">Кран со штуцером 1/2" + магнитная колба</span>
             </div>
           </div>
+
+          <!-- Инженерная физика гидрострелки -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.3); border-radius:6px; font-size:10.5px; color:#67e8f9; line-height:1.4;">
+            💡 <strong>Инженерная физика узла:</strong><br>
+            В сложной котельной насосы теплого пола, радиаторов и бойлера качают с разной силой. Без гидрострелки насос теплого пола опрокидывает циркуляцию котла, котел тактует и шумит. Стрелка создает зону нулевого перепада (ΔP≈0), защищая котел от термоудара холодной обратки.
+          </div>
+
+          <!-- Контроль помощника (Анти-брак) -->
+          <div style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; font-size:10.5px; color:#fcd34d; line-height:1.4;">
+            🛑 <strong>Контроль помощника (Красные флаги монтажа):</strong><br>
+            1. Подачу от котла подключать строго в ВЕРХНИЙ входной патрубок гидрострелки! 2. Сверху обязательно накрутить автомат Caleffi Robocal. 3. Снизу обязателен кран со штуцером для промывки шлама во время ТО!
+          </div>
         </div>
 
         <!-- Кнопки действий мастера -->
         <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-separator-client-script" onclick="window.app.copySeparatorClientScript()" class="btn-submit-modal" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; height:44px; font-weight:800;">
+            🗣️ Скопировать аргумент для Заказчика (Telegram)
+          </button>
           <button id="btn-copy-separator-calc" onclick="window.app.copySeparatorCalculation()" class="btn-submit-modal" style="background:var(--gold-primary); color:#080e1a; height:46px; font-weight:900;">
             📋 Скопировать расчет гидрострелки для Telegram
           </button>
@@ -3769,11 +3973,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.3.6: Инженерный калькулятор гидравлического разделителя и первичного кольца DIN EN 12828) -->
-  <script src="./js/image_processor.js?v=2.3.6"></script>
-  <script src="./js/db.js?v=2.3.6"></script>
-  <script src="./js/pdf_engine.js?v=2.3.6"></script>
-  <script src="./js/ai_concierge.js?v=2.3.6"></script>
-  <script src="./js/app.js?v=2.3.6"></script>
+  <!-- Скрипты LIGA OS (Версия 2.4.0: Система активной инженерной безопасности, прозрачной физики и защиты от рутины) -->
+  <script src="./js/image_processor.js?v=2.4.0"></script>
+  <script src="./js/db.js?v=2.4.0"></script>
+  <script src="./js/pdf_engine.js?v=2.4.0"></script>
+  <script src="./js/ai_concierge.js?v=2.4.0"></script>
+  <script src="./js/app.js?v=2.4.0"></script>
 </body>
 </html>

@@ -427,6 +427,21 @@ class LigaApp {
       }
     }
 
+    // Световой маяк безопасности в навигационной ленте шапки (v2.4.0)
+    const beacon = document.getElementById('header-safety-beacon');
+    const beaconText = document.getElementById('safety-beacon-text');
+    if (beacon && beaconText) {
+      if (isActive) {
+        beacon.className = 'screen-ribbon-safety client-mode';
+        beaconText.innerText = '🛡️ БЕЗОПАСНЫЙ ПОКАЗ';
+        beacon.title = 'Режим безопасного показа клиенту (цены и зарплаты скрыты). Нажмите для возврата в режим Мастера.';
+      } else {
+        beacon.className = 'screen-ribbon-safety master-mode';
+        beaconText.innerText = '👑 МАСТЕР';
+        beacon.title = 'Режим инженера-мастера (полный доступ к оптовым ценам и кассе). Нажмите для показа клиенту.';
+      }
+    }
+
     // Реактивно перерисовываем активный экран с учетом изоляции данных
     this.render();
     this.checkOnboardingHint();
@@ -448,6 +463,10 @@ class LigaApp {
 
   setClientModeTrue() {
     this.setClientMode(true);
+  }
+
+  toggleSafetyBeacon() {
+    this.toggleClientMode();
   }
 
   checkOnboardingHint() {
@@ -3200,6 +3219,71 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     }
   }
 
+  applyPipePreset(key) {
+    if (!this.pipeCalc) {
+      this.pipeCalc = { cold: 6, hot: 4, hasHighFlow: true, hasRecirc: false, pressure: '6.0', length: 'medium' };
+    }
+    if (key === 'apt_small') {
+      this.pipeCalc.cold = 6;
+      this.pipeCalc.hot = 4;
+      this.pipeCalc.hasHighFlow = true;
+      this.pipeCalc.hasRecirc = false;
+      this.pipeCalc.length = 'medium';
+    } else if (key === 'villa') {
+      this.pipeCalc.cold = 12;
+      this.pipeCalc.hot = 8;
+      this.pipeCalc.hasHighFlow = true;
+      this.pipeCalc.hasRecirc = true;
+      this.pipeCalc.length = 'medium';
+    } else if (key === 'residence') {
+      this.pipeCalc.cold = 18;
+      this.pipeCalc.hot = 12;
+      this.pipeCalc.hasHighFlow = true;
+      this.pipeCalc.hasRecirc = true;
+      this.pipeCalc.length = 'long';
+    }
+    const cEl = document.getElementById('pipe-calc-cold-val');
+    const hEl = document.getElementById('pipe-calc-hot-val');
+    const hfEl = document.getElementById('pipe-calc-high-flow');
+    const recEl = document.getElementById('pipe-calc-boiler-recirc');
+    const lenEl = document.getElementById('pipe-calc-length-select');
+    if (cEl) cEl.innerText = this.pipeCalc.cold;
+    if (hEl) hEl.innerText = this.pipeCalc.hot;
+    if (hfEl) hfEl.checked = this.pipeCalc.hasHighFlow;
+    if (recEl) recEl.checked = this.pipeCalc.hasRecirc;
+    if (lenEl) lenEl.value = this.pipeCalc.length;
+    this.recalculatePipeManifold();
+    if (this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(520, 0.05);
+    }
+    this.showToast(`⚡ Экспресс-пресет узла ввода: ${key === 'apt_small' ? '2-3 комн. квартира' : key === 'villa' ? 'Дом/Вилла' : 'Элитная Резиденция'}`);
+  }
+
+  async copyPipeClientScript() {
+    const c = this.currentCalculatedPipes || { cold: 6, hot: 4, inlet: '25 мм (Rehau 25×3.5)', manifoldCold: 'FAR 1"', manifoldHot: 'FAR 1"' };
+    const text = `Здравствуйте! Подготовил инженерное решение по узлу ввода и распределительным коллекторам водоснабжения.
+
+💎 Главный принцип надежности:
+Мы применяем премиальную лучевую коллекторную схему трубами Rehau Rautitan. К каждому смесителю, душу и прибору идет отдельная бесшовная труба от коллектора FAR без единого тройника и скрытого соединения в стяжке пола.
+
+🚿 Гарантия стабильной температуры:
+Диаметр ввода (${c.inlet || '25 мм'}) и пропускная способность коллекторов рассчитаны строго по европейскому стандарту DIN 1988 на одновременный расход. Даже если кто-то нажмет смыв унитаза или включится стиральная машина — напор и температура воды в душе не изменятся ни на градус (никаких температурных шоков и ожогов!).
+
+В спецификации заложены гасители гидроударов FAR и редукторы давления Caleffi для абсолютной защиты сантехники.
+Срок службы такой системы — свыше 50 лет надежно, как швейцарские часы!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент для заказчика скопирован в буфер обмена!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
+    }
+  }
+
   async addCalculatedPipesToMaterials() {
     const c = this.currentCalculatedPipes;
     if (!c) return;
@@ -3448,6 +3532,43 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     }
   }
 
+  applyFloorPreset(areaSqM) {
+    if (!this.floorCalc) {
+      this.floorCalc = { area: 50, step: '150', hasEdgeZones: true, isTiles: true };
+    }
+    this.floorCalc.area = Number(areaSqM) || 50;
+    const areaEl = document.getElementById('floor-calc-area-val');
+    if (areaEl) areaEl.innerText = this.floorCalc.area;
+    this.recalculateFloorHeating();
+    if (this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(520, 0.05);
+    }
+    this.showToast(`⚡ Экспресс-пресет теплого пола: ${this.floorCalc.area} м²`);
+  }
+
+  async copyFloorClientScript() {
+    const f = this.currentCalculatedFloor || { area: 50, loops: 5, avgLoop: 72, totalPowerKw: 4.0 };
+    const text = `Здравствуйте! Подготовил инженерный расчет водяного теплого пола для вашего объекта (${f.area} м²).
+
+🌡️ Физика комфорта и тепла:
+Площадь разделена на ${f.loops} независимых петель со средней длиной ~${f.avgLoop} м (строго в пределах европейской нормы ≤ 80 м). Это исключает гидравлическое запирание, завоздушивание и эффект «зебры» (когда часть пола горячая, а часть холодная). Прогрев поверхности абсолютно мягкий и равномерный.
+
+🛡️ Надежность в стяжке:
+Каждый контур укладывается цельным отрезком трубы Rehau Pink без единого фитинга или муфты в бетоне. Коллекторная группа с ротаметрами позволяет индивидуально настроить комфортную температуру в каждом помещении.
+Срок службы — более 50 лет!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по теплому полу скопирован для клиента!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
+    }
+  }
+
   async addCalculatedFloorToMaterials() {
     const f = this.currentCalculatedFloor;
     if (!f) return;
@@ -3682,6 +3803,42 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
       this.showToast('✓ Расчет радиаторов скопирован для Telegram / Базара!');
     } catch (e) {
       this.showToast('✓ Расчет радиаторов сформирован!');
+    }
+  }
+
+  applyRadiatorPreset(count) {
+    if (!this.radiatorCalc) {
+      this.radiatorCalc = { count: 5, type: 'bimetal', roomArea: '16', connection: 'wall', cornerBoost: true };
+    }
+    this.radiatorCalc.count = Number(count) || 5;
+    const countEl = document.getElementById('rad-calc-count-val');
+    if (countEl) countEl.innerText = this.radiatorCalc.count;
+    this.recalculateRadiators();
+    if (this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(520, 0.05);
+    }
+    this.showToast(`⚡ Экспресс-пресет радиаторов: ${this.radiatorCalc.count} шт`);
+  }
+
+  async copyRadClientScript() {
+    const r = this.currentCalculatedRadiators || { count: 8, totalPowerKw: 10.5, totalSections: 64 };
+    const text = `Здравствуйте! Направляю инженерную спецификацию радиаторной системы отопления (${r.count || 8} приборов).
+
+🔥 Лучевая схема Rehau:
+Все радиаторы подключаются лучами из нержавеющего коллектора. Никаких тройников в полу под плиткой или паркетом! Каждый радиатор имеет независимую подачу и обратку со встроенным термостатическим клапаном для поддержания точной температуры.
+
+⚡ Энергоэффективность и долговечность:
+Тепловая мощность рассчитана с запасом на самые морозные дни в Ташкенте. Система быстро прогревает комнаты и работает в щадящем режиме для котла, экономя газ. Гарантия спокойствия на десятилетия!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по радиаторам скопирован для клиента!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
     }
   }
 
@@ -4013,6 +4170,55 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     }
   }
 
+  applyBoilerPreset(residents, hasBath) {
+    if (!this.boilerCalc) {
+      this.boilerCalc = { residents: 4, type: 'bkn', rainShower: true, bigBath: false, recirc: true };
+    }
+    this.boilerCalc.residents = Number(residents) || 4;
+    this.boilerCalc.bigBath = Boolean(hasBath);
+    this.boilerCalc.rainShower = true;
+    this.boilerCalc.recirc = true;
+
+    const resEl = document.getElementById('boiler-calc-residents-val');
+    const bathEl = document.getElementById('boiler-calc-big-bath');
+    const rainEl = document.getElementById('boiler-calc-rain-shower');
+    const recircEl = document.getElementById('boiler-calc-recirc');
+
+    if (resEl) resEl.innerText = this.boilerCalc.residents;
+    if (bathEl) bathEl.checked = this.boilerCalc.bigBath;
+    if (rainEl) rainEl.checked = this.boilerCalc.rainShower;
+    if (recircEl) recircEl.checked = this.boilerCalc.recirc;
+
+    this.recalculateBoiler();
+    if (this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(520, 0.05);
+    }
+    this.showToast(`⚡ Экспресс-пресет бойлера: ${this.boilerCalc.residents} чел • ${hasBath ? 'с ванной' : 'с душем'}`);
+  }
+
+  async copyBoilerClientScript() {
+    const b = this.currentCalculatedBoiler || { volume: 200, tankModel: 'Reflex Refix DE 18' };
+    const text = `Здравствуйте! Сделал расчет объема бойлера косвенного нагрева (БКН) для вашей семьи.
+
+🛁 Безлимитный комфорт горячей воды:
+Рассчитанный объем накопительного бака составляет ${b.volume || 200} литров. Это обеспечивает полноценную работу одновременно двух душей и мойки на кухне — горячая вода никогда не закончится в самый неподходящий момент, в отличие от двухконтурных котлов или колонок.
+
+⏱️ Мгновенная подача за 1 секунду:
+Благодаря линии рециркуляции ГВС горячая вода поступает в смеситель моментально при открытии крана, без ожидания и слива холодной воды. Для долговечности бойлер укомплектован расширительным баком Reflex Refix и надежной группой безопасности Caleffi.
+Система создана для максимального комфорта вашей семьи!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по бойлеру скопирован для клиента!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
+    }
+  }
+
   async addCalculatedBoilerToMaterials() {
     const b = this.currentCalculatedBoiler;
     if (!b) return;
@@ -4310,6 +4516,52 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
       this.showToast('✓ Расчет защиты от протечек скопирован для Telegram / Базара!');
     } catch (e) {
       this.showToast('✓ Расчет защиты от протечек сформирован!');
+    }
+  }
+
+  applyLeakPreset(valves, sensors, dia) {
+    if (!this.leakCalc) {
+      this.leakCalc = { diameter: '3/4', system: 'neptun', valvesCount: 2, sensorsCount: 6, wireless: true, ups: true, serviceValves: true };
+    }
+    this.leakCalc.valvesCount = Number(valves) || 2;
+    this.leakCalc.sensorsCount = Number(sensors) || 6;
+    this.leakCalc.diameter = dia || '3/4';
+
+    const valEl = document.getElementById('leak-calc-valves-val');
+    const sensEl = document.getElementById('leak-calc-sensors-val');
+    const diaEl = document.getElementById('leak-calc-diameter-select');
+
+    if (valEl) valEl.innerText = this.leakCalc.valvesCount;
+    if (sensEl) sensEl.innerText = this.leakCalc.sensorsCount;
+    if (diaEl) diaEl.value = this.leakCalc.diameter;
+
+    this.recalculateLeakSystem();
+    if (this.isSoundEnabled && typeof this.playChime === 'function') {
+      this.playChime(520, 0.05);
+    }
+    this.showToast(`⚡ Экспресс-пресет антизатопления: ${this.leakCalc.valvesCount} крана, ${this.leakCalc.sensorsCount} зон`);
+  }
+
+  async copyLeakClientScript() {
+    const l = this.currentCalculatedLeak || { valvesCount: 2, sensorsCount: 6, diameter: '3/4' };
+    const text = `Здравствуйте! Подготовил инженерную спецификацию интеллектуальной системы защиты от протечек и затопления.
+
+🛡️ Принцип мгновенного перекрытия:
+В узлах ввода монтируются краны из горячепрессованной латуни с мощным электроприводом (${l.diameter || '3/4"'}) и крутящим моментом до 16 Н*м, а во всех критических зонах (под стиральной машиной, коллектором, раковинами, инсталляциями) размещаются радиодатчики воды.
+
+⚡ Защита за 18 секунд:
+При попадании капли воды на датчик контроллер перекрывает воду ровно за 18 секунд, предотвращая затопление дорогостоящей отделки и соседей снизу. Система снабжена блоком резервного питания и работает даже при отключении электричества в квартире/доме.
+Полное спокойствие за дом 24/7!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по защите от протечек скопирован!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
     }
   }
 
@@ -4664,6 +4916,27 @@ ${loopsText}
       this.showToast('✓ Шпаргалка настройки ротаметров скопирована для Telegram!');
     } catch (e) {
       this.showToast('✓ Шпаргалка сформирована!');
+    }
+  }
+
+  async copyBalancingClientScript() {
+    const text = `Здравствуйте! Направляю инженерную схему гидравлической балансировки контуров теплого пола.
+
+⚖️ Точная покомнатная настройка:
+Каждый контур отопления отрегулирован по встроенным ротаметрам коллектора FAR с точностью до 0.1 л/мин. Длинные петли получают больший поток, короткие — меньший.
+
+🌱 Экономия и уют:
+Благодаря правильному балансу в доме не возникает зон перегрева или недогрева. Температура во всех комнатах распределяется равномерно, насос работает тихо и без лишнего расхода электричества.`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по балансировке скопирован для клиента!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
     }
   }
 
@@ -5038,6 +5311,29 @@ ${loopsText}
     }
   }
 
+  async copyPumpClientScript() {
+    const p = this.currentCalculatedPump || { pumpModel: 'Grundfos ALPHA 25-60', velocity: 0.48 };
+    const text = `Здравствуйте! Сделал расчет циркуляционного насоса и диаметров магистральных трубопроводов.
+
+🌀 Бесшумность и надежность:
+Насос и сечение труб подобраны так, чтобы теплоноситель двигался со строго выверенной скоростью (0.4–0.6 м/с). Это полностью исключает гидравлический гул и свист в радиаторах, а также защищает систему от преждевременного износа.
+
+⚡ Энергосбережение:
+Современный энергоэффективный насос (${p.pumpModel || 'Grundfos / Wilo'}) автоматически подстраивает свою мощность под потребности дома, потребляя минимум электроэнергии.
+Долговечная безаварийная работа гарантирована!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по циркуляционному насосу скопирован!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
+    }
+  }
+
   async addCalculatedPumpToMaterials() {
     const calc = this.currentCalculatedPump;
     if (!calc) return;
@@ -5345,6 +5641,29 @@ ${loopsText}
       this.showToast('✓ Расчет бака Reflex и клапана скопирован для Telegram!');
     } catch (e) {
       this.showToast('✓ Расчет бака Reflex сформирован!');
+    }
+  }
+
+  async copyExpansionTankClientScript() {
+    const t = this.currentCalculatedTank || { tankModel: 'Reflex NG 35', p0: 1.5 };
+    const text = `Здравствуйте! Подготовил инженерный расчет мембранного расширительного бака Reflex.
+
+🛑 Защита от гидроударов и разрыва:
+При нагреве объем воды в системе неизбежно увеличивается. Если расширению некуда деваться, давление подскочит до критического и сорвет соединения либо разрушит теплообменник котла.
+
+💎 Швейцарский стандарт:
+Устанавливается качественный мембранный бак европейского бренда Reflex с предварительной закачкой азота (P₀ = ${t.p0 || 1.5} бар) и специальным сервисным клапаном для ежегодного обслуживания. Давление в вашей котельной всегда будет стабильным.
+Система полностью защищена на десятилетия!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по расширительному баку скопирован!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
     }
   }
 
@@ -5682,6 +6001,29 @@ ${loopsText}
       this.showToast('✓ Расчет гидрострелки скопирован для Telegram!');
     } catch (e) {
       this.showToast('✓ Расчет гидрострелки сформирован!');
+    }
+  }
+
+  async copySeparatorClientScript() {
+    const s = this.currentCalculatedSeparator || { powerKw: 35, standardProfile: '80×80 мм' };
+    const text = `Здравствуйте! Направляю инженерное обоснование установки гидравлического разделителя (гидрострелки) в вашей котельной.
+
+⚗️ Независимость и баланс контуров:
+Когда в доме работает несколько отопительных контуров (теплый пол, радиаторы 1 и 2 этажей, бойлер косвенного нагрева), их насосы начинают мешать друг другу и «перетягивать» теплоноситель. Гидрострелка создает зону нулевого перепада давления, разделяя котловой и отопительные контуры.
+
+🛡️ Защита котла и тишина:
+Гидрострелка полностью защищает котел от резких перепадов температуры обратной воды (термоударов), удаляет микропузырьки воздуха и шлам, обеспечивая долгий срок службы всей котельной.
+Настоящее швейцарское качество для вашего дома!`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        await this.copyToClipboard(text);
+      }
+      this.showToast('✓ Аргумент по гидрострелке скопирован для клиента!');
+    } catch (e) {
+      this.showToast('✓ Текст для заказчика сформирован!');
     }
   }
 

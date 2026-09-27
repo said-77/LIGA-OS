@@ -399,6 +399,52 @@ body.more-menu-open .top-header {
   white-space: nowrap;
 }
 
+/* СВЕТОВОЙ МАЯК РЕЖИМА БЕЗОПАСНОСТИ (МАСТЕР / КЛИЕНТ) v2.4.0 */
+.screen-ribbon-safety {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.screen-ribbon-safety.master-mode {
+  background: rgba(255, 209, 117, 0.12);
+  border: 1px solid rgba(255, 209, 117, 0.35);
+  color: var(--gold-primary);
+}
+.screen-ribbon-safety.client-mode {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+.safety-beacon-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.screen-ribbon-safety.master-mode .safety-beacon-dot {
+  background: var(--gold-primary);
+  box-shadow: 0 0 6px var(--gold-primary);
+}
+.screen-ribbon-safety.client-mode .safety-beacon-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-safety-green 1.5s infinite;
+}
+@keyframes pulse-safety-green {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
 /* ==========================================================================
    2. СТЕКЛЯННЫЕ КАРТОЧКИ (Glassmorphism Cards)
    ========================================================================== */
