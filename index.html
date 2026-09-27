@@ -378,7 +378,7 @@
       <div class="form-group" style="margin-bottom: 12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <label class="form-label" style="margin-bottom:0;">Активный объект:</label>
-          <button id="btn-open-add-site" class="btn-contact" style="height:28px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary);">
+          <button id="btn-open-add-site" class="btn-action-trigger btn-action-gold" style="padding:4px 12px; font-size:11px; height:28px;">
             + Новый объект
           </button>
         </div>
@@ -518,8 +518,8 @@
           <section class="glass-card" id="dashboard-finances-card">
         <div class="card-header-flex">
           <div class="card-label">💰 Финансовый пульс объекта</div>
-          <button id="btn-open-payment" class="btn-contact master-only" style="height:28px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald);">
-            + Платеж
+          <button id="btn-open-payment" class="btn-action-trigger btn-action-emerald master-only" style="padding:4px 12px; font-size:11px; height:28px;">
+            💳 + Платеж
           </button>
         </div>
 
@@ -1243,7 +1243,7 @@
             <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
               Неизменяемый журнал этапов монтажа и скрытых работ:
             </div>
-            <button id="btn-open-add-event" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary); flex-shrink:0;">
+            <button id="btn-open-add-event" class="btn-action-trigger btn-action-gold master-only" style="height:28px; padding:4px 12px; font-size:11px; flex-shrink:0;">
               + Событие
             </button>
           </div>
@@ -1259,7 +1259,7 @@
             <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
               Учет выдачи средств помощникам и мастерам:
             </div>
-            <button id="btn-open-add-payout" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--neon-ruby); border-color:var(--neon-ruby); flex-shrink:0;">
+            <button id="btn-open-add-payout" class="btn-action-trigger master-only" style="height:28px; padding:4px 12px; font-size:11px; flex-shrink:0; background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color:#fff; border:1px solid rgba(254,202,202,0.4); box-shadow:0 4px 12px rgba(239,68,68,0.35);">
               + Выплата
             </button>
           </div>
@@ -1280,7 +1280,7 @@
             <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
               Паспорта европейских узлов с заводской гарантией:
             </div>
-            <button id="btn-open-add-equipment" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--neon-emerald); border-color:var(--neon-emerald); flex-shrink:0;">
+            <button id="btn-open-add-equipment" class="btn-action-trigger btn-action-emerald master-only" style="height:28px; padding:4px 12px; font-size:11px; flex-shrink:0;">
               + Оборудование
             </button>
           </div>
@@ -1296,7 +1296,7 @@
             <div style="font-size:11px; color:var(--text-muted); font-weight:700;">
               Реестр заказчиков, дизайнеров и подрядчиков Лиги:
             </div>
-            <button id="btn-open-add-contact" onclick="window.app.openAddContactModal()" class="btn-contact master-only" style="height:30px; padding:2px 10px; font-size:11px; color:var(--gold-primary); border-color:var(--gold-secondary); flex-shrink:0;">
+            <button id="btn-open-add-contact" onclick="window.app.openAddContactModal()" class="btn-action-trigger btn-action-gold master-only" style="height:28px; padding:4px 12px; font-size:11px; flex-shrink:0;">
               + Контакт
             </button>
           </div>
@@ -1805,6 +1805,45 @@
           <button onclick="window.app.closeModal('modal-voice')" class="btn-contact" style="height:52px; flex:1; border-color:var(--glass-border);">
             Отмена
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: ЭКСПРЕСС-ПОДТВЕРЖДЕНИЕ ГОЛОСА («СВОБОДНЫЕ РУКИ НА БАЗАРЕ»)
+         ==================================================================== -->
+    <div id="voice-confirmation-overlay" class="voice-confirmation-overlay" style="display:none;">
+      <div class="voice-confirmation-card">
+        <div class="voice-confirmation-header">
+          <span class="voice-confirmation-badge" id="voice-conf-badge">🛒 Базар Джами</span>
+          <span style="font-size:11px; color:var(--text-dim); margin-left:auto;">Голосовой консьерж</span>
+        </div>
+
+        <div class="voice-confirmation-title" id="voice-conf-title">
+          Записать расход на материалы?
+        </div>
+
+        <div class="voice-confirmation-amount" id="voice-conf-amount">
+          1 800 000 сум
+        </div>
+
+        <div class="voice-confirmation-site">
+          <span>🏢 Объект списания:</span>
+          <b id="voice-conf-site-name" style="color:var(--gold-primary);">Mirabad Avenue</b>
+        </div>
+
+        <div class="voice-confirmation-actions">
+          <button type="button" id="btn-voice-conf-confirm" class="btn-voice-confirm-big" onclick="window.app.confirmVoiceFastAction()">
+            <span>✅</span> Подтвердить (или сказать «Да»)
+          </button>
+          <div class="btn-voice-cancel-row">
+            <button type="button" id="btn-voice-conf-site" class="btn-voice-change-site" onclick="window.app.switchVoiceConfSite()">
+              <span>🏢</span> Другой объект
+            </button>
+            <button type="button" id="btn-voice-conf-cancel" class="btn-voice-cancel" onclick="window.app.cancelVoiceFastAction()">
+              <span>✕</span> Отмена
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -4156,11 +4195,11 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.2: Интерактивный видеогид и живой шоурум) -->
-  <script src="./js/image_processor.js?v=2.4.2"></script>
-  <script src="./js/db.js?v=2.4.2"></script>
-  <script src="./js/pdf_engine.js?v=2.4.2"></script>
-  <script src="./js/ai_concierge.js?v=2.4.2"></script>
-  <script src="./js/app.js?v=2.4.2"></script>
+  <!-- Скрипты LIGA OS (Версия 2.4.3: Премиальные тогглы, живые кнопки, шелковистый скролл и голосовой консьерж) -->
+  <script src="./js/image_processor.js?v=2.4.3"></script>
+  <script src="./js/db.js?v=2.4.3"></script>
+  <script src="./js/pdf_engine.js?v=2.4.3"></script>
+  <script src="./js/ai_concierge.js?v=2.4.3"></script>
+  <script src="./js/app.js?v=2.4.3"></script>
 </body>
 </html>

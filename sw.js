@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.4.2-interactive-video-tour-and-vip-showcase';
+const CACHE_NAME = 'liga-os-v2.4.3-toggles-affordance-liquid-scroll-voice-vip';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -6206,9 +6206,124 @@ ${loopsText}
   }
 
   // ==========================================================================
-  // МОДУЛЬ ГОЛОСОВОГО АССИСТЕНТА («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ») — МИРОВОЙ УРОВЕНЬ
-  // Непрерывное распознавание (continuous listening), живой вывод, Keep-Alive при паузах
+  // МОДУЛЬ ГОЛОСОВОГО КОНСЬЕРЖА («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ») — LIGA VOICE VIP
+  // Естественный синтез речи, живой диалог, подтверждения в 1 тап и подсветка
   // ==========================================================================
+  speakVoice(text) {
+    if (!this.isSoundEnabled || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/[*#`_~[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 280);
+      const utt = new SpeechSynthesisUtterance(clean);
+      utt.lang = 'ru-RU';
+      utt.rate = 1.0;
+      utt.pitch = 1.0;
+      utt.volume = 0.95;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        v.lang.startsWith('ru') && (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium'))
+      ) || voices.find(v => v.lang.startsWith('ru') && !v.localService)
+        || voices.find(v => v.lang.startsWith('ru'));
+
+      if (preferred) utt.voice = preferred;
+      window.speechSynthesis.speak(utt);
+    } catch (e) {
+      console.warn('[LIGA Voice] Speak error:', e);
+    }
+  }
+
+  pulseElement(elementId) {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.classList.remove('element-spotlight-pulse');
+      void el.offsetWidth;
+      el.classList.add('element-spotlight-pulse');
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (_) {}
+    }
+  }
+
+  showVoiceFastConfirmation(action) {
+    this.pendingFastVoiceAction = action;
+    const overlay = document.getElementById('voice-confirmation-overlay');
+    const badge = document.getElementById('voice-conf-badge');
+    const title = document.getElementById('voice-conf-title');
+    const amountEl = document.getElementById('voice-conf-amount');
+    const siteNameEl = document.getElementById('voice-conf-site-name');
+
+    if (overlay && title && amountEl && siteNameEl) {
+      if (badge) badge.innerText = `🛒 ${action.category || 'Базар Джами'}`;
+      title.innerText = `Записать покупку: ${action.title}?`;
+      amountEl.innerText = this.formatSum(action.amount);
+      const siteName = this.currentSite ? this.currentSite.name : 'Активный объект';
+      siteNameEl.innerText = siteName;
+      overlay.style.display = 'flex';
+
+      const promptText = `Записать покупку: ${action.title} на ${this.formatSum(action.amount)}? Скажите «Да» для подтверждения.`;
+      this.speakVoice(promptText);
+    }
+  }
+
+  async confirmVoiceFastAction() {
+    if (!this.pendingFastVoiceAction) return;
+    const action = this.pendingFastVoiceAction;
+    const overlay = document.getElementById('voice-confirmation-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    await window.ligaDB.add('materials', {
+      siteId: this.currentSiteId,
+      category: action.category || 'Трубы и фитинги',
+      name: action.title,
+      qty: action.qty || '1 компл',
+      price: action.amount,
+      isPurchased: true,
+      receiptPhoto: null,
+      date: new Date().toISOString().slice(0, 10)
+    });
+
+    await window.ligaDB.add('finances', {
+      siteId: this.currentSiteId,
+      type: 'material_expense',
+      amount: action.amount,
+      method: 'Базарный карман мастера (Наличные)',
+      recipient: `Закупка: ${action.title}`,
+      date: new Date().toISOString().slice(0, 10)
+    });
+
+    this.showToast(`✓ ${action.title} (${this.formatSum(action.amount)}) записан в снабжение!`);
+    this.speakVoice(`Записано в снабжение. Списано ${this.formatSum(action.amount)} из базарного кармана.`);
+    this.pendingFastVoiceAction = null;
+    this.render();
+  }
+
+  switchVoiceConfSite() {
+    if (!this.sites || this.sites.length <= 1) {
+      this.showToast('В системе только 1 объект');
+      return;
+    }
+    const curIdx = this.sites.findIndex(s => s.id === this.currentSiteId);
+    const nextIdx = (curIdx + 1) % this.sites.length;
+    const nextSite = this.sites[nextIdx];
+    this.currentSiteId = nextSite.id;
+    this.currentSite = nextSite;
+
+    const siteNameEl = document.getElementById('voice-conf-site-name');
+    if (siteNameEl) siteNameEl.innerText = nextSite.name;
+    this.showToast(`Объект списания: ${nextSite.name}`);
+    this.speakVoice(`Объект списания: ${nextSite.name}. Скажите «Да» для подтверждения.`);
+    this.render();
+  }
+
+  cancelVoiceFastAction() {
+    const overlay = document.getElementById('voice-confirmation-overlay');
+    if (overlay) overlay.style.display = 'none';
+    this.pendingFastVoiceAction = null;
+    this.showToast('Запись покупки отменена');
+    this.speakVoice('Запись отменена.');
+  }
+
   initVoiceEngine() {
     const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechClass) {
@@ -6403,6 +6518,24 @@ ${loopsText}
   handleVoiceResult(transcript) {
     const inputEl = document.getElementById('voice-recognized-input');
     if (inputEl) inputEl.value = transcript;
+
+    const lower = (transcript || '').toLowerCase().trim();
+    const overlay = document.getElementById('voice-confirmation-overlay');
+    if (overlay && overlay.style.display === 'flex' && this.pendingFastVoiceAction) {
+      if (lower.includes('да') || lower.includes('подтверждаю') || lower.includes('запиши') || lower.includes('верно') || lower.includes('хорошо') || lower.includes('ок') || lower.includes('давай')) {
+        this.confirmVoiceFastAction();
+        return;
+      }
+      if (lower.includes('отмена') || lower.includes('не надо') || lower.includes('отмени') || lower.includes('нет')) {
+        this.cancelVoiceFastAction();
+        return;
+      }
+      if (lower.includes('другой объект') || lower.includes('смени объект')) {
+        this.switchVoiceConfSite();
+        return;
+      }
+    }
+
     this.handleVoiceInputText(transcript);
   }
 
@@ -6502,6 +6635,7 @@ ${loopsText}
         type: 'modal_action',
         target: 'modal-master-guide',
         title: '📖 Инструмент: Памятка мастера',
+        voiceResponse: 'Открываю памятку мастера и диалоги с дизайнерами',
         desc: 'Открываю шпаргалку диалогов с дизайнерами и заказчиками...'
       };
     }
@@ -6510,14 +6644,17 @@ ${loopsText}
         type: 'modal_action',
         target: 'modal-passport-photos',
         title: '📸 Инструмент: Фотофиксация узлов',
+        voiceResponse: 'Открываю галерею скрытых инженерных узлов',
         desc: 'Открываю галерею скрытых узлов для инженерного паспорта...'
       };
     }
-    if (lower.includes('протокол 16') || lower.includes('акт опрессовк') || lower.includes('манометр фото')) {
+    if (lower.includes('протокол 16') || lower.includes('акт опрессовк') || lower.includes('манометр фото') || (lower.includes('опрессовк') && !lower.includes('завершен') && !lower.includes('готов'))) {
       return {
         type: 'modal_action',
         target: 'modal-pressure-test',
         title: '🛡️ Инструмент: Протокол 16 бар',
+        voiceResponse: 'Открываю протокол гидравлических испытаний 16 бар на 24 часа',
+        spotlightId: 'modal-pressure-test',
         desc: 'Открываю протокол гидравлических испытаний 16 бар / 24ч...'
       };
     }
@@ -6526,6 +6663,7 @@ ${loopsText}
         type: 'modal_action',
         target: 'modal-ai-audit',
         title: '📐 Инструмент: Экспресс-аудит',
+        voiceResponse: 'Запускаю экспресс-аудит по швейцарским стандартам надежности',
         desc: 'Запускаю проверку по швейцарским стандартам надежности...'
       };
     }
@@ -6534,6 +6672,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openBalancingCalculator',
         title: '⚖️ Инструмент: Балансировка ротаметров коллектора',
+        voiceResponse: 'Открываю расчет уставок ротаметров FAR и петель теплого пола',
         desc: 'Открываю расчет точных уставок ротаметров FAR / Caleffi и гидравлики петель теплого пола...'
       };
     }
@@ -6542,6 +6681,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openPipeCalculator',
         title: '📐 Инструмент: Калькулятор труб и коллекторов',
+        voiceResponse: 'Открываю калькулятор диаметров труб и гребенок FAR',
         desc: 'Открываю гидравлический расчет диаметров труб и гребенок FAR (DIN 1988)...'
       };
     }
@@ -6550,6 +6690,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openFloorCalculator',
         title: '♨️ Инструмент: Калькулятор теплого пола и НСУ',
+        voiceResponse: 'Открываю расчет петель и смесительного узла водяного теплого пола',
         desc: 'Открываю расчет петель, бухт и смесительного узла (увязка петель <= 75-80 м)...'
       };
     }
@@ -6558,6 +6699,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openRadiatorCalculator',
         title: '🔥 Инструмент: Калькулятор радиаторного отопления',
+        voiceResponse: 'Открываю расчет радиаторов и лучевой разводки Rehau',
         desc: 'Открываю расчет радиаторов, лучевой разводки Rehau и узлов нижнего подключения...'
       };
     }
@@ -6566,6 +6708,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openBoilerCalculator',
         title: '⚡ Инструмент: Калькулятор бойлера и бака ГВС',
+        voiceResponse: 'Открываю расчет объема бойлера и мембранного бака Reflex',
         desc: 'Открываю расчет объема бойлера, мембранного бака Reflex и рециркуляции ГВС...'
       };
     }
@@ -6574,6 +6717,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openLeakCalculator',
         title: '🛡️ Инструмент: Защита от протечек Neptun / Gidrolock',
+        voiceResponse: 'Открываю расчет системы защиты от протечек Neptun',
         desc: 'Открываю расчет кранов с электроприводом, радиодатчиков и блока питания LiFePO4...'
       };
     }
@@ -6582,6 +6726,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openPumpCalculator',
         title: '🌀 Инструмент: Подбор циркуляционного насоса и магистралей',
+        voiceResponse: 'Открываю расчет рабочей точки насоса и диаметров магистралей',
         desc: 'Открываю расчет рабочей точки насоса (Q, H), скорости теплоносителя и диаметров Rehau...'
       };
     }
@@ -6590,6 +6735,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openExpansionTankCalculator',
         title: '🛑 Инструмент: Расширительный бак Reflex и клапан DIN EN 12828',
+        voiceResponse: 'Открываю расчет объема бака Reflex и сбросного клапана',
         desc: 'Открываю расчет объема бака Reflex, давления азота P₀ и сбросного клапана...'
       };
     }
@@ -6598,6 +6744,7 @@ ${loopsText}
         type: 'direct_func',
         target: 'openSeparatorCalculator',
         title: '🛡️ Инструмент: Гидрострелка и первичное кольцо котельной',
+        voiceResponse: 'Открываю расчет гидрострелки и первичного кольца котельной',
         desc: 'Открываю расчет гидравлического разделителя, правила 3d и баланса контуров...'
       };
     }
@@ -6608,6 +6755,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'finances',
         title: '💰 Навигация: Финансы объекта',
+        voiceResponse: 'Открываю финансовый пульс и кассу объекта',
+        spotlightId: 'dashboard-finances-card',
         desc: 'Перехожу в финансовый пульс и кассу объекта...'
       };
     }
@@ -6616,6 +6765,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'materials',
         title: '📦 Навигация: Склад и снабжение',
+        voiceResponse: 'Открываю склад материалов и снабжение',
+        spotlightId: 'screen-materials',
         desc: 'Открываю склад материалов и список на базар Урикзор...'
       };
     }
@@ -6624,6 +6775,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'checklist',
         title: '📋 Навигация: Чек-лист контроля',
+        voiceResponse: 'Открываю чек-лист контроля перед заливкой стяжки',
+        spotlightId: 'screen-checklist',
         desc: 'Открываю чек-лист 10 критических пунктов перед заливкой стяжки...'
       };
     }
@@ -6632,6 +6785,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'estimate',
         title: '⚡ Навигация: Экспресс-смета',
+        voiceResponse: 'Открываю экспресс-смету и расценки на точки',
+        spotlightId: 'screen-estimate',
         desc: 'Открываю калькулятор сметы и расценок на точки...'
       };
     }
@@ -6640,6 +6795,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'history',
         title: '📜 Навигация: Хроника объекта',
+        voiceResponse: 'Открываю хронику вех и 10-летнюю историю объекта',
+        spotlightId: 'timeline-events-container',
         desc: 'Открываю 10-летнюю историю и журнал вех объекта...'
       };
     }
@@ -6648,6 +6805,8 @@ ${loopsText}
         type: 'nav_action',
         target: 'dashboard',
         title: '🏢 Навигация: Главный экран',
+        voiceResponse: 'Возвращаюсь к карточке объекта',
+        spotlightId: 'dashboard-finances-card',
         desc: 'Возвращаюсь к карточке текущего объекта...'
       };
     }
@@ -6869,6 +7028,15 @@ ${loopsText}
       }
     } else if (action.type === 'press_test') {
       await this.togglePressureTest();
+    } else if (action.type === 'material') {
+      if (this.voiceNavTimeout) {
+        clearTimeout(this.voiceNavTimeout);
+        this.voiceNavTimeout = null;
+      }
+      this.closeModal('modal-voice');
+      this.showVoiceFastConfirmation(action);
+      this.parsedVoiceAction = null;
+      return;
     } else if (action.type === 'nav_action') {
       if (this.voiceNavTimeout) {
         clearTimeout(this.voiceNavTimeout);
@@ -6877,6 +7045,12 @@ ${loopsText}
       this.closeModal('modal-voice');
       this.switchScreen(action.target);
       this.playSwissChime();
+      const siteName = this.currentSite ? this.currentSite.name : '';
+      const voiceText = action.voiceResponse || `Открываю ${action.title} ${siteName}`.trim();
+      this.speakVoice(voiceText);
+      if (action.spotlightId) {
+        this.pulseElement(action.spotlightId);
+      }
       this.showToast(action.desc || '✓ Переход выполнен');
       this.parsedVoiceAction = null;
       return;
@@ -6888,6 +7062,11 @@ ${loopsText}
       this.closeModal('modal-voice');
       this.openModal(action.target);
       this.playSwissChime();
+      const voiceText = action.voiceResponse || `Открываю ${action.title}`.trim();
+      this.speakVoice(voiceText);
+      if (action.spotlightId) {
+        this.pulseElement(action.spotlightId);
+      }
       this.showToast(action.desc || '✓ Инструмент открыт');
       this.parsedVoiceAction = null;
       return;
@@ -6898,6 +7077,8 @@ ${loopsText}
       }
       this.closeModal('modal-voice');
       this.playSwissChime();
+      const voiceText = action.voiceResponse || `Выполняю ${action.title}`.trim();
+      this.speakVoice(voiceText);
       if (action.target === 'setClientModeTrue') {
         this.setClientMode(true);
       } else if (typeof this[action.target] === 'function') {
