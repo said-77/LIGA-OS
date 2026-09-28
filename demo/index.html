@@ -386,7 +386,13 @@
         <div class="phone-notch"></div>
         <div class="phone-screen" id="phone-screen">
           <img id="active-screenshot" src="./assets/01_dashboard.png" alt="Экран LIGA OS">
-          <video id="demo-mp4-video" controls playsinline src="./liga_os_full_guide.mp4" style="display:none; width:100%; height:100%; object-fit:contain; background:#000;"></video>
+          <video id="demo-mp4-video" controls playsinline preload="auto" poster="./assets/01_dashboard.png" style="display:none; width:100%; height:100%; object-fit:contain; background:#000;">
+            <source src="./liga_os_full_guide.mp4" type="video/mp4">
+            <source src="liga_os_full_guide.mp4" type="video/mp4">
+            <source src="/demo/liga_os_full_guide.mp4" type="video/mp4">
+            <source src="/liga_os_full_guide.mp4" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+          </video>
         </div>
       </div>
       <div class="phone-controls" id="phone-nav-controls">

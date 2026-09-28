@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.4.8-live-video-network-first';
+const CACHE_NAME = 'liga-os-v2.4.9-faststart-video-stream';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -52,6 +52,11 @@ self.addEventListener('activate', (event) => {
 // Cache First для статики (иконки, логотипы, шрифты)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // 1. Медиа-потоки (MP4 видео, аудио) НЕ перехватываем — браузер стримит их напрямую через HTTP 206 Range
+  if (url.pathname.endsWith('.mp4') || url.pathname.endsWith('.webm') || url.pathname.endsWith('.wav') || event.request.headers.get('range')) {
+    return;
+  }
 
   // Проверяем, является ли запрос кодом приложения
   const isCodeAsset = event.request.mode === 'navigate' ||
