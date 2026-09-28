@@ -603,13 +603,43 @@ class LigaApp {
     }
   }
 
-  // Регистрация оффлайн-воркера
+  // Регистрация оффлайн-воркера с немедленной проверкой обновлений (v2.4.8)
   registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('Service Worker LIGA OS зарегистрирован (Offline-Ready)'))
+        .then((reg) => {
+          console.log('Service Worker LIGA OS зарегистрирован (Offline-Ready)');
+          // При каждом старте приложения принудительно проверяем обновления на сервере
+          if (reg && typeof reg.update === 'function') {
+            reg.update().catch(() => {});
+          }
+        })
         .catch(err => console.log('Service Worker ошибка регистрации:', err));
+
+      // Если новый воркер взял управление — перезагружаем страницу при необходимости
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[LIGA OS] Обнаружена новая версия приложения!');
+      });
     }
+  }
+
+  // Принудительное мгновенное обновление приложения (очистка кэша браузера)
+  async forceUpdateApp() {
+    this.showToast('🔄 Проверка и обновление приложения...');
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const r of registrations) {
+          await r.unregister();
+        }
+      }
+    } catch (_) {}
+    // Перезагрузка с временной меткой в обход кэша
+    window.location.href = window.location.pathname + '?nocache=' + Date.now();
   }
 
   // Привязка событий интерфейса
@@ -9207,26 +9237,19 @@ ${shareUrl}
 
   openVideoTour() {
     this.closeModal('modal-more-menu');
-    if (!this.videoTourState) this.initVideoTour();
-    this.videoTourState.isOpen = true;
-    this.videoTourState.currentChapter = 0;
-    this.videoTourState.currentSeconds = 0;
-    this.videoTourState.isPlaying = true;
-
-    this.renderVideoChaptersList();
-    this.renderVideoChapter(0);
+    this.closeModal('modal-system-guide');
     this.openModal('modal-video-tour');
-    this.startVideoTimer();
+    const player = document.getElementById('liga-real-mp4-player');
+    if (player) {
+      player.currentTime = 0;
+      player.play().catch(() => {});
+    }
   }
 
   closeVideoTour() {
-    if (this.videoTourState) {
-      this.videoTourState.isOpen = false;
-      this.videoTourState.isPlaying = false;
-      if (this.videoTourState.timer) {
-        clearInterval(this.videoTourState.timer);
-        this.videoTourState.timer = null;
-      }
+    const player = document.getElementById('liga-real-mp4-player');
+    if (player) {
+      player.pause();
     }
     this.closeModal('modal-video-tour');
   }

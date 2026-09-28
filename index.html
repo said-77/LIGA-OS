@@ -288,6 +288,13 @@
               <div class="more-menu-desc">Параметры ИИ, звуков и интерфейса</div>
             </div>
           </button>
+          <button id="menu-item-force-update" class="more-menu-item" type="button" onclick="window.app.forceUpdateApp()" style="border-color:rgba(212,175,55,0.4); background:rgba(212,175,55,0.08);">
+            <span class="more-menu-icon">🔄</span>
+            <div class="more-menu-info">
+              <div class="more-menu-label" style="color:var(--gold-primary);">Обновить приложение</div>
+              <div class="more-menu-desc">Очистить кэш телефона и загрузить свежий код</div>
+            </div>
+          </button>
         </div>
 
         <!-- Нижняя кнопка закрытия -->
@@ -365,8 +372,8 @@
 
         <!-- Кнопки быстрого запуска интерактивного видеогида и живого тура (v2.4.2) -->
         <div class="onboarding-video-cta" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(212,175,55,0.2); display:flex; gap:8px;">
-          <button type="button" id="btn-onboarding-start-video" class="btn-video-guide-banner" onclick="window.open('./demo/index.html', '_blank')" style="flex:1;">
-            🎬 <b>Видео-презентация</b> (11 шагов)
+          <button type="button" id="btn-onboarding-start-video" class="btn-video-guide-banner" onclick="window.app.openVideoTour()" style="flex:1;">
+            🎬 <b>Смотреть видеогид</b> (1.5 мин)
           </button>
           <button type="button" id="btn-onboarding-start-tour" class="btn-live-tour-banner" onclick="window.app.startSpotlightTour()" style="flex:1;">
             ✨ <b>Живой тур по кнопкам</b>
@@ -4120,6 +4127,14 @@
               font-weight:800; cursor:pointer; font-family:var(--font-main); box-shadow:0 4px 14px rgba(212,175,55,0.25); display:flex; align-items:center; justify-content:center; gap:8px;">
               <span>💾</span> Сохранить персональную печать и подпись
             </button>
+
+            <!-- Кнопка сброса кэша и принудительного обновления -->
+            <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1); text-align:center;">
+              <button type="button" onclick="window.app.forceUpdateApp()" style="width:100%; padding:10px; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); border-radius:10px; color:#cbd5e1; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font-main);">
+                🔄 Мгновенно обновить LIGA OS (сброс кэша телефона)
+              </button>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">Нажмите, если на телефоне отображается устаревшая версия приложения</div>
+            </div>
           </div>
 
         </div>
@@ -4175,108 +4190,34 @@
          МОДАЛЬНОЕ ОКНО: 🎬 ИНТЕРАКТИВНЫЙ ВИДЕОГИД & VIP-ШОУРУМ (v2.4.2)
          ==================================================================== -->
     <div id="modal-video-tour" class="modal-overlay">
-      <div class="modal-sheet modal-video-tour-sheet">
+      <div class="modal-sheet modal-video-tour-sheet" style="max-width: 520px; padding: 16px; border-radius: 20px;">
         <div class="modal-drag-handle"></div>
         
         <!-- Заголовок видеоплеера -->
-        <div class="video-modal-header">
-          <div class="video-header-left">
-            <div class="video-edition-badge">
-              <span class="video-badge-dot"></span>
-              <span>4K INTERACTIVE ENGINE • LIGA MASTER CLASS</span>
-            </div>
-            <div class="video-modal-title" id="video-tour-main-title">🎬 Интерактивная Видеоинструкция LIGA OS</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; letter-spacing:0.8px;">ОФИЦИАЛЬНОЕ ВИДЕО • 100% ОФФЛАЙН</div>
+            <div style="font-size:16px; font-weight:900; color:var(--text-main);">🎬 Видеогид по системе LIGA OS</div>
           </div>
-          <div class="video-header-right">
-            <!-- Переключатель режима: Обучение мастера / VIP Презентация заказчику -->
-            <div class="video-mode-switch">
-              <button type="button" id="tab-video-mode-master" class="video-mode-btn active" onclick="window.app.switchVideoTourMode('master')">
-                👷 Для мастера
-              </button>
-              <button type="button" id="tab-video-mode-client" class="video-mode-btn" onclick="window.app.switchVideoTourMode('client')">
-                👑 Для заказчика (VIP)
-              </button>
-            </div>
-            <button class="btn-close-modal" id="btn-close-video-tour" title="Закрыть видеоинструкцию" onclick="window.app.closeVideoTour()">✕</button>
-          </div>
+          <button class="btn-close-modal" id="btn-close-video-tour" title="Закрыть видео" onclick="window.app.closeVideoTour()" style="width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border-subtle); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text-main); cursor:pointer;">✕</button>
         </div>
 
-        <!-- Кинематографический экран 16:9 (Сцена живой интерактивной симуляции) -->
-        <div class="video-cinema-viewport">
-          <div id="video-cinema-stage" class="video-cinema-stage">
-            <!-- Динамическое интерактивное полотно сцены -->
-            <div class="video-scene-watermark">LIGA OS • SWISS MASTER</div>
-            <div id="video-scene-content" class="video-scene-content">
-              <!-- Сюда JS рендерит кадры соответствующей главы -->
-            </div>
-            <!-- Виртуальный курсор-указка с золотым ореолом -->
-            <div id="video-virtual-cursor" class="video-virtual-cursor">
-              <div class="cursor-pointer"></div>
-              <div class="cursor-pulse"></div>
-            </div>
-          </div>
-
-          <!-- Нижняя плашка дикторских субтитров -->
-          <div class="video-subtitles-bar">
-            <div class="video-subtitles-speaker">
-              <span id="video-subtitles-icon">🛡️</span>
-              <span id="video-subtitles-label">ИНЖЕНЕРНЫЙ ИНСТРУКТОР:</span>
-            </div>
-            <div id="video-subtitles-text" class="video-subtitles-text">
-              Добро пожаловать в LIGA OS. Система создана, чтобы убрать 90% рутины и защитить ваш статус мастера высшей категории.
-            </div>
-          </div>
+        <!-- Настоящий MP4 видеоплеер с аппаратным ускорением и русской озвучкой -->
+        <div style="position:relative; border-radius:14px; overflow:hidden; background:#000; box-shadow:0 10px 30px rgba(0,0,0,0.8); border:1.5px solid var(--glass-border);">
+          <video id="liga-real-mp4-player" controls playsinline preload="auto" style="width:100%; max-height:65vh; display:block; margin:0 auto; background:#000;">
+            <source src="./demo/liga_os_full_guide.mp4" type="video/mp4">
+            Ваш браузер не поддерживает воспроизведение MP4 видео.
+          </video>
         </div>
 
-        <!-- Панель управления плеером (Scrubber, Controls, Live Button) -->
-        <div class="video-player-controls">
-          <!-- Временная шкала (Timeline Scrubber) -->
-          <div class="video-timeline-wrapper">
-            <div class="video-timeline-track" id="video-timeline-track" onclick="window.app.seekVideoTimeline(event)">
-              <div class="video-timeline-progress" id="video-timeline-progress" style="width: 0%;"></div>
-              <div class="video-timeline-chapters-markers" id="video-timeline-markers">
-                <span class="timeline-marker" style="left: 0%;"></span>
-                <span class="timeline-marker" style="left: 20%;"></span>
-                <span class="timeline-marker" style="left: 40%;"></span>
-                <span class="timeline-marker" style="left: 60%;"></span>
-                <span class="timeline-marker" style="left: 80%;"></span>
-              </div>
-            </div>
-            <div class="video-timeline-time">
-              <span id="video-current-time">0:00</span> / <span id="video-total-time">3:45</span>
-            </div>
-          </div>
-
-          <!-- Кнопки управления воспроизведением -->
-          <div class="video-buttons-bar">
-            <div class="video-playback-buttons">
-              <button type="button" class="video-ctrl-btn" id="btn-video-prev" onclick="window.app.prevVideoChapter()" title="Предыдущая глава">⏮</button>
-              <button type="button" class="video-ctrl-btn-play" id="btn-video-play-pause" onclick="window.app.toggleVideoPlayPause()" title="Воспроизведение / Пауза">
-                <span id="video-play-icon">▶</span>
-              </button>
-              <button type="button" class="video-ctrl-btn" id="btn-video-next" onclick="window.app.nextVideoChapter()" title="Следующая глава">⏭</button>
-              <div class="video-chapter-title-display">
-                <span id="video-chapter-num-badge">Глава 1/5</span>
-                <span id="video-chapter-name-text">Световой маяк и безопасность мастера</span>
-              </div>
-            </div>
-
-            <div class="video-action-buttons">
-              <button type="button" class="btn-try-live-interface" id="btn-try-live-tour" onclick="window.app.startSpotlightFromVideo()">
-                <span class="btn-try-sparkle">✨</span>
-                <span>Попробовать на живом экране</span>
-              </button>
-            </div>
-          </div>
+        <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <a href="./demo/liga_os_full_guide.mp4" download="LIGA_OS_Guide.mp4" class="btn-action" style="font-size:11px; padding:7px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <span>⬇️</span> Скачать видео (3.8 МБ)
+          </a>
+          <button type="button" class="btn-action btn-gold" onclick="window.open('./demo/index.html', '_blank')" style="font-size:11px; padding:7px 12px; border-radius:8px; font-weight:800; cursor:pointer;">
+            <span>📱</span> Интерактивная веб-версия →
+          </button>
         </div>
-
-        <!-- Горизонтальная прокрутка глав (Interactive Chapters Accordion) -->
-        <div class="video-chapters-scroll">
-          <div class="video-chapters-container" id="video-chapters-list">
-            <!-- Генерируется из JS при инициализации -->
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -4299,16 +4240,29 @@
         </p>
 
         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
-          <!-- Вариант 1: Полноценная интерактивная веб-презентация (v2.4.7) -->
-          <div class="clickable-drilldown" id="btn-guide-choice-web-demo" onclick="window.app.closeModal('modal-system-guide'); window.open('./demo/index.html', '_blank');" style="background:rgba(212,175,55,0.12); border:1.5px solid var(--gold-primary); border-radius:12px; padding:12px; box-shadow:0 4px 15px rgba(212,175,55,0.2);">
+          <!-- Вариант 1: Полноценное MP4 видео с диктором и показом интерфейса -->
+          <div class="clickable-drilldown" id="btn-guide-choice-mp4-video" onclick="window.app.closeModal('modal-system-guide'); window.app.openVideoTour();" style="background:rgba(212,175,55,0.15); border:1.8px solid var(--gold-primary); border-radius:12px; padding:12px; box-shadow:0 4px 18px rgba(212,175,55,0.25);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
               <div style="font-weight:900; font-size:13.5px; color:var(--gold-primary); display:flex; align-items:center; gap:6px;">
-                <span>🎬</span> 1. Интерактивная веб-презентация (11 шагов)
+                <span>▶️</span> 1. Смотреть полноценный видеогид (MP4, 1.5 мин)
               </div>
-              <span class="badge badge-gold" style="font-size:9px;">Новое • Рекомендуем</span>
+              <span class="badge badge-gold" style="font-size:9px;">Новое • Видео</span>
             </div>
             <div style="font-size:11.5px; color:#f1f5f9; line-height:1.4;">
-              Полноценная демонстрация в смартфоне с реальными скриншотами интерфейса, голосовым диктором, показом опрессовки 16 бар, печати и подписи.
+              Настоящая видеозапись интерфейса со студийной русской озвучкой диктором: дашборд, опрессовка 16 бар, печать и подпись.
+            </div>
+          </div>
+
+          <!-- Вариант 2: Интерактивная веб-презентация со смартфоном -->
+          <div class="clickable-drilldown" id="btn-guide-choice-web-demo" onclick="window.app.closeModal('modal-system-guide'); window.open('./demo/index.html', '_blank');" style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.35); border-radius:12px; padding:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <div style="font-weight:800; font-size:13px; color:var(--neon-cyan); display:flex; align-items:center; gap:6px;">
+                <span>📱</span> 2. Интерактивная веб-презентация (11 шагов)
+              </div>
+              <span style="font-size:10px; color:var(--neon-cyan);">Веб-плеер</span>
+            </div>
+            <div style="font-size:11.5px; color:#cbd5e1; line-height:1.35;">
+              Пошаговый просмотр каждого экрана в интерактивном макете смартфона со слайдером и кнопками.
             </div>
           </div>
 

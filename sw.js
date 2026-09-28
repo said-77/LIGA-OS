@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.4.7-elite-seal-signature-pad-drilldown';
+const CACHE_NAME = 'liga-os-v2.4.8-live-video-network-first';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,7 +31,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Активация и удаление старых кэшей
+// Активация и немедленное удаление старых кэшей
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
@@ -47,27 +47,52 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Обработка запросов (Cache First с fallback на сеть)
+// Интеллектуальная обработка запросов:
+// Network First для HTML/JS/CSS — чтобы обновления с GitHub применялись МГНОВЕННО
+// Cache First для статики (иконки, логотипы, шрифты)
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        // Кэшируем только успешные GET запросы
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+  const url = new URL(event.request.url);
+
+  // Проверяем, является ли запрос кодом приложения
+  const isCodeAsset = event.request.mode === 'navigate' ||
+                      url.pathname.endsWith('.html') ||
+                      url.pathname.endsWith('.js') ||
+                      url.pathname.endsWith('.css') ||
+                      url.pathname === '/' ||
+                      url.pathname.endsWith('/LIGA-OS/');
+
+  if (isCodeAsset) {
+    // Network First с автоматическим сохранением свежей копии в кэш
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
           return networkResponse;
+        })
+        .catch(() => {
+          // Если сеть недоступна (на объекте в подвале) — отдаем из локального кэша
+          return caches.match(event.request).then((cached) => cached || caches.match('./index.html'));
+        })
+    );
+  } else {
+    // Cache First для тяжелой статики и иконок
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+        return fetch(event.request).then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+            return networkResponse;
+          }
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return networkResponse;
         });
-        return networkResponse;
-      }).catch(() => {
-        // Оффлайн фоллбэк на главную
-        return caches.match('./index.html');
-      });
-    })
-  );
+      })
+    );
+  }
 });

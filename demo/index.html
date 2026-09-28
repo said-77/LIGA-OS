@@ -372,13 +372,24 @@
 
     <!-- Левая колонка: интерактивный смартфон -->
     <div class="phone-container">
+      <!-- Переключатель режима: Шаги / Видео -->
+      <div style="display:flex; gap:8px; margin-bottom:12px; width:100%; max-width:360px;">
+        <button id="btn-mode-interactive" class="control-btn" onclick="switchDemoView('interactive')" style="flex:1; justify-content:center; background:var(--gold-primary); color:#0b0f19;">
+          📱 По шагам (11)
+        </button>
+        <button id="btn-mode-video" class="control-btn" onclick="switchDemoView('video')" style="flex:1; justify-content:center;">
+          🎬 MP4 Видео (1.5м)
+        </button>
+      </div>
+
       <div class="phone-mockup">
         <div class="phone-notch"></div>
         <div class="phone-screen" id="phone-screen">
           <img id="active-screenshot" src="./assets/01_dashboard.png" alt="Экран LIGA OS">
+          <video id="demo-mp4-video" controls playsinline src="./liga_os_full_guide.mp4" style="display:none; width:100%; height:100%; object-fit:contain; background:#000;"></video>
         </div>
       </div>
-      <div class="phone-controls">
+      <div class="phone-controls" id="phone-nav-controls">
         <button class="control-btn" onclick="prevStep()">← Назад</button>
         <button class="control-btn" onclick="nextStep()">Вперед →</button>
         <button class="control-btn" onclick="toggleAutoPlay()">
@@ -699,6 +710,37 @@
       utterance.rate = 1.05;
       utterance.pitch = 1.0;
       window.speechSynthesis.speak(utterance);
+    }
+
+    function switchDemoView(mode) {
+      const img = document.getElementById('active-screenshot');
+      const vid = document.getElementById('demo-mp4-video');
+      const btnInt = document.getElementById('btn-mode-interactive');
+      const btnVid = document.getElementById('btn-mode-video');
+      const navControls = document.getElementById('phone-nav-controls');
+
+      if (mode === 'video') {
+        img.style.display = 'none';
+        vid.style.display = 'block';
+        vid.currentTime = 0;
+        vid.play().catch(() => {});
+        btnInt.style.background = 'rgba(255,255,255,0.08)';
+        btnInt.style.color = '#fff';
+        btnVid.style.background = 'var(--gold-primary)';
+        btnVid.style.color = '#0b0f19';
+        if (navControls) navControls.style.opacity = '0.4';
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } else {
+        vid.pause();
+        vid.style.display = 'none';
+        img.style.display = 'block';
+        btnVid.style.background = 'rgba(255,255,255,0.08)';
+        btnVid.style.color = '#fff';
+        btnInt.style.background = 'var(--gold-primary)';
+        btnInt.style.color = '#0b0f19';
+        if (navControls) navControls.style.opacity = '1';
+        goToStep(currentStepIdx);
+      }
     }
   </script>
 </body>
