@@ -3,7 +3,7 @@
    Ядро LIGA OS работает офлайн; голос, внешние ссылки и мессенджеры требуют сеть
    ========================================================================== */
 
-const CACHE_NAME = 'liga-os-v2.4.9-faststart-video-stream';
+const CACHE_NAME = 'liga-os-v2.5.0-banner-logo-fix';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const ASSETS_TO_CACHE = [
   './icons/logo.svg',
   './favicon.ico',
   './icons/og-preview.png',
+  './icons/og-preview.jpg',
   './icons/folder_icon.ico'
 ];
 

@@ -4388,23 +4388,29 @@ body.client-mode .btn-floating-voice {
   justify-content: space-between;
   width: 100%;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .brand-badge {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
+  min-width: max-content !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0 !important;
 }
 
 .brand-text-block {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .brand-title {
@@ -4429,7 +4435,8 @@ body.client-mode .btn-floating-voice {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .header-main-actions .liga-ai-indicator {
@@ -4637,20 +4644,85 @@ body.client-mode .btn-floating-voice {
 
 @media (max-width: 640px) {
   .btn-video-tour-header {
-    padding: 2px 8px;
-    height: 30px;
-    font-size: 10px;
-    border-radius: 15px;
-    gap: 4px;
+    padding: 0 8px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 13px;
+    border-radius: 16px;
+    gap: 0;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
   .btn-video-tour-header .btn-video-label {
-    display: inline-block !important;
-    font-size: 10px;
-    font-weight: 800;
+    display: none !important;
   }
   .btn-video-tour-header .btn-video-pulse-dot {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .top-header-primary {
+    gap: 4px;
+  }
+  .brand-badge {
+    gap: 6px;
+    flex-shrink: 0 !important;
+  }
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+  }
+  .brand-title {
+    font-size: 15px;
+    letter-spacing: 0.3px;
+  }
+  .brand-subtitle {
+    font-size: 8.5px;
+  }
+  .header-main-actions {
+    gap: 3px;
+  }
+  .btn-video-tour-header {
+    padding: 0 6px;
+    height: 32px;
+    min-width: 32px;
+  }
+  .btn-video-tour-header .btn-video-label {
+    display: none !important;
+  }
+  .header-main-actions .liga-ai-indicator {
+    height: 32px;
+    padding: 0 6px;
+    font-size: 10.5px;
+  }
+  .header-main-actions .btn-icon-top {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    font-size: 14px;
+  }
+  .btn-more-menu-toggle {
+    height: 32px;
+    padding: 0 7px;
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .btn-more-menu-toggle .btn-more-label {
+    display: none !important;
+  }
+  .btn-more-menu-toggle {
+    min-width: 32px;
+    padding: 0 6px;
+    font-size: 14px;
+    justify-content: center;
+  }
+  .brand-subtitle {
     display: none;
   }
 }
