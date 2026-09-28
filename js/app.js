@@ -329,7 +329,37 @@ class LigaApp {
     this.applyClientMode(this.isClientMode, false);
     const btnToggle = document.getElementById('btn-client-mode-toggle');
     if (btnToggle) {
+      // Клик — быстрое переключение режима
       btnToggle.addEventListener('click', () => this.toggleClientMode());
+
+      // Долгое нажатие (3 секунды пальцем на смартфоне или удержание курсора) — показ подсказки приватности
+      let longPressTimer = null;
+      let longPressTriggered = false;
+
+      const startLongPress = (e) => {
+        longPressTriggered = false;
+        longPressTimer = setTimeout(() => {
+          longPressTriggered = true;
+          this.showEyeLongPressTooltip();
+          if (navigator.vibrate) {
+            try { navigator.vibrate([50, 30, 50]); } catch (_) {}
+          }
+        }, 3000);
+      };
+
+      const cancelLongPress = () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      };
+
+      btnToggle.addEventListener('touchstart', startLongPress, { passive: true });
+      btnToggle.addEventListener('touchend', cancelLongPress);
+      btnToggle.addEventListener('touchcancel', cancelLongPress);
+      btnToggle.addEventListener('mousedown', startLongPress);
+      btnToggle.addEventListener('mouseup', cancelLongPress);
+      btnToggle.addEventListener('mouseleave', cancelLongPress);
     }
     const btnExit = document.getElementById('btn-exit-client-mode');
     if (btnExit) {
@@ -1174,7 +1204,19 @@ class LigaApp {
   }
 
   // Переключение экранов приложения с навигационным компасом и тактильной отдачей (v2.3.1)
+  // Централизованная остановка голоса диктора при любом переходе (v2.4.7)
+  stopAllVoices() {
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (e) {
+      // Игнорируем в браузерах без поддержки Web Speech API
+    }
+  }
+
   switchScreen(screenName) {
+    this.stopAllVoices();
     this.currentScreen = screenName;
 
     // 1. Переключение видимости экранов с анимацией появления
@@ -8081,6 +8123,7 @@ ${shareUrl}
   }
 
   closeModal(modalId) {
+    this.stopAllVoices();
     if (modalId === 'modal-voice' && this.voiceNavTimeout) {
       clearTimeout(this.voiceNavTimeout);
       this.voiceNavTimeout = null;
@@ -8852,7 +8895,7 @@ ${shareUrl}
       mode: 'master', // 'master' | 'client'
       currentChapter: 0,
       timer: null,
-      chapterDuration: 25,
+      chapterDuration: 16,
       currentSeconds: 0
     };
 
@@ -9410,31 +9453,59 @@ ${shareUrl}
   // ==========================================================================
   drillDownToFinance(targetType = 'debt') {
     this.switchScreen('finances');
-    let targetId = 'page-fin-debt';
-    let message = 'Открыта финансовая ведомость объекта';
-    if (targetType === 'contract') {
-      targetId = 'page-fin-contract';
-      message = 'Сметная стоимость работ по договору';
-    } else if (targetType === 'advance') {
-      targetId = 'page-fin-advance';
-      message = 'Внесенные авансы и поступления';
-    } else if (targetType === 'brigade') {
-      targetId = 'page-fin-brigade';
-      message = 'Начисления помощникам бригады';
-    } else if (targetType === 'designer') {
-      targetId = 'page-fin-contract';
-      message = 'Бонусное вознаграждение дизайнеру (10%)';
-    }
+
+    // Маппинг типов на ID строк и сообщения
+    const targetMap = {
+      contract: { rowId: 'row-fin-contract', valId: 'page-fin-contract', message: 'Сметная стоимость работ по договору', label: 'ДОГОВОР' },
+      advance:  { rowId: 'row-fin-advance', valId: 'page-fin-advance', message: 'Внесенные авансы и поступления', label: 'АВАНС' },
+      debt:     { rowId: 'row-fin-debt', valId: 'page-fin-debt', message: 'Остаток долга заказчика к расчёту', label: 'ДОЛГ' },
+      brigade:  { rowId: 'row-fin-brigade', valId: 'page-fin-brigade', message: 'Начисления помощникам бригады', label: 'БРИГАДА' },
+      designer: { rowId: 'row-fin-contract', valId: 'page-fin-contract', message: 'Бонусное вознаграждение дизайнеру (10%)', label: 'ДИЗАЙНЕР' },
+      bazaar:   { rowId: 'row-fin-bazaar-pocket', valId: 'page-fin-bazaar-pocket', message: 'Свободный остаток на закупку материалов', label: 'ЗАКУПКА' }
+    };
+
+    const target = targetMap[targetType] || targetMap.debt;
 
     setTimeout(() => {
-      const el = document.getElementById(targetId);
-      if (el) {
-        const container = el.closest('.item-row') || el;
-        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        this.pulseElement(container.id || targetId);
+      // Убираем предыдущий drill-down фокус и бейджи
+      document.querySelectorAll('.drilldown-active-target').forEach(el => el.classList.remove('drilldown-active-target'));
+      document.querySelectorAll('.drilldown-pointer-flag').forEach(el => el.remove());
+
+      const row = document.getElementById(target.rowId);
+      const valEl = document.getElementById(target.valId);
+
+      if (row) {
+        // Добавляем класс яркого фокуса с анимацией пульсации
+        row.classList.add('drilldown-active-target');
+
+        // Считываем актуальную сумму для бейджа
+        const sumText = valEl ? valEl.innerText.trim() : '';
+
+        // Создаём плавающий бейдж-указатель «👈 ВЫ ЗДЕСЬ: 12 000 000 сум»
+        const flag = document.createElement('div');
+        flag.className = 'drilldown-pointer-flag';
+        flag.innerText = `👈 ВЫ ЗДЕСЬ: ${sumText}`;
+        row.style.position = 'relative';
+        row.appendChild(flag);
+
+        // Плавная прокрутка к целевой строке в центр экрана
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Виброотклик смартфона
+        if (navigator.vibrate) {
+          try { navigator.vibrate([30, 50, 30]); } catch (_) {}
+        }
+
+        // Автоматическое снятие фокуса через 6 секунд
+        setTimeout(() => {
+          row.classList.remove('drilldown-active-target');
+          const oldFlag = row.querySelector('.drilldown-pointer-flag');
+          if (oldFlag) oldFlag.remove();
+        }, 6000);
       }
-    }, 150);
-    this.showToast(message);
+    }, 200);
+
+    this.showToast(`📍 ${target.message}`);
   }
 
   drillDownToMaterials() {
@@ -9714,29 +9785,45 @@ ${shareUrl}
       const box = document.getElementById('spotlight-highlight-box');
       const card = document.getElementById('spotlight-tooltip-card');
 
+      // Определяем, находится ли целевой элемент внутри открытой модалки
+      const isInsideModal = !!targetEl.closest('.modal-overlay.open');
+
       if (box) {
         const pad = 8;
         box.style.top = `${Math.max(0, rect.top - pad)}px`;
         box.style.left = `${Math.max(0, rect.left - pad)}px`;
         box.style.width = `${rect.width + pad * 2}px`;
         box.style.height = `${rect.height + pad * 2}px`;
+
+        // При открытой модалке — z-index выше модалки
+        if (isInsideModal) {
+          box.classList.add('spotlight-over-modal');
+        } else {
+          box.classList.remove('spotlight-over-modal');
+        }
       }
 
       if (card) {
-        const cardWidth = Math.min(340, window.innerWidth - 24);
-        const cardHeight = 200;
-        let cardTop = 0;
-        let cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, rect.left + rect.width / 2 - cardWidth / 2));
-
-        if (rect.top > window.innerHeight / 2) {
-          cardTop = Math.max(12, rect.top - cardHeight - 16);
+        // При открытой модалке — карточка фиксируется снизу как Bottom Sheet
+        if (isInsideModal) {
+          card.classList.add('spotlight-over-modal');
         } else {
-          cardTop = Math.min(window.innerHeight - cardHeight - 12, rect.bottom + 16);
-        }
+          card.classList.remove('spotlight-over-modal');
+          const cardWidth = Math.min(340, window.innerWidth - 24);
+          const cardHeight = 200;
+          let cardTop = 0;
+          let cardLeft = Math.max(12, Math.min(window.innerWidth - cardWidth - 12, rect.left + rect.width / 2 - cardWidth / 2));
 
-        card.style.width = `${cardWidth}px`;
-        card.style.top = `${cardTop}px`;
-        card.style.left = `${cardLeft}px`;
+          if (rect.top > window.innerHeight / 2) {
+            cardTop = Math.max(12, rect.top - cardHeight - 16);
+          } else {
+            cardTop = Math.min(window.innerHeight - cardHeight - 12, rect.bottom + 16);
+          }
+
+          card.style.width = `${cardWidth}px`;
+          card.style.top = `${cardTop}px`;
+          card.style.left = `${cardLeft}px`;
+        }
 
         const prevBtn = document.getElementById('btn-spotlight-prev');
         const nextBtn = document.getElementById('btn-spotlight-next');
@@ -9796,6 +9883,8 @@ ${shareUrl}
 
     // Загрузка первичных значений в форму и превью
     this.loadMasterSealSettings();
+    // Инициализация Canvas для рукописной подписи пальцем/стилусом (v2.4.7)
+    this.initSignaturePad();
   }
 
   loadMasterSealSettings() {
@@ -9865,8 +9954,11 @@ ${shareUrl}
       licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : 'LMO-UZ-2011/2026',
       title: (inputTitle && inputTitle.value.trim()) ? inputTitle.value.trim() : 'Ведущий инженер сантехники и систем отопления',
       signatureText: (inputSign && inputSign.value.trim()) ? inputSign.value.trim() : 'Хакимов У.А.',
-      stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : 'blue_seal'
+      stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : 'swiss_imperial_gold'
     };
+
+    // Сохраняем рукописную подпись с Canvas, если она есть
+    this.saveSignaturePadToEngine();
 
     const ok = window.ligaSealEngine.saveSettings(newSettings);
     if (ok) {
@@ -9875,6 +9967,311 @@ ${shareUrl}
       this.showToast('✓ Персональная печать и подпись мастера сохранены!');
     } else {
       this.showToast('⚠️ Ошибка сохранения настроек печати');
+    }
+  }
+
+  // ==========================================================================
+  // ПОДСКАЗКА ПРИВАТНОСТИ ПРИ ДОЛГОМ НАЖАТИИ НА КНОПКУ «ГЛАЗ 👁️» (v2.4.7)
+  // ==========================================================================
+  showEyeLongPressTooltip() {
+    // Удаляем предыдущую подсказку, если есть
+    const old = document.querySelector('.eye-long-press-tooltip');
+    if (old) old.remove();
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'eye-long-press-tooltip';
+    tooltip.innerHTML = `
+      <button class="tooltip-close" onclick="this.closest('.eye-long-press-tooltip').remove()">&times;</button>
+      <div class="tooltip-title">🛡️ Режим безопасного показа клиенту</div>
+      <div class="tooltip-body">
+        <b>Кнопка 👁️</b> моментально скрывает от глаз заказчика:<br>
+        • Оптовые закупочные цены на материалы<br>
+        • Зарплату бригады и бонус дизайнера<br>
+        • Маржу и чистую прибыль мастера<br>
+        • Базарный карман (деньги на руках)<br><br>
+        <b>Клик</b> — быстрое переключение Мастер ↔ Клиент.<br>
+        <b>Долгое удержание (3 сек)</b> — эта подсказка.
+      </div>
+    `;
+    document.body.appendChild(tooltip);
+
+    // Автоскрытие через 8 секунд
+    setTimeout(() => {
+      if (tooltip.parentElement) tooltip.remove();
+    }, 8000);
+  }
+
+  // ==========================================================================
+  // CANVAS SIGNATURE PAD — РИСОВАНИЕ ПОДПИСИ ПАЛЬЦЕМ / СТИЛУСОМ (v2.4.7)
+  // Алгоритм сглаживания: квадратичные кривые Безье (quadraticCurveTo)
+  // с динамической толщиной линии по скорости движения пальца
+  // ==========================================================================
+  initSignaturePad() {
+    const canvas = document.getElementById('signature-pad-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let points = [];
+    let lastTime = 0;
+    const wrapper = canvas.closest('.signature-canvas-wrapper');
+
+    // Масштаб Canvas для HiDPI экранов
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    // Загружаем сохранённую подпись, если есть
+    if (window.ligaSealEngine && window.ligaSealEngine.settings.handwrittenSignature) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = window.ligaSealEngine.settings.handwrittenSignature;
+      const statusEl = document.getElementById('signature-pad-status');
+      if (statusEl) statusEl.innerText = '✓ Сохранена';
+      if (statusEl) statusEl.style.color = '#10b981';
+    }
+
+    // Настройки кисти
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1a1a2e';
+
+    const getPos = (e) => {
+      const touch = e.touches ? e.touches[0] : e;
+      const cRect = canvas.getBoundingClientRect();
+      return {
+        x: touch.clientX - cRect.left,
+        y: touch.clientY - cRect.top,
+        time: Date.now()
+      };
+    };
+
+    const startDraw = (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      points = [];
+      const pos = getPos(e);
+      points.push(pos);
+      lastTime = pos.time;
+      if (wrapper) wrapper.classList.add('drawing');
+    };
+
+    const moveDraw = (e) => {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      points.push(pos);
+
+      // Динамическая толщина по скорости (быстро = тонко, медленно = толсто)
+      const dt = Math.max(1, pos.time - lastTime);
+      const prev = points[points.length - 2];
+      const dist = Math.sqrt((pos.x - prev.x) ** 2 + (pos.y - prev.y) ** 2);
+      const speed = dist / dt;
+      const lineWidth = Math.max(1.2, Math.min(3.8, 3.8 - speed * 1.5));
+      lastTime = pos.time;
+
+      ctx.lineWidth = lineWidth;
+
+      if (points.length >= 3) {
+        // Алгоритм сглаживания Безье: рисуем кривые через средние точки
+        const len = points.length;
+        const p0 = points[len - 3];
+        const p1 = points[len - 2];
+        const p2 = points[len - 1];
+
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+
+        ctx.beginPath();
+        ctx.moveTo((p0.x + p1.x) / 2, (p0.y + p1.y) / 2);
+        ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+        ctx.stroke();
+      } else if (points.length === 2) {
+        const p0 = points[0];
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+    };
+
+    const endDraw = () => {
+      isDrawing = false;
+      points = [];
+      if (wrapper) wrapper.classList.remove('drawing');
+
+      // Обновляем статус
+      const statusEl = document.getElementById('signature-pad-status');
+      if (statusEl) {
+        statusEl.innerText = '✍️ Нарисована (не сохранена)';
+        statusEl.style.color = '#f59e0b';
+      }
+    };
+
+    // Touch events (мобильные)
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener('touchcancel', endDraw);
+
+    // Mouse events (десктоп)
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+
+    this._signaturePadCanvas = canvas;
+    this._signaturePadCtx = ctx;
+  }
+
+  clearSignaturePad() {
+    const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Очищаем и в движке
+    if (window.ligaSealEngine) {
+      window.ligaSealEngine.clearHandwrittenSignature();
+    }
+
+    const statusEl = document.getElementById('signature-pad-status');
+    if (statusEl) {
+      statusEl.innerText = 'Не задана';
+      statusEl.style.color = '';
+    }
+
+    this.updateSealLivePreview();
+    this.showToast('🗑️ Подпись очищена');
+  }
+
+  applySignaturePreset(presetName = 'classic') {
+    const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1a1a2e';
+
+    // Имя мастера для генерации
+    const masterName = (window.ligaSealEngine && window.ligaSealEngine.settings.masterName) || 'Хакимов Улугбек';
+
+    if (presetName === 'classic') {
+      // Классический каллиграфический росчерк
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.1, h * 0.65);
+      ctx.bezierCurveTo(w * 0.06, h * 0.35, w * 0.18, h * 0.15, w * 0.24, h * 0.25);
+      ctx.bezierCurveTo(w * 0.30, h * 0.35, w * 0.20, h * 0.72, w * 0.16, h * 0.78);
+      ctx.bezierCurveTo(w * 0.13, h * 0.82, w * 0.25, h * 0.75, w * 0.35, h * 0.60);
+      ctx.stroke();
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.33, h * 0.60);
+      ctx.quadraticCurveTo(w * 0.40, h * 0.38, w * 0.45, h * 0.55);
+      ctx.quadraticCurveTo(w * 0.50, h * 0.40, w * 0.55, h * 0.52);
+      ctx.quadraticCurveTo(w * 0.60, h * 0.42, w * 0.65, h * 0.50);
+      ctx.quadraticCurveTo(w * 0.70, h * 0.38, w * 0.78, h * 0.52);
+      ctx.stroke();
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.65, h * 0.50);
+      ctx.quadraticCurveTo(w * 0.82, h * 0.78, w * 0.95, h * 0.30);
+      ctx.quadraticCurveTo(w * 0.85, h * 0.82, w * 0.50, h * 0.82);
+      ctx.stroke();
+    } else if (presetName === 'elegant') {
+      // Элегантный дипломатический
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.08, h * 0.55);
+      ctx.bezierCurveTo(w * 0.15, h * 0.18, w * 0.30, h * 0.12, w * 0.28, h * 0.40);
+      ctx.bezierCurveTo(w * 0.26, h * 0.68, w * 0.18, h * 0.85, w * 0.35, h * 0.65);
+      ctx.stroke();
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.33, h * 0.65);
+      ctx.bezierCurveTo(w * 0.45, h * 0.30, w * 0.55, h * 0.50, w * 0.60, h * 0.42);
+      ctx.bezierCurveTo(w * 0.65, h * 0.34, w * 0.72, h * 0.55, w * 0.80, h * 0.45);
+      ctx.stroke();
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.72, h * 0.48);
+      ctx.bezierCurveTo(w * 0.85, h * 0.72, w * 0.95, h * 0.25, w * 0.90, h * 0.55);
+      ctx.bezierCurveTo(w * 0.85, h * 0.85, w * 0.40, h * 0.88, w * 0.25, h * 0.85);
+      ctx.stroke();
+      // Финальная точка
+      ctx.beginPath();
+      ctx.arc(w * 0.92, h * 0.28, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fill();
+    } else if (presetName === 'bold') {
+      // Жирный уверенный росчерк
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.10, h * 0.50);
+      ctx.bezierCurveTo(w * 0.12, h * 0.20, w * 0.25, h * 0.15, w * 0.30, h * 0.35);
+      ctx.bezierCurveTo(w * 0.35, h * 0.55, w * 0.22, h * 0.80, w * 0.40, h * 0.60);
+      ctx.stroke();
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.38, h * 0.60);
+      ctx.quadraticCurveTo(w * 0.50, h * 0.30, w * 0.58, h * 0.48);
+      ctx.quadraticCurveTo(w * 0.66, h * 0.28, w * 0.75, h * 0.45);
+      ctx.stroke();
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.70, h * 0.45);
+      ctx.bezierCurveTo(w * 0.88, h * 0.70, w * 0.95, h * 0.20, w * 0.85, h * 0.65);
+      ctx.stroke();
+      // Финальная точка
+      ctx.beginPath();
+      ctx.arc(w * 0.88, h * 0.22, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fill();
+    }
+
+    const statusEl = document.getElementById('signature-pad-status');
+    if (statusEl) {
+      statusEl.innerText = '✍️ Шаблон (не сохранён)';
+      statusEl.style.color = '#f59e0b';
+    }
+    this.showToast(`✍️ Шаблон подписи «${presetName === 'classic' ? 'Классика' : presetName === 'elegant' ? 'Элегант' : 'Жирный'}» применён`);
+  }
+
+  saveSignaturePadToEngine() {
+    const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
+    if (!canvas || !window.ligaSealEngine) return;
+
+    // Проверяем, есть ли что-то нарисованное на холсте
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let hasContent = false;
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] > 0) { hasContent = true; break; }
+    }
+
+    if (hasContent) {
+      // Экспорт как PNG DataURL
+      const dataUrl = canvas.toDataURL('image/png');
+      window.ligaSealEngine.saveHandwrittenSignature(dataUrl);
+
+      const statusEl = document.getElementById('signature-pad-status');
+      if (statusEl) {
+        statusEl.innerText = '✓ Сохранена';
+        statusEl.style.color = '#10b981';
+      }
     }
   }
 }

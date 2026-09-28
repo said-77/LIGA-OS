@@ -5769,4 +5769,144 @@ body.client-mode .btn-floating-voice {
 }
 
 
+/* ==========================================================================
+   LIGA OS v2.4.7: DRILL-DOWN ФОКУС С БЕЙДЖЕМ «ВЫ ЗДЕСЬ» И CANVAS SIGNATURE PAD
+   ========================================================================== */
 
+/* Яркий фокус целевой строки при drill-down навигации с дашборда */
+.drilldown-active-target {
+  position: relative;
+  background: rgba(212, 175, 55, 0.12) !important;
+  border-color: var(--gold-primary) !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.35), inset 0 0 12px rgba(212, 175, 55, 0.08) !important;
+  animation: drilldown-glow-pulse 2s ease-in-out infinite;
+  z-index: 5;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes drilldown-glow-pulse {
+  0% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.35), inset 0 0 12px rgba(212, 175, 55, 0.08); }
+  50% { box-shadow: 0 0 35px rgba(212, 175, 55, 0.55), inset 0 0 20px rgba(212, 175, 55, 0.15); }
+  100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.35), inset 0 0 12px rgba(212, 175, 55, 0.08); }
+}
+
+/* Плавающий бейдж-указатель «👈 ВЫ ЗДЕСЬ: 12 000 000 сум» */
+.drilldown-pointer-flag {
+  position: absolute;
+  top: -10px;
+  right: 8px;
+  background: linear-gradient(135deg, var(--gold-primary) 0%, #b8860b 100%);
+  color: #050811;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.5);
+  white-space: nowrap;
+  z-index: 10;
+  animation: drilldown-flag-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+}
+
+@keyframes drilldown-flag-bounce {
+  0% { transform: translateY(-15px) scale(0.7); opacity: 0; }
+  60% { transform: translateY(3px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Холст рукописной подписи мастера */
+.signature-canvas-wrapper {
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  transition: border-color 0.2s ease;
+}
+
+.signature-canvas-wrapper:hover,
+.signature-canvas-wrapper.drawing {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+}
+
+.btn-sig-action {
+  transition: all 0.2s ease;
+}
+
+.btn-sig-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.btn-sig-action:active {
+  transform: translateY(0);
+}
+
+/* Подсказка при долгом нажатии на кнопку Глаз (приватность) */
+.eye-long-press-tooltip {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 0%, #172238 0%, #0a0f1d 70%, #04070e 100%);
+  border: 1.5px solid var(--gold-primary);
+  border-radius: 14px;
+  padding: 14px 18px;
+  max-width: 320px;
+  width: calc(100vw - 32px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 25px rgba(212,175,55,0.3);
+  z-index: 500;
+  animation: tooltip-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+}
+
+@keyframes tooltip-fade-in {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.eye-long-press-tooltip .tooltip-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.eye-long-press-tooltip .tooltip-body {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.eye-long-press-tooltip .tooltip-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Спотлайт тур: при открытой модалке — карточка подсказки снизу, z-index ВЫШЕ модалки */
+.spotlight-tooltip-card.spotlight-over-modal {
+  z-index: 100005 !important;
+  position: fixed !important;
+  top: auto !important;
+  bottom: 16px !important;
+  left: 12px !important;
+  right: 12px !important;
+  width: auto !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+.spotlight-highlight-box.spotlight-over-modal {
+  z-index: 100004 !important;
+}

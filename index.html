@@ -38,7 +38,7 @@
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.3.4 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.3.4">
+  <link rel="stylesheet" href="./css/style.css?v=2.4.7">
 </head>
 <body>
   <div class="app-container">
@@ -800,7 +800,7 @@
           </button>
         </div>
         
-        <div class="item-row">
+        <div class="item-row" id="row-fin-contract">
           <div class="item-left">
             <div class="item-name">Общая стоимость работ</div>
             <div class="item-desc">По договору с заказчиком</div>
@@ -808,7 +808,7 @@
           <div id="page-fin-contract" class="item-right">0 сум</div>
         </div>
 
-        <div class="item-row">
+        <div class="item-row" id="row-fin-advance">
           <div class="item-left">
             <div class="item-name" style="color:var(--neon-emerald);">Внесено авансов</div>
             <div class="item-desc">Наличные / Перевод на карту</div>
@@ -816,7 +816,7 @@
           <div id="page-fin-advance" class="item-right" style="color:var(--neon-emerald);">0 сум</div>
         </div>
 
-        <div class="item-row" style="border-color: rgba(220, 38, 38, 0.4);">
+        <div class="item-row" id="row-fin-debt" style="border-color: rgba(220, 38, 38, 0.4);">
           <div class="item-left">
             <div class="item-name" style="color:var(--neon-ruby);">Остаток долга заказчика</div>
             <div class="item-desc">К окончательному расчету при сдаче</div>
@@ -824,7 +824,7 @@
           <div id="page-fin-debt" class="item-right" style="color:var(--gold-primary);">0 сум</div>
         </div>
 
-        <div class="item-row master-only" style="border-color: rgba(14, 165, 233, 0.35); background: rgba(14, 165, 233, 0.05);">
+        <div class="item-row master-only" id="row-fin-bazaar-pocket" style="border-color: rgba(14, 165, 233, 0.35); background: rgba(14, 165, 233, 0.05);">
           <div class="item-left">
             <div class="item-name" style="color:var(--neon-cyan);">🛒 Деньги на закупку на руках</div>
             <div class="item-desc">Свободный остаток подотчетных средств (Урикзор)</div>
@@ -832,7 +832,7 @@
           <div id="page-fin-bazaar-pocket" class="item-right" style="color:var(--neon-cyan); font-weight:800;">0 сум</div>
         </div>
 
-        <div class="item-row master-only">
+        <div class="item-row master-only" id="row-fin-brigade">
           <div class="item-left">
             <div class="item-name">Начислено помощникам бригады</div>
             <div class="item-desc">Алишер, Сардор (по опрессовке)</div>
@@ -4064,9 +4064,10 @@
                 <div>
                   <label class="settings-input-label" for="select-master-stamp-style" style="font-size:11px; font-weight:700; color:var(--text-main); display:block; margin-bottom:4px;">Стиль официального оттиска:</label>
                   <select class="settings-input-field" id="select-master-stamp-style" style="width:100%; padding:9px 12px; background:var(--input-bg, rgba(0,0,0,0.25)); border:1px solid var(--glass-border); border-radius:8px; color:var(--text-main); font-size:12px; cursor:pointer;">
-                    <option value="blue_seal">🔷 Синяя мастика (Классика)</option>
-                    <option value="gold_seal">👑 Золотое VIP-тиснение</option>
-                    <option value="titanium_seal">🛡️ Дипломатический титан</option>
+                    <option value="swiss_imperial_gold">👑 Swiss Imperial Gold 24K (Корона и щит)</option>
+                    <option value="diplomatic_vermilion">🔴 Swiss Diplomatic Vermilion (Нотариальный сургуч)</option>
+                    <option value="black_titanium_platinum">⚫ Black Titanium & Platinum Luxe</option>
+                    <option value="royal_geneva_azure">🔵 Royal Geneva Azure (Женевская лазурь)</option>
                   </select>
                 </div>
               </div>
@@ -4084,6 +4085,32 @@
               </div>
               <div id="seal-live-preview-box" class="seal-live-preview-box" style="display:flex; justify-content:center; align-items:center; min-height:170px; background:radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, transparent 70%); border-radius:8px; overflow:hidden;">
                 <!-- Динамически заполняется window.ligaSealEngine -->
+              </div>
+            </div>
+
+            <!-- Рукописная подпись пальцем / стилусом (LIGA OS v2.4.7) -->
+            <div class="signature-canvas-section" style="margin-top:14px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:12px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; letter-spacing:0.5px;">✍️ Личная подпись мастера (пальцем или стилусом):</span>
+                <span id="signature-pad-status" style="font-size:9px; font-weight:700; color:var(--text-dim);">Не задана</span>
+              </div>
+              <div class="signature-canvas-wrapper" style="position:relative; background:#ffffff; border-radius:8px; overflow:hidden; touch-action:none;">
+                <canvas id="signature-pad-canvas" width="600" height="180" style="width:100%; height:140px; display:block; cursor:crosshair;"></canvas>
+                <div class="signature-baseline" style="position:absolute; bottom:35px; left:12px; right:12px; border-bottom:1px dashed rgba(0,0,0,0.15); pointer-events:none;"></div>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                <button type="button" id="btn-sig-clear" class="btn-sig-action" style="flex:1; min-width:80px; padding:7px 10px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#ef4444; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-main);" onclick="window.app.clearSignaturePad()">
+                  🗑️ Очистить
+                </button>
+                <button type="button" id="btn-sig-preset-classic" class="btn-sig-action" style="flex:1; min-width:80px; padding:7px 10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); border-radius:8px; color:var(--gold-primary); font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-main);" onclick="window.app.applySignaturePreset('classic')">
+                  ✒️ Классика
+                </button>
+                <button type="button" id="btn-sig-preset-elegant" class="btn-sig-action" style="flex:1; min-width:80px; padding:7px 10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); border-radius:8px; color:var(--gold-primary); font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-main);" onclick="window.app.applySignaturePreset('elegant')">
+                  🖋️ Элегант
+                </button>
+                <button type="button" id="btn-sig-preset-bold" class="btn-sig-action" style="flex:1; min-width:80px; padding:7px 10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); border-radius:8px; color:var(--gold-primary); font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-main);" onclick="window.app.applySignaturePreset('bold')">
+                  🏆 Жирный
+                </button>
               </div>
             </div>
 
@@ -4360,11 +4387,11 @@
     </div>
 
   <!-- Скрипты LIGA OS (Версия 2.4.6: Живой тур с диктором, реальное открытие окон, швейцарские 3D-тумблеры и гербовая печать) -->
-  <script src="./js/image_processor.js?v=2.4.6"></script>
-  <script src="./js/db.js?v=2.4.6"></script>
-  <script src="./js/seal_engine.js?v=2.4.6"></script>
-  <script src="./js/pdf_engine.js?v=2.4.6"></script>
-  <script src="./js/ai_concierge.js?v=2.4.6"></script>
-  <script src="./js/app.js?v=2.4.6"></script>
+  <script src="./js/image_processor.js?v=2.4.7"></script>
+  <script src="./js/db.js?v=2.4.7"></script>
+  <script src="./js/seal_engine.js?v=2.4.7"></script>
+  <script src="./js/pdf_engine.js?v=2.4.7"></script>
+  <script src="./js/ai_concierge.js?v=2.4.7"></script>
+  <script src="./js/app.js?v=2.4.7"></script>
 </body>
 </html>
