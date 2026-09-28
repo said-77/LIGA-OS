@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIGA OS — Официальная Интерактивная Презентация и Демо-Гид</title>
+  <link rel="icon" href="../icons/favicon.ico">
+  <style>
+    :root {
+      --bg-dark: #080c16;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --glass-border: rgba(212, 175, 55, 0.25);
+      --gold-primary: #d4af37;
+      --gold-light: #fef08a;
+      --gold-gradient: linear-gradient(135deg, #d4af37 0%, #f59e0b 50%, #b45309 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --neon-emerald: #10b981;
+      --neon-cyan: #06b6d4;
+      --radius-main: 16px;
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(ellipse at 50% 0%, #151f38 0%, #080c16 70%, #03050a 100%);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Верхняя панель презентации */
+    .demo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: rgba(8, 12, 22, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--gold-gradient);
+      padding: 6px;
+      box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, var(--gold-primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tag {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--gold-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-gold {
+      background: var(--gold-gradient);
+      color: #0b0f19;
+      border: none;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    }
+
+    .btn-gold:hover {
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    }
+
+    /* Основная рабочая область */
+    .demo-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 32px;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 992px) {
+      .demo-main {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+    }
+
+    /* Смартфон-фрейм */
+    .phone-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: sticky;
+      top: 90px;
+    }
+
+    .phone-mockup {
+      width: 360px;
+      height: 740px;
+      background: #000000;
+      border-radius: 46px;
+      border: 4px solid #2a3447;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.2);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 20px;
+      background: #000;
+      border-radius: 12px;
+      z-index: 10;
+    }
+
+    .phone-screen {
+      flex: 1;
+      overflow-y: auto;
+      background: #0b0f19;
+      position: relative;
+    }
+
+    .phone-screen img {
+      width: 100%;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    .phone-controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .control-btn:hover {
+      background: var(--gold-primary);
+      color: #0b0f19;
+    }
+
+    /* Панель шагов и описаний */
+    .walkthrough-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-main);
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      backdrop-filter: blur(12px);
+    }
+
+    .step-card:hover {
+      border-color: rgba(212, 175, 55, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .step-card.active {
+      border-color: var(--gold-primary);
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%);
+      box-shadow: 0 12px 30px rgba(212, 175, 55, 0.18);
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .step-number {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gold-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .step-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    .step-card.active .step-badge {
+      background: var(--gold-primary);
+      color: #0b0f19;
+    }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .step-features {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .feature-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    .step-card.active .feature-chip {
+      border-color: rgba(212, 175, 55, 0.3);
+      color: var(--gold-light);
+    }
+
+    /* Футер */
+    .demo-footer {
+      padding: 16px 24px;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(8, 12, 22, 0.9);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Floating Voice Player Indicator */
+    .voice-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--neon-emerald);
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-emerald);
+      box-shadow: 0 0 10px var(--neon-emerald);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Верхний статус-бар презентации -->
+  <header class="demo-header">
+    <div class="brand-block">
+      <img src="../icons/logo.svg" alt="LIGA Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">LIGA OS • Интерактивный Демо-Гид</div>
+        <div class="brand-tag">Ведущий инженер сантехники и отопления • Улугбек Хакимов (Ташкент)</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-voice-toggle" class="btn-action" onclick="toggleVoiceNarration()">
+        <span id="voice-icon">🔊</span>
+        <span id="voice-status">Диктор: Вкл</span>
+      </button>
+      <a href="./NOTEBOOKLM_MASTER_SOURCE.md" target="_blank" class="btn-action" title="Открыть полный сценарий для NotebookLM">
+        <span>📖</span> Сценарий NotebookLM
+      </a>
+      <a href="../index.html" class="btn-action btn-gold" title="Открыть рабочее приложение LIGA OS">
+        <span>⚡</span> Открыть LIGA OS
+      </a>
+    </div>
+  </header>
+
+  <!-- Рабочая область -->
+  <main class="demo-main">
+
+    <!-- Левая колонка: интерактивный смартфон -->
+    <div class="phone-container">
+      <div class="phone-mockup">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" id="phone-screen">
+          <img id="active-screenshot" src="./assets/01_dashboard.png" alt="Экран LIGA OS">
+        </div>
+      </div>
+      <div class="phone-controls">
+        <button class="control-btn" onclick="prevStep()">← Назад</button>
+        <button class="control-btn" onclick="nextStep()">Вперед →</button>
+        <button class="control-btn" onclick="toggleAutoPlay()">
+          <span id="autoplay-icon">▶</span> Авто
+        </button>
+      </div>
+    </div>
+
+    <!-- Правая колонка: интерактивные шаги -->
+    <div class="walkthrough-panel" id="steps-list">
+
+      <!-- Шаг 1 -->
+      <div class="step-card active" data-step="0" onclick="goToStep(0)">
+        <div class="step-header">
+          <span class="step-number">Шаг 01 / 11</span>
+          <span class="step-badge">ГЛАВНЫЙ ЭКРАН</span>
+        </div>
+        <div class="step-title">🏢 Дашборд мастера и карточки контекста</div>
+        <div class="step-desc">
+          Командный центр ведущего инженера. Маяк «БАЗА ОФФЛАЙН» гарантирует сохранность данных без интернета. Карточки быстрого входа («На объекте», «Без чертежей», «Сделал заранее», «Есть проект») адаптируют интерфейс под реальные полевые условия.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">100% Оффлайн IndexedDB</span>
+          <span class="feature-chip">ЖК Mirabad Avenue</span>
+          <span class="feature-chip">Связь с заказчиком и дизайнером</span>
+        </div>
+      </div>
+
+      <!-- Шаг 2 -->
+      <div class="step-card" data-step="1" onclick="goToStep(1)">
+        <div class="step-header">
+          <span class="step-number">Шаг 02 / 11</span>
+          <span class="step-badge">ФИНАНСЫ & DRILL-DOWN</span>
+        </div>
+        <div class="step-title">💰 Финансовая ведомость и Базарный карман</div>
+        <div class="step-desc">
+          Прозрачный учет каждого сума: общая сумма договора, внесенные авансы и чистый остаток долга. Нажатие на любую цифру с дашборда мгновенно фокусирует строку золотым пульсирующим бейджем «👈 ВЫ ЗДЕСЬ». Модуль «Базарный карман (Урикзор)» защищает личные деньги мастера от строительных расходов.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Drill-Down навигация</span>
+          <span class="feature-chip">Базарный карман (Урикзор)</span>
+          <span class="feature-chip">Зарплата бригады & 10% дизайнеру</span>
+        </div>
+      </div>
+
+      <!-- Шаг 3 -->
+      <div class="step-card" data-step="2" onclick="goToStep(2)">
+        <div class="step-header">
+          <span class="step-number">Шаг 03 / 11</span>
+          <span class="step-badge">СКЛАД & МАТЕРИАЛЫ</span>
+        </div>
+        <div class="step-title">📦 Комплектация объекта и закупки</div>
+        <div class="step-desc">
+          Учет труб Rehau Rautitan, коллекторов FAR, аксиальных фитингов и запорной арматуры. Разделение на позиции «Куплено», «Требуется докупить» и «Возврат на базар». Защита оптовых закупочных цен от глаз заказчика.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Rehau Rautitan Stabil</span>
+          <span class="feature-chip">Коллекторы FAR 3/4"</span>
+          <span class="feature-chip">Автосписание из кассы</span>
+        </div>
+      </div>
+
+      <!-- Шаг 4 -->
+      <div class="step-card" data-step="3" onclick="goToStep(3)">
+        <div class="step-header">
+          <span class="step-number">Шаг 04 / 11</span>
+          <span class="step-badge">СТАНДАРТ 16 БАР</span>
+        </div>
+        <div class="step-title">🛡️ Технадзор и Ворота Качества (Quality Gate)</div>
+        <div class="step-desc">
+          Электронный чек-лист строгого контроля. Система физически блокирует сдачу объекта до тех пор, пока мастер не прикрепит фото опрессовки 16.0 бар со сроком выдержки 24 часа. Исключает человеческий фактор и халатность.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Опрессовка 16 бар / 24 часа</span>
+          <span class="feature-chip">Фото скрытых трасс до стяжки</span>
+          <span class="feature-chip">Уклоны канализации</span>
+        </div>
+      </div>
+
+      <!-- Шаг 5 -->
+      <div class="step-card" data-step="4" onclick="goToStep(4)">
+        <div class="step-header">
+          <span class="step-number">Шаг 05 / 11</span>
+          <span class="step-badge">ЭКСПРЕСС-СМЕТА</span>
+        </div>
+        <div class="step-title">⚡ Расчет стоимости сантехники за 3 минуты</div>
+        <div class="step-desc">
+          Экспресс-калькулятор для мгновенного осмечивания на первой встрече с заказчиком. Ввод количества водорозеток, радиаторов и контуров теплого пола. Автоматический расчет метража труб и стоимости монтажа.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Расчет точек водорозеток</span>
+          <span class="feature-chip">Коэффициенты сложности</span>
+          <span class="feature-chip">Готовая цена прямо на объекте</span>
+        </div>
+      </div>
+
+      <!-- Шаг 6 -->
+      <div class="step-card" data-step="5" onclick="goToStep(5)">
+        <div class="step-header">
+          <span class="step-number">Шаг 06 / 11</span>
+          <span class="step-badge">ХРОНИКА ОБЪЕКТА</span>
+        </div>
+        <div class="step-title">📜 Неопровержимая хроника и аудит-лог</div>
+        <div class="step-desc">
+          Лента событий с точными отметками времени: фиксация авансов, фотофиксация скрытых узлов, старт гидравлических испытаний. Защищает мастера от претензий отделочников и заливщиков пола в случае повреждения труб другими бригадами.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Таймстемпы каждого действия</span>
+          <span class="feature-chip">Юридическая доказательная база</span>
+          <span class="feature-chip">История изменений</span>
+        </div>
+      </div>
+
+      <!-- Шаг 7 -->
+      <div class="step-card" data-step="6" onclick="goToStep(6)">
+        <div class="step-header">
+          <span class="step-number">Шаг 07 / 11</span>
+          <span class="step-badge">НАСТРОЙКИ СИСТЕМЫ</span>
+        </div>
+        <div class="step-title">⚙️ Персонализация мастера и безопасность</div>
+        <div class="step-desc">
+          Управление реквизитами ведущего инженера (ФИО, организация, номер лицензии/сертификата, должность). Настройка голосового озвучивания и параметров опрессовки.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Улугбек Хакимов</span>
+          <span class="feature-chip">Лига Опытных Мастеров</span>
+          <span class="feature-chip">Сертификат LMO-UZ-2011/2026</span>
+        </div>
+      </div>
+
+      <!-- Шаг 8 -->
+      <div class="step-card" data-step="7" onclick="goToStep(7)">
+        <div class="step-header">
+          <span class="step-number">Шаг 08 / 11</span>
+          <span class="step-badge">ЭЛИТНАЯ ПЕЧАТЬ</span>
+        </div>
+        <div class="step-title">👑 Швейцарская гербовая печать королевского класса</div>
+        <div class="step-desc">
+          4 роскошных стиля оттиска (Swiss Imperial Gold 24K с короной и щитом, нотариальный сургуч Vermilion, платиновый титан и Женевская лазурь). Защитный латинский микротекст и верификационный штамп ЭЦП VERIFIED.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Swiss Imperial Gold 24K</span>
+          <span class="feature-chip">Латинский микротекст</span>
+          <span class="feature-chip">Корона и швейцарский щит</span>
+        </div>
+      </div>
+
+      <!-- Шаг 9 -->
+      <div class="step-card" data-step="8" onclick="goToStep(8)">
+        <div class="step-header">
+          <span class="step-number">Шаг 09 / 11</span>
+          <span class="step-badge">ЦИФРОВАЯ ПОДПИСЬ</span>
+        </div>
+        <div class="step-title">✍️ Canvas роспись пальцем со сглаживанием Безье</div>
+        <div class="step-desc">
+          Уникальный холст для подписи мастера пальцем или стилусом на смартфоне. Алгоритм сглаживания кривыми Безье убирает дрожание и создает штрих дорогого золотого пера. Встроены 3 каллиграфических вензеля («Классика», «Элегант», «Жирный»).
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Безье-сглаживание (quadraticCurveTo)</span>
+          <span class="feature-chip">Динамическая толщина линии</span>
+          <span class="feature-chip">3 авторских каллиграфических пресета</span>
+        </div>
+      </div>
+
+      <!-- Шаг 10 -->
+      <div class="step-card" data-step="9" onclick="goToStep(9)">
+        <div class="step-header">
+          <span class="step-number">Шаг 10 / 11</span>
+          <span class="step-badge">ОФИЦИАЛЬНЫЙ АКТ</span>
+        </div>
+        <div class="step-title">📋 Протокол гидравлических испытаний 16 бар</div>
+        <div class="step-desc">
+          Юридически строгий документ с фиксацией начального и конечного давления, времени выдержки 24 часа и прикреплением фотографии поверенного манометра. Автоматически скрепляется гербовой печатью и подписью мастера.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Фиксация 16.0 бар без падения</span>
+          <span class="feature-chip">Печать и подпись мастера</span>
+          <span class="feature-chip">Экспорт в PDF и печать на А4</span>
+        </div>
+      </div>
+
+      <!-- Шаг 11 -->
+      <div class="step-card" data-step="10" onclick="goToStep(10)">
+        <div class="step-header">
+          <span class="step-number">Шаг 11 / 11</span>
+          <span class="step-badge">ИНСТРУМЕНТЫ МАСТЕРА</span>
+        </div>
+        <div class="step-title">⋯ Меню инструментов: Калькулятор труб и бэкапы</div>
+        <div class="step-desc">
+          Полный арсенал профессионала: встроенный расчет метража труб и теплопотерь, управление тарифами, экспорт базы данных в JSON и восстановление из резервной копии.
+        </div>
+        <div class="step-features">
+          <span class="feature-chip">Калькулятор метража труб</span>
+          <span class="feature-chip">Резервное копирование</span>
+          <span class="feature-chip">Настройка тарифов мастера</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Футер -->
+  <footer class="demo-footer">
+    LIGA OS v2.4.7 Swiss Engineering Edition • Разработано для Улугбека Хакимова («Лига Опытных Мастеров», Ташкент) • Все данные хранятся локально
+  </footer>
+
+  <script>
+    const screenshots = [
+      './assets/01_dashboard.png',
+      './assets/02_finances.png',
+      './assets/03_materials.png',
+      './assets/04_checklist.png',
+      './assets/05_estimate.png',
+      './assets/06_history.png',
+      './assets/07_settings.png',
+      './assets/08_seal_preview.png',
+      './assets/09_signature_pad.png',
+      './assets/10_pressure_act.png',
+      './assets/11_more_menu.png'
+    ];
+
+    const voiceTexts = [
+      "Шаг первый. Главный экран. Командный пункт мастера. Обратите внимание на зеленый индикатор 'База оффлайн'. Все данные объекта ЖК Mirabad Avenue хранятся прямо на смартфоне.",
+      "Шаг второй. Финансы и взаиморасчеты. Договор, авансы и чистый остаток долга. Нажмите на сумму с главного экрана, и система подсветит строку ярким золотым бейджем 'Вы здесь'.",
+      "Шаг третий. Склад и комплектация. Учет труб Rehau, коллекторов FAR и фитингов. Реальные закупочные цены на рынке Урикзор скрыты от посторонних глаз.",
+      "Шаг четвертый. Технадзор и опрессовка 16 бар. Система физически блокирует сдачу объекта до подтверждения суточной опрессовки давлением 16 атмосфер.",
+      "Шаг пятый. Экспресс-смета за три минуты прямо на объекте. Расчет водорозеток, отопления и теплого пола. Согласование цены без лишних споров.",
+      "Шаг шестой. История объекта. Полный электронный журнал каждого действия с метками времени для защиты от любых претензий строителей.",
+      "Шаг седьмой. Настройки системы. Персональные данные ведущего инженера Улугбека Хакимова и лицензия Лиги Опытных Мастеров.",
+      "Шаг восьмой. Швейцарская гербовая печать королевского класса Swiss Imperial Gold с короной, щитом и микротекстом для официальных документов.",
+      "Шаг девятый. Цифровая роспись мастера на холсте со сглаживанием Безье. Палец скользит мягко, как золотое перо, без неровностей и дрожания.",
+      "Шаг десятый. Официальный Акт гидравлических испытаний 16 бар. Готов к печати на А4 или отправке клиенту в Телеграм.",
+      "Шаг одиннадцатый. Меню инструментов мастера. Калькулятор труб, управление тарифами и надежные резервные копии базы данных."
+    ];
+
+    let currentStepIdx = 0;
+    let isVoiceEnabled = true;
+    let autoPlayTimer = null;
+
+    function goToStep(idx) {
+      if (idx < 0 || idx >= screenshots.length) return;
+      currentStepIdx = idx;
+
+      // 1. Обновляем изображение в смартфоне с плавной анимацией
+      const img = document.getElementById('active-screenshot');
+      img.style.opacity = '0.3';
+      setTimeout(() => {
+        img.src = screenshots[idx];
+        img.style.opacity = '1';
+      }, 150);
+
+      // Скроллим телефон наверх
+      const screen = document.getElementById('phone-screen');
+      if (screen) screen.scrollTop = 0;
+
+      // 2. Подсвечиваем активную карточку
+      document.querySelectorAll('.step-card').forEach((card, i) => {
+        if (i === idx) {
+          card.classList.add('active');
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          card.classList.remove('active');
+        }
+      });
+
+      // 3. Озвучиваем диктором, если включено
+      if (isVoiceEnabled) {
+        speakText(voiceTexts[idx]);
+      }
+    }
+
+    function prevStep() {
+      const nextIdx = currentStepIdx > 0 ? currentStepIdx - 1 : screenshots.length - 1;
+      goToStep(nextIdx);
+    }
+
+    function nextStep() {
+      const nextIdx = currentStepIdx < screenshots.length - 1 ? currentStepIdx + 1 : 0;
+      goToStep(nextIdx);
+    }
+
+    function toggleAutoPlay() {
+      const btn = document.getElementById('autoplay-icon');
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+        btn.innerText = '▶';
+      } else {
+        btn.innerText = '⏸';
+        nextStep();
+        autoPlayTimer = setInterval(() => {
+          nextStep();
+        }, 8000);
+      }
+    }
+
+    function toggleVoiceNarration() {
+      isVoiceEnabled = !isVoiceEnabled;
+      const statusEl = document.getElementById('voice-status');
+      const iconEl = document.getElementById('voice-icon');
+      if (isVoiceEnabled) {
+        statusEl.innerText = 'Диктор: Вкл';
+        iconEl.innerText = '🔊';
+        speakText(voiceTexts[currentStepIdx]);
+      } else {
+        statusEl.innerText = 'Диктор: Выкл';
+        iconEl.innerText = '🔇';
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      }
+    }
+
+    function speakText(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ru-RU';
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  </script>
+</body>
+</html>
