@@ -10297,6 +10297,68 @@ ${shareUrl}
       }
     }
   }
+
+  // ==========================================================================
+  // ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ПАСПОРТ ТЕСТ-ДРАЙВА ДЛЯ УЛУГБЕКА ХАКИМОВА
+  // ==========================================================================
+  openUlugbekVipBrief() {
+    this.openModal('modal-ulugbek-vip-brief');
+    this.showToast('👑 Персональный бриф тест-драйва для Улугбека Хакимова');
+  }
+
+  closeUlugbekVipBrief() {
+    this.closeModal('modal-ulugbek-vip-brief');
+  }
+
+  testDriveStep1_Offline() {
+    const isOnline = navigator.onLine;
+    const msg = isOnline
+      ? '⚡ База данных IndexedDB активна в памяти устройства. Включите авиарежим: данные продолжат сохраняться!'
+      : '🟢 РЕЖИМ ОФЛАЙН АКТИВЕН: все хранилища LIGA OS работают полностью автономно!';
+    this.showToast(msg);
+  }
+
+  testDriveStep2_Pressure() {
+    this.closeModal('modal-ulugbek-vip-brief');
+    setTimeout(() => {
+      this.openModal('modal-pressure-test');
+      this.showToast('⏱️ Открыт таймер и протокол гидравлики 16 бар / 24ч');
+    }, 150);
+  }
+
+  testDriveStep3_Seal() {
+    this.closeModal('modal-ulugbek-vip-brief');
+    setTimeout(() => {
+      this.openModal('modal-settings');
+      setTimeout(() => {
+        const sealSec = document.getElementById('settings-section-seal') || document.querySelector('.seal-preview-box');
+        if (sealSec) sealSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        this.showToast('✍️ Выберите стиль печати мастера и распишитесь пальцем');
+      }, 250);
+    }, 150);
+  }
+
+  testDriveStep4_Passport() {
+    this.closeModal('modal-ulugbek-vip-brief');
+    setTimeout(() => {
+      if (typeof this.generatePdfPassport === 'function') {
+        this.generatePdfPassport();
+      } else if (typeof this.openPassportPreviewModal === 'function') {
+        this.openPassportPreviewModal();
+      } else {
+        this.openModal('modal-passport-preview');
+      }
+      this.showToast('📄 Сформирован Исполнительный Инженерный Паспорт А4');
+    }, 150);
+  }
+
+  testDriveStep5_ClientMode() {
+    this.closeModal('modal-ulugbek-vip-brief');
+    setTimeout(() => {
+      this.toggleClientMode();
+      this.showToast('👁️ Безопасный режим клиента: коммерческая тайна и цены скрыты!');
+    }, 150);
+  }
 }
 
 // Безотказный запуск приложения: поддерживает как ожидание DOM, так и немедленный старт

@@ -122,6 +122,19 @@
           Единый центр управления: 5 инженерных калькуляторов, контроль опрессовки 16 бар, скрипты диалогов и настройки системы мастера.
         </p>
 
+        <!-- КНОПКА VIP-БРИФА ДЛЯ УЛУГБЕКА В МЕНЮ -->
+        <div class="video-tour-banner-card" style="border-color:var(--gold-primary); background:linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(18,24,38,0.95) 100%); margin-bottom:10px; cursor:pointer;" onclick="window.app.closeModal('modal-more-menu'); window.app.openUlugbekVipBrief();">
+          <div class="video-tour-badge-pulse" style="background:var(--gold-gradient); color:#000; font-size:16px;">
+            👑
+          </div>
+          <div class="video-tour-content">
+            <div class="video-tour-tag">ЭКСКЛЮЗИВ • УЛУГБЕК ХАКИМОВ</div>
+            <div class="video-tour-heading">Паспорт тест-драйва мастера</div>
+            <div class="video-tour-subtext">5 боевых контрольных узлов: 16 бар, офлайн, печать VIP, Паспорт А4, Client View</div>
+          </div>
+          <div class="video-tour-cta-btn" style="background:var(--gold-gradient); color:#000;">Бриф →</div>
+        </div>
+
         <!-- БАННЕР ИНТЕРАКТИВНОГО ВИДЕОГИДА И ШОУРУМА v2.4.2 -->
         <div class="video-tour-banner-card" id="banner-video-tour-menu" onclick="window.app.openVideoTour()">
           <div class="video-tour-badge-pulse">
@@ -383,6 +396,23 @@
           </button>
           <button type="button" id="btn-onboarding-start-tour" class="btn-live-tour-banner" onclick="window.app.startSpotlightTour()" style="flex:1;">
             ✨ <b>Живой тур по кнопкам</b>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIP-БРИФ И ТЕСТ-ДРАЙВ ДЛЯ УЛУГБЕКА ХАКИМОВА («ЛИГА ОПЫТНЫХ МАСТЕРОВ») -->
+      <div class="ulugbek-vip-card" id="card-ulugbek-brief">
+        <div class="vip-top-row">
+          <div class="vip-badge-tag">👑 ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ТЕСТ-ДРАЙВ</div>
+          <span class="vip-shield-icon">🛡️ 16 BAR</span>
+        </div>
+        <div class="vip-content-row">
+          <div class="vip-text-block">
+            <h2 class="vip-engineer-name">Улугбек Хакимов • «Лига Опытных Мастеров»</h2>
+            <p class="vip-engineer-sub">Персональная программа приёмки системы LIGA OS ведущим инженером Ташкента. 5 ключевых узлов надежности.</p>
+          </div>
+          <button type="button" class="btn-vip-action-gold" onclick="window.app.openUlugbekVipBrief()">
+            <span>📋</span> Открыть бриф мастера →
           </button>
         </div>
       </div>
@@ -4359,6 +4389,139 @@
             <button type="button" class="btn-spotlight-nav" id="btn-spotlight-prev" onclick="window.app.prevSpotlightStep()">← Назад</button>
             <button type="button" class="btn-spotlight-nav-next" id="btn-spotlight-next" onclick="window.app.nextSpotlightStep()">Далее →</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: 👑 ИНЖЕНЕРНЫЙ ПАСПОРТ ТЕСТ-ДРАЙВА ДЛЯ УЛУГБЕКА ХАКИМОВА
+         ==================================================================== -->
+    <div id="modal-ulugbek-vip-brief" class="modal-overlay">
+      <div class="modal-sheet modal-ulugbek-sheet">
+        <div class="modal-drag-handle"></div>
+
+        <!-- Шапка брифа с гербом LIGA OS -->
+        <div class="vip-modal-header">
+          <div class="vip-modal-brand-row">
+            <img src="./icons/logo.svg" alt="LIGA OS" class="vip-modal-logo">
+            <div>
+              <div class="vip-modal-badge">ЭКСКЛЮЗИВНЫЙ ПАСПОРТ ПРИЁМКИ</div>
+              <div class="vip-modal-title">LIGA OS • ШВЕЙЦАРСКИЙ СТАНДАРТ</div>
+              <div class="vip-modal-subtitle">Ведущему инженеру Ташкента — Улугбеку Хакимову</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" onclick="window.app.closeUlugbekVipBrief()" title="Закрыть бриф">✕</button>
+        </div>
+
+        <!-- Обращение к Улугбеку -->
+        <div class="vip-letter-card">
+          <div class="vip-letter-greeting">Уважаемый Улугбек!</div>
+          <p class="vip-letter-text">
+            Эта операционная система спроектирована специально под Ваши бескомпромиссные стандарты сантехники и отопления в Ташкенте. Никаких «записок на коленке» и споров с отделочниками — только чистая инженерная прозрачность, железный стандарт 16 бар и полная юридическая защита Вашего авторитета.
+          </p>
+          <div class="vip-letter-quote">
+            «Система создана, чтобы защитить Ваш доход, подчеркнуть статус ведущего мастера и дать заказчику уровень сервиса швейцарского банка.»
+          </div>
+        </div>
+
+        <!-- 5 интерактивных шагов полевого тест-драйва -->
+        <div class="vip-steps-title">
+          <span>⚡</span> 5 КОНТРОЛЬНЫХ УЗЛОВ ДЛЯ ВАШЕГО ТЕСТ-ДРАЙВА:
+        </div>
+
+        <div class="vip-steps-list">
+          <!-- Шаг 1: Автономность -->
+          <div class="vip-step-card">
+            <div class="vip-step-num">01</div>
+            <div class="vip-step-content">
+              <div class="vip-step-title">100% Автономность базы данных (Офлайн)</div>
+              <div class="vip-step-desc">
+                База данных IndexedDB работает прямо в памяти Вашего телефона. Включите авиарежим или спуститесь в железобетонный подвал — система продолжит вести учет, открывать узлы и хранить сметы без интернета.
+              </div>
+              <div class="vip-step-action-row">
+                <button type="button" class="btn-step-test" onclick="window.app.testDriveStep1_Offline()">
+                  <span>⚡</span> Проверить статус офлайн-базы
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Шаг 2: Гидравлика 16 бар -->
+          <div class="vip-step-card">
+            <div class="vip-step-num">02</div>
+            <div class="vip-step-content">
+              <div class="vip-step-title">Гидравлические испытания 16 БАР / 24ч</div>
+              <div class="vip-step-desc">
+                В 4 раза строже строительных СНиП. Автоматический таймер суточной выдержки и строгий контроль допуска падения давления (не более 0.2 бар). Гарантия абсолютного спокойствия до заливки чистовой стяжки.
+              </div>
+              <div class="vip-step-action-row">
+                <button type="button" class="btn-step-test btn-gold-step" onclick="window.app.testDriveStep2_Pressure()">
+                  <span>⏱️</span> Открыть испытание 16 БАР →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Шаг 3: Печать и подпись пальцем -->
+          <div class="vip-step-card">
+            <div class="vip-step-num">03</div>
+            <div class="vip-step-content">
+              <div class="vip-step-title">Элитная печать мастера и умная подпись</div>
+              <div class="vip-step-desc">
+                3 стиля гербовой печати инженера (Золотой VIP, Дипломатический титан, Синяя мастика) с микроузором «ТАШКЕНТ СТАНДАРТ ELITE». Холст подписи пальцем по кривым Безье обеспечивает плавный каллиграфический росчерк без угловатых изломов.
+              </div>
+              <div class="vip-step-action-row">
+                <button type="button" class="btn-step-test" onclick="window.app.testDriveStep3_Seal()">
+                  <span>✍️</span> Расписаться пальцем и выбрать печать →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Шаг 4: Паспорт А4 -->
+          <div class="vip-step-card">
+            <div class="vip-step-num">04</div>
+            <div class="vip-step-content">
+              <div class="vip-step-title">Исполнительный Паспорт Объекта А4 (PDF)</div>
+              <div class="vip-step-desc">
+                Официальный документ для клиента с фотофиксацией трасс, коллекторов FAR и скрытых узлов. Железная страховка от претензий: если отделочники пробьют трубу дюбелем, в паспорте зафиксировано ее точное положение до 1 мм.
+              </div>
+              <div class="vip-step-action-row">
+                <button type="button" class="btn-step-test btn-gold-step" onclick="window.app.testDriveStep4_Passport()">
+                  <span>📄</span> Сформировать и посмотреть Паспорт А4 →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Шаг 5: Режим показа клиенту -->
+          <div class="vip-step-card">
+            <div class="vip-step-num">05</div>
+            <div class="vip-step-content">
+              <div class="vip-step-title">Защита коммерческой тайны (Client View)</div>
+              <div class="vip-step-desc">
+                Передавайте телефон в руки заказчику без опасений. Нажмите значок глаза — все закупочные цены, контакты поставщиков и Ваша чистая прибыль мгновенно скрываются, а клиент видит только статусы, этапы и качество.
+              </div>
+              <div class="vip-step-action-row">
+                <button type="button" class="btn-step-test" onclick="window.app.testDriveStep5_ClientMode()">
+                  <span>👁️</span> Протестировать режим клиента →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Нижняя плашка мастера -->
+        <div class="vip-modal-footer-card">
+          <div style="font-weight:800; font-size:13px; color:var(--gold-primary); margin-bottom:4px;">
+            «Лига Опытных Мастеров» • Ташкент
+          </div>
+          <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
+            Улугбек, после ознакомления и тестирования подтвердите готовность — система развертывается на все Ваши объекты!
+          </div>
+          <button type="button" class="btn-action btn-gold" onclick="window.app.closeUlugbekVipBrief()" style="margin-top:10px; width:100%; height:40px; font-weight:800; font-size:13px;">
+            ✓ Принять бриф и перейти к работе
+          </button>
         </div>
       </div>
     </div>

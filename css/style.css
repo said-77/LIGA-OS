@@ -5982,3 +5982,308 @@ body.client-mode .btn-floating-voice {
 .spotlight-highlight-box.spotlight-over-modal {
   z-index: 100004 !important;
 }
+
+/* ==========================================================================
+   ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ПАСПОРТ ТЕСТ-ДРАЙВА ДЛЯ УЛУГБЕКА ХАКИМОВА
+   ========================================================================== */
+
+/* 1. Премиальный виджет-баннер на Дашборде */
+.ulugbek-vip-card {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.16) 0%, rgba(18, 24, 38, 0.95) 50%, rgba(6, 9, 17, 0.98) 100%);
+  border: 1.5px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.ulugbek-vip-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.vip-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.vip-badge-tag {
+  background: var(--gold-gradient);
+  color: #060911;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+}
+
+.vip-shield-icon {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vip-content-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vip-text-block {
+  flex: 1;
+  min-width: 200px;
+}
+
+.vip-engineer-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #f8fafc !important;
+  margin: 0 0 3px 0;
+  line-height: 1.25;
+}
+
+.vip-engineer-sub {
+  font-size: 11.5px;
+  color: #cbd5e1 !important;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.btn-vip-action-gold {
+  background: var(--gold-gradient);
+  color: #060911;
+  font-weight: 900;
+  font-size: 12px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-vip-action-gold:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.btn-vip-action-gold:active {
+  transform: scale(0.97);
+}
+
+/* 2. Модальное окно Персонального Брифа Улугбека */
+.modal-ulugbek-sheet {
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  padding: 20px;
+  background: radial-gradient(ellipse at 50% 0%, #151d2f 0%, #0c101a 60%, #060911 100%);
+  border: 1.5px solid var(--gold-primary);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.25);
+}
+
+.vip-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--glass-border-subtle);
+}
+
+.vip-modal-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vip-modal-logo {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 0 10px rgba(255, 209, 117, 0.5));
+}
+
+.vip-modal-badge {
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.vip-modal-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #f8fafc !important;
+  line-height: 1.2;
+}
+
+.vip-modal-subtitle {
+  font-size: 12px;
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+/* Письмо-обращение к Улугбеку */
+.vip-letter-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-left: 3px solid var(--gold-primary);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.vip-letter-greeting {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  margin-bottom: 6px;
+}
+
+.vip-letter-text {
+  font-size: 12px;
+  color: #f1f5f9 !important;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+}
+
+.vip-letter-quote {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--gold-light);
+  line-height: 1.4;
+  border-top: 1px dashed rgba(212, 175, 55, 0.25);
+  padding-top: 6px;
+}
+
+/* Список 5 шагов тест-драйва */
+.vip-steps-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.vip-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.vip-step-card {
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.vip-step-card:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vip-step-num {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  line-height: 1;
+  opacity: 0.8;
+  min-width: 24px;
+}
+
+.vip-step-content {
+  flex: 1;
+}
+
+.vip-step-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc !important;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.vip-step-desc {
+  font-size: 11.5px;
+  color: #cbd5e1 !important;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.vip-step-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-step-test {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-step-test:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+}
+
+.btn-step-test.btn-gold-step {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.12) 100%);
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+}
+
+.btn-step-test.btn-gold-step:hover {
+  background: var(--gold-gradient);
+  color: #000;
+}
+
+.vip-modal-footer-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+}
