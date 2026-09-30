@@ -6853,6 +6853,50 @@ ${loopsText}
     const lower = text.toLowerCase();
 
     // 0. Навигационные интенты естественного языка мастера («Своими словами • Нулевая рутина»)
+    // 0.0. Персональный тест-драйв и бриф Улугбека Хакимова
+    if (lower.includes('бриф') || lower.includes('тест драйв') || lower.includes('тест-драйв') || lower.includes('паспорт приемки') || lower.includes('паспорт приёмки') || lower.includes('программа приемки') || lower.includes('программа приёмки') || lower.includes('памятка улугбек') || lower.includes('открой бриф') || lower.includes('покажи бриф')) {
+      return {
+        type: 'direct_func',
+        target: 'openUlugbekVipBrief',
+        title: '👑 Бриф: Персональный тест-драйв Улугбека',
+        voiceResponse: 'Открываю персональный бриф тест-драйва для Улугбека Хакимова',
+        desc: 'Открываю программу приёмки LIGA OS и 5 контрольных узлов...'
+      };
+    }
+
+    // 0.0.1. Королевская кнопка факта (3 секунды)
+    if (lower.includes('зафиксируй факт') || lower.includes('королевская кнопка') || lower.includes('фото факта') || lower.includes('быстрое фото') || (lower.includes('факт') && (lower.includes('сфоткай') || lower.includes('сохрани') || lower.includes('сделай')))) {
+      return {
+        type: 'direct_func',
+        target: 'openQuickFactModal',
+        title: '📸 Факт: Быстрая фотофиксация узла (3 сек)',
+        voiceResponse: 'Включаю камеру быстрой фотофиксации скрытого узла до стяжки',
+        desc: 'Запускаю быструю камеру для фиксации скрытого узла до стяжки...'
+      };
+    }
+
+    // 0.0.2. LIGA AI Голосовой Консьерж
+    if (lower.includes('спроси ии') || lower.includes('ии консьерж') || lower.includes('ии-консьерж') || lower.includes('голосовой ии') || lower.includes('помощник ии') || (lower.includes('ассистент') && !lower.includes('помощнику'))) {
+      return {
+        type: 'modal_action',
+        target: 'modal-ai-concierge',
+        title: '🤖 LIGA AI: Голосовой Консьерж',
+        voiceResponse: 'Открываю LIGA AI Консьерж. Чем я могу помочь?',
+        desc: 'Запускаю голосового ИИ-консультанта инженера (Gemini Flash)...'
+      };
+    }
+
+    // 0.0.3. Гербовая печать и подпись мастера
+    if (lower.includes('печать') || lower.includes('подпись мастера') || lower.includes('гербовая печать') || lower.includes('распишись')) {
+      return {
+        type: 'direct_func',
+        target: 'testDriveStep3_Seal',
+        title: '✍️ Настройки: Печать и подпись мастера',
+        voiceResponse: 'Открываю настройки именной гербовой печати и подписи мастера',
+        desc: 'Перехожу к настройкам гербовой печати и холсту подписи пальцем...'
+      };
+    }
+
     // 0.1. Прямые функции системы
     if (lower.includes('телеграм') || lower.includes('скинь в тг') || lower.includes('отчет заказчик')) {
       return {
