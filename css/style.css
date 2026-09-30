@@ -6287,3 +6287,52 @@ body.client-mode .btn-floating-voice {
   padding: 12px 14px;
   text-align: center;
 }
+
+/* 3. Анимация привлечения внимания к тест-драйву Улугбека (v2.4.8) */
+@keyframes vipAttentionGlow {
+  0%, 100% {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 18px rgba(212, 175, 55, 0.45);
+    border-color: rgba(212, 175, 55, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 32px rgba(255, 215, 0, 0.8), 0 0 50px rgba(212, 175, 55, 0.4);
+    border-color: #ffd700;
+    transform: scale(1.012);
+  }
+}
+
+.ulugbek-vip-card.vip-attention-pulse {
+  animation: vipAttentionGlow 2.2s infinite ease-in-out;
+  position: relative;
+  z-index: 5;
+}
+
+/* Мерцающий бейдж в первой строке карточки */
+.vip-badge-first-priority {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff !important;
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+  animation: vipBadgeFlash 1.6s infinite ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes vipBadgeFlash {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.97);
+  }
+}
+

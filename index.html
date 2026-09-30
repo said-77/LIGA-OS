@@ -403,7 +403,10 @@
       <!-- VIP-БРИФ И ТЕСТ-ДРАЙВ ДЛЯ УЛУГБЕКА ХАКИМОВА («ЛИГА ОПЫТНЫХ МАСТЕРОВ») -->
       <div class="ulugbek-vip-card" id="card-ulugbek-brief">
         <div class="vip-top-row">
-          <div class="vip-badge-tag">👑 ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ТЕСТ-ДРАЙВ</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="vip-badge-tag">👑 ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ТЕСТ-ДРАЙВ</div>
+            <div id="vip-badge-priority" class="vip-badge-first-priority" style="display:none;">⚡ ИЗУЧИТЕ В ПЕРВУЮ ОЧЕРЕДЬ!</div>
+          </div>
           <span class="vip-shield-icon">🛡️ 16 BAR</span>
         </div>
         <div class="vip-content-row">
@@ -3949,6 +3952,17 @@
             
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
+                <div class="settings-toggle-label">👑 Тест-драйв Улугбека Хакимова</div>
+                <div class="settings-toggle-desc">Персональная карточка приёмки на дашборде</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-block-ulugbek-brief" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
                 <div class="settings-toggle-label">⏱️ 3D-Радар готовности и темпа</div>
                 <div class="settings-toggle-desc">Швейцарский круговой хронометр сроков</div>
               </div>
@@ -4020,8 +4034,11 @@
             <button class="btn-restore-onboarding" id="btn-restore-onboarding" type="button" onclick="window.app.restoreOnboardingHint()">
               💡 Вернуть подсказку «Как работать за 3 шага»
             </button>
+            <button class="btn-restore-onboarding" id="btn-reopen-ulugbek-brief" type="button" onclick="window.app.openUlugbekVipBrief()" style="margin-top:8px; background:rgba(212,175,55,0.12); border-color:rgba(212,175,55,0.4); color:var(--gold-primary); font-weight:800;">
+              👑 Открыть тест-драйв Улугбека Хакимова
+            </button>
             <div style="font-size:10px; color:var(--text-dim); margin-top:4px;">
-              Если вы случайно скрыли памятку на главном экране — нажмите эту кнопку, чтобы вернуть её.
+              Памятки и персональный тест-драйв можно повторно запустить в любой момент.
             </div>
           </div>
 
@@ -4519,19 +4536,19 @@
           <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
             Улугбек, после ознакомления и тестирования подтвердите готовность — система развертывается на все Ваши объекты!
           </div>
-          <button type="button" class="btn-action btn-gold" onclick="window.app.closeUlugbekVipBrief()" style="margin-top:10px; width:100%; height:40px; font-weight:800; font-size:13px;">
-            ✓ Принять бриф и перейти к работе
+          <button type="button" class="btn-action btn-gold" onclick="window.app.acknowledgeUlugbekTestDrive()" style="margin-top:10px; width:100%; height:40px; font-weight:800; font-size:13px;">
+            ✓ Я ознакомился, начать тест-драйв
           </button>
         </div>
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.6: Живой тур с диктором, реальное открытие окон, швейцарские 3D-тумблеры и гербовая печать) -->
-  <script src="./js/image_processor.js?v=2.4.7"></script>
-  <script src="./js/db.js?v=2.4.7"></script>
-  <script src="./js/seal_engine.js?v=2.4.7"></script>
-  <script src="./js/pdf_engine.js?v=2.4.7"></script>
-  <script src="./js/ai_concierge.js?v=2.4.7"></script>
-  <script src="./js/app.js?v=2.4.7"></script>
+  <!-- Скрипты LIGA OS (Версия 2.4.8: VIP Тест-драйв Улугбека с авто-онбордингом, звуковым аккордом и тумблером в настройках) -->
+  <script src="./js/image_processor.js?v=2.4.8"></script>
+  <script src="./js/db.js?v=2.4.8"></script>
+  <script src="./js/seal_engine.js?v=2.4.8"></script>
+  <script src="./js/pdf_engine.js?v=2.4.8"></script>
+  <script src="./js/ai_concierge.js?v=2.4.8"></script>
+  <script src="./js/app.js?v=2.4.8"></script>
 </body>
 </html>

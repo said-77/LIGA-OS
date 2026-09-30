@@ -124,6 +124,7 @@ class LigaApp {
       this.calculateEstimate();
       await this.updateNavBadges();
       this.checkOnboardingHint();
+      this.initUlugbekBriefOnboarding();
       this.initVideoTour();
       this.initMasterSealSettings();
     } catch (renderErr) {
@@ -281,6 +282,78 @@ class LigaApp {
       osc2.stop(now + 0.65);
     } catch (e) {
       console.warn('Ошибка воспроизведения звука chime:', e);
+    }
+  }
+
+  // Благородный кристальный звон привлечения внимания к тест-драйву Улугбека (E5 -> B5 -> G#6)
+  playVipAttentionChime() {
+    if (!this.isSoundEnabled) return;
+    try {
+      this.initAudioEngine();
+      if (!this.audioCtx) return;
+
+      const runSound = () => {
+        if (!this.audioCtx) return;
+        const now = this.audioCtx.currentTime;
+
+        // Нота 1: E5 (659.25 Hz)
+        const osc1 = this.audioCtx.createOscillator();
+        const gain1 = this.audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.22, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc1.connect(gain1);
+        gain1.connect(this.audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.45);
+
+        // Нота 2: B5 (987.77 Hz) через 130мс
+        const osc2 = this.audioCtx.createOscillator();
+        const gain2 = this.audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(987.77, now + 0.13);
+        gain2.gain.setValueAtTime(0.24, now + 0.13);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        osc2.connect(gain2);
+        gain2.connect(this.audioCtx.destination);
+        osc2.start(now + 0.13);
+        osc2.stop(now + 0.65);
+
+        // Нота 3: G#6 (1661.22 Hz) через 260мс с кристальным швейцарским резонансом
+        const osc3 = this.audioCtx.createOscillator();
+        const gain3 = this.audioCtx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(1661.22, now + 0.26);
+        gain3.gain.setValueAtTime(0.26, now + 0.26);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+        osc3.connect(gain3);
+        gain3.connect(this.audioCtx.destination);
+        osc3.start(now + 0.26);
+        osc3.stop(now + 1.15);
+      };
+
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().then(() => runSound()).catch(() => {
+          const unlockHandler = () => {
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+              this.audioCtx.resume().then(() => runSound());
+            } else {
+              runSound();
+            }
+            window.removeEventListener('pointerdown', unlockHandler);
+            window.removeEventListener('touchstart', unlockHandler);
+            window.removeEventListener('click', unlockHandler);
+          };
+          window.addEventListener('pointerdown', unlockHandler, { once: true });
+          window.addEventListener('touchstart', unlockHandler, { once: true });
+          window.addEventListener('click', unlockHandler, { once: true });
+        });
+      } else {
+        runSound();
+      }
+    } catch (e) {
+      console.warn('Ошибка воспроизведения звука VIP Chime:', e);
     }
   }
 
@@ -8233,6 +8306,7 @@ ${shareUrl}
   // ==========================================================================
   initBlockCustomization() {
     const blocks = [
+      { id: 'ulugbekBrief', toggleId: 'toggle-block-ulugbek-brief', elementId: 'card-ulugbek-brief' },
       { id: 'radar', toggleId: 'toggle-block-radar', elementId: 'site-chrono-radar' },
       { id: 'nextaction', toggleId: 'toggle-block-nextaction', elementId: 'site-next-action-card' },
       { id: 'fact', toggleId: 'toggle-block-fact', elementId: 'quick-fact-action-box' },
@@ -8269,6 +8343,7 @@ ${shareUrl}
     if (btnMinimal) {
       btnMinimal.addEventListener('click', () => {
         const minimalConfig = {
+          ulugbekBrief: false,
           radar: false,
           nextaction: false,
           fact: true,
@@ -8285,6 +8360,7 @@ ${shareUrl}
     if (btnFull) {
       btnFull.addEventListener('click', () => {
         const fullConfig = {
+          ulugbekBrief: true,
           radar: true,
           nextaction: true,
           fact: true,
@@ -10296,6 +10372,50 @@ ${shareUrl}
         statusEl.style.color = '#10b981';
       }
     }
+  }
+
+  // ==========================================================================
+  // АВТО-ОНБОРДИНГ И ПРИВЛЕЧЕНИЕ ВНИМАНИЯ К ТЕСТ-ДРАЙВУ УЛУГБЕКА (v2.4.8)
+  // ==========================================================================
+  initUlugbekBriefOnboarding() {
+    const card = document.getElementById('card-ulugbek-brief');
+    const badgePriority = document.getElementById('vip-badge-priority');
+    if (!card) return;
+
+    const isAcknowledged = localStorage.getItem('liga_ulugbek_testdrive_ack') === 'true';
+
+    if (!isAcknowledged) {
+      // Первое открытие: привлекаем внимание мастера пульсацией и бейджем
+      card.classList.add('vip-attention-pulse');
+      if (badgePriority) badgePriority.style.display = 'inline-flex';
+
+      // Швейцарский звон привлечения внимания через 600мс
+      setTimeout(() => {
+        this.playVipAttentionChime();
+      }, 600);
+
+      // Автоматически открываем модальный бриф через 1.4 секунды
+      setTimeout(() => {
+        if (localStorage.getItem('liga_ulugbek_testdrive_ack') !== 'true') {
+          this.openUlugbekVipBrief();
+        }
+      }, 1400);
+    } else {
+      card.classList.remove('vip-attention-pulse');
+      if (badgePriority) badgePriority.style.display = 'none';
+    }
+  }
+
+  acknowledgeUlugbekTestDrive() {
+    localStorage.setItem('liga_ulugbek_testdrive_ack', 'true');
+    const card = document.getElementById('card-ulugbek-brief');
+    const badgePriority = document.getElementById('vip-badge-priority');
+    if (card) card.classList.remove('vip-attention-pulse');
+    if (badgePriority) badgePriority.style.display = 'none';
+
+    this.playSwissChime();
+    this.closeUlugbekVipBrief();
+    this.showToast('👑 Тест-драйв принят! Успешной работы, Улугбек! Вы можете скрыть этот блок в Настройках ⚙️');
   }
 
   // ==========================================================================
