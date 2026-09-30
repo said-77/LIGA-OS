@@ -79,6 +79,9 @@ class LigaApp {
     this.isSoundEnabled = localStorage.getItem('liga_sound_enabled') !== 'false';
     this.audioCtx = null;
 
+    // Машинная озвучка ответов (TTS SpeechSynthesis) — ПО УМОЛЧАНИЮ СТРОГО ВЫКЛЮЧЕНА (Тихий швейцарский режим)
+    this.isVoiceTtsEnabled = localStorage.getItem('liga_voice_tts_enabled') === 'true'; // false по умолчанию
+
     // Ситуации мастера (v2.1.0: on-site / voice-create / ahead-work / designer-project)
     this.currentSituation = localStorage.getItem('liga_os_situation') || 'on-site';
   }
@@ -6562,20 +6565,21 @@ ${loopsText}
   // МОДУЛЬ ГОЛОСОВОГО КОНСЬЕРЖА («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ») — LIGA VOICE VIP
   // Естественный синтез речи, живой диалог, подтверждения в 1 тап и подсветка
   // ==========================================================================
+  // Машинный голосовой синтез речи (TTS) — строго подчиняется переключателю (по умолчанию ВЫКЛ)
   speakVoice(text) {
-    if (!this.isSoundEnabled || !window.speechSynthesis) return;
+    if (!this.isVoiceTtsEnabled || !this.isSoundEnabled || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
-      const clean = text.replace(/[*#`_~[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 280);
+      const clean = text.replace(/[*#`_~[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 150);
       const utt = new SpeechSynthesisUtterance(clean);
       utt.lang = 'ru-RU';
-      utt.rate = 1.0;
-      utt.pitch = 1.0;
-      utt.volume = 0.95;
+      utt.rate = 1.1; // динамичнее
+      utt.pitch = 0.98; // солиднее
+      utt.volume = 0.85;
 
       const voices = window.speechSynthesis.getVoices();
       const preferred = voices.find(v =>
-        v.lang.startsWith('ru') && (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Premium'))
+        v.lang.startsWith('ru') && (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Yandex') || v.name.includes('Premium'))
       ) || voices.find(v => v.lang.startsWith('ru') && !v.localService)
         || voices.find(v => v.lang.startsWith('ru'));
 
@@ -6583,6 +6587,32 @@ ${loopsText}
       window.speechSynthesis.speak(utt);
     } catch (e) {
       console.warn('[LIGA Voice] Speak error:', e);
+    }
+  }
+
+  toggleVoiceTts() {
+    this.isVoiceTtsEnabled = !this.isVoiceTtsEnabled;
+    localStorage.setItem('liga_voice_tts_enabled', this.isVoiceTtsEnabled ? 'true' : 'false');
+    this.updateVoiceTtsUI();
+    this.showToast(this.isVoiceTtsEnabled ? '🔊 Голосовая озвучка включена' : '🔇 Голосовая озвучка выключена (Тихий швейцарский режим)');
+  }
+
+  updateVoiceTtsUI() {
+    const iconEl = document.getElementById('voice-tts-status-icon');
+    const textEl = document.getElementById('voice-tts-status-text');
+    const btn = document.getElementById('btn-toggle-voice-tts');
+    if (iconEl) iconEl.innerText = this.isVoiceTtsEnabled ? '🔊' : '🔇';
+    if (textEl) textEl.innerText = this.isVoiceTtsEnabled ? 'Озвучка ответов: ВКЛ' : 'Озвучка ответов: ВЫКЛ (тихий режим)';
+    if (btn) {
+      if (this.isVoiceTtsEnabled) {
+        btn.style.borderColor = 'var(--gold-primary)';
+        btn.style.color = 'var(--gold-primary)';
+        btn.style.background = 'rgba(217,119,6,0.18)';
+      } else {
+        btn.style.borderColor = 'rgba(255,255,255,0.12)';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.background = 'rgba(255,255,255,0.06)';
+      }
     }
   }
 
@@ -6818,6 +6848,7 @@ ${loopsText}
   // Единый метод открытия голосового помощника для обеих кнопок (в шапке и плавающей)
   openVoiceAssistant() {
     this.openModal('modal-voice');
+    this.updateVoiceTtsUI();
     this.startVoiceRecording();
   }
 
@@ -7031,9 +7062,6 @@ ${loopsText}
 
     this.openModal('modal-voice-concierge-choice');
     this.playDiplomaticChime();
-
-    // Короткий вежливый голос ассистента без утомительного перечисления вариантов
-    this.speakVoice(voicePrompt);
 
     if (statusEl) {
       statusEl.innerHTML = '🟢 Слушаю ваш ответ: «Один», «Два», «Три»...';
@@ -7510,33 +7538,17 @@ ${loopsText}
       };
     }
 
-    // 21. Если мастер назвал ТОЛЬКО имя объекта (например «Мирабад», «Инфинити», «Сити»)
+    // 21. Если мастер назвал объект (например «Мирабад», «Инфинити», «Сити», «Бульвар»)
+    // МГНОВЕННО переключаем на этот объект БЕЗ ЛИШНИХ ВОПРОСОВ И БЕЗ РУТИНЫ
     if (siteMatch) {
-      // Если сказано «перейди», «открой», «включи» — сразу переключаем на этот объект!
-      const isSwitchVerb = lower.includes('открой') || lower.includes('перейди') || lower.includes('включи') || lower.includes('выбери') || lower.includes('покажи');
-      if (isSwitchVerb) {
-        return {
-          type: 'direct_func',
-          target: 'selectSite',
-          targetArg: siteMatch.id,
-          siteToSwitch: siteMatch.id,
-          title: `🏢 Объект: ${siteMatch.name}`,
-          voiceResponse: `Переключаю на объект ${siteMatch.name}`,
-          desc: `Загружаю все данные объекта ${siteMatch.name}...`
-        };
-      }
-
-      // Если названо только имя объекта без глагола — умный выбор действий именно для этого объекта!
       return {
-        type: 'concierge_disambiguation',
-        question: `Улугбек, что открыть по объекту «${siteMatch.name}»?`,
-        voicePrompt: `Улугбек, что открыть по объекту ${siteMatch.name}? Назовите номер: один, два, три или четыре.`,
-        options: [
-          { num: 1, title: `📸 Скрытые фото и узлы`, desc: `Фотофиксация скрытых трасс до стяжки (${siteMatch.name})`, targetFunc: 'openPassportPhotosModal', siteToSwitch: siteMatch.id },
-          { num: 2, title: `📄 Исполнительный Паспорт А4`, desc: `Официальный инженерный паспорт объекта (${siteMatch.name})`, targetFunc: 'testDriveStep4_Passport', siteToSwitch: siteMatch.id },
-          { num: 3, title: `💰 Касса и баланс объекта`, desc: `Финансовый пульс и остаток в кармане (${siteMatch.name})`, targetScreen: 'finances', siteToSwitch: siteMatch.id },
-          { num: 4, title: `📋 Чек-лист перед стяжкой`, desc: `10 контрольных узлов готовности к заливке (${siteMatch.name})`, targetScreen: 'checklist', siteToSwitch: siteMatch.id }
-        ]
+        type: 'direct_func',
+        target: 'selectSite',
+        targetArg: siteMatch.id,
+        siteToSwitch: siteMatch.id,
+        title: `🏢 Объект: ${siteMatch.name}`,
+        voiceResponse: `Объект ${siteMatch.name}`,
+        desc: `Переключено на объект ${siteMatch.name} (все данные загружены)`
       };
     }
 
