@@ -6977,10 +6977,14 @@ ${loopsText}
 
     if (!modal || !listEl) return;
 
-    this.activeConciergeOptions = data.options || [];
+    const options = Array.isArray(data) ? data : (data && data.options ? data.options : []);
+    const question = Array.isArray(data) ? (spokenQuery || 'Улугбек, что для вас открыть?') : (data && data.question ? data.question : 'Улугбек, что для вас открыть?');
+    const voicePrompt = Array.isArray(data) ? 'Улугбек, что открыть? Назовите номер или нажмите на карточку.' : (data && data.voicePrompt ? data.voicePrompt : 'Улугбек, что открыть? Назовите номер или нажмите на карточку.');
+
+    this.activeConciergeOptions = options;
     this.isConciergeListening = true;
 
-    if (titleEl) titleEl.innerText = data.question || 'Улугбек, что для вас открыть?';
+    if (titleEl) titleEl.innerText = question;
     if (subEl) subEl.innerText = 'Скажите вслух «Один», «Два» или «Три» — либо нажмите на нужную карточку:';
 
     let html = '';
@@ -7002,7 +7006,6 @@ ${loopsText}
     this.playDiplomaticChime();
 
     // Короткий вежливый голос ассистента без утомительного перечисления вариантов
-    const voicePrompt = data.voicePrompt || 'Улугбек, что открыть? Назовите номер или нажмите на карточку.';
     this.speakVoice(voicePrompt);
 
     if (statusEl) {
