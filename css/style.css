@@ -2939,9 +2939,6 @@ body.client-mode .client-view-placeholder,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-  margin-top: 2px;
-  line-height: 1.3;
-}
 
 /* Блок мгновенной фиксации факта (3 секунды) */
 .quick-fact-action-box {
@@ -3189,9 +3186,9 @@ body.client-mode .btn-floating-voice {
 }
 
 [data-theme="light"] .quick-onboarding-card {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border-color: #f59e0b;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+  background: linear-gradient(135deg, #fffdf8 0%, #fef3c7 100%);
+  border: 1.5px solid #d97706;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.12);
 }
 
 .btn-dismiss-onboarding {
@@ -3233,7 +3230,8 @@ body.client-mode .btn-floating-voice {
 }
 
 [data-theme="light"] .onboarding-title {
-  color: #b45309;
+  color: #92400e;
+  font-weight: 900;
 }
 
 .onboarding-steps {
@@ -3264,8 +3262,9 @@ body.client-mode .btn-floating-voice {
 }
 
 [data-theme="light"] .onboarding-step-num {
-  background: #f59e0b;
+  background: #d97706;
   color: #ffffff;
+  font-weight: 900;
 }
 
 .onboarding-step-content {
@@ -3273,6 +3272,27 @@ body.client-mode .btn-floating-voice {
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-main);
+}
+
+[data-theme="light"] .onboarding-step-content {
+  color: #0f172a !important;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+[data-theme="light"] .onboarding-step-content b {
+  color: #78350f;
+  font-weight: 800;
+}
+
+[data-theme="light"] .onboarding-step-content i {
+  color: #92400e;
+  font-style: normal;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.16);
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 
 /* 2. Баннер «Базарный карман мастера» (Деньги на закупку на руках) */
@@ -6060,10 +6080,11 @@ body.client-mode .btn-floating-voice {
 }
 
 .vip-engineer-sub {
-  font-size: 11.5px;
-  color: #cbd5e1 !important;
+  font-size: 12px;
+  color: #e2e8f0 !important;
   margin: 0;
-  line-height: 1.35;
+  line-height: 1.4;
+  font-weight: 500;
 }
 
 .btn-vip-action-gold {
@@ -6148,12 +6169,13 @@ body.client-mode .btn-floating-voice {
 
 /* Письмо-обращение к Улугбеку */
 .vip-letter-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-left: 3px solid var(--gold-primary);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-left: 4px solid var(--gold-primary);
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .vip-letter-greeting {
@@ -6164,24 +6186,30 @@ body.client-mode .btn-floating-voice {
 }
 
 .vip-letter-text {
-  font-size: 12px;
+  font-size: 12.5px;
   color: #f1f5f9 !important;
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 0 0 8px 0;
 }
 
 .vip-letter-quote {
-  font-size: 11px;
+  font-size: 12.5px;
   font-style: italic;
-  color: var(--gold-light);
-  line-height: 1.4;
-  border-top: 1px dashed rgba(212, 175, 55, 0.25);
-  padding-top: 6px;
+  font-weight: 600;
+  color: #fde047 !important;
+  line-height: 1.5;
+  background: rgba(212, 175, 55, 0.12);
+  border-left: 3px solid #ffd175;
+  border-top: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: 10px;
+  text-shadow: 0 0 10px rgba(253, 224, 71, 0.25);
 }
 
 /* Список 5 шагов тест-драйва */
 .vip-steps-title {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 900;
   color: var(--gold-primary);
   text-transform: uppercase;
@@ -6202,16 +6230,16 @@ body.client-mode .btn-floating-voice {
 .vip-step-card {
   display: flex;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border-subtle);
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 209, 117, 0.25);
   border-radius: 14px;
   padding: 12px 14px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .vip-step-card:hover {
-  border-color: rgba(212, 175, 55, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 175, 55, 0.5);
+  background: rgba(21, 29, 47, 0.85);
 }
 
 .vip-step-num {
@@ -6219,7 +6247,7 @@ body.client-mode .btn-floating-voice {
   font-weight: 900;
   color: var(--gold-primary);
   line-height: 1;
-  opacity: 0.8;
+  opacity: 0.9;
   min-width: 24px;
 }
 
@@ -6228,7 +6256,7 @@ body.client-mode .btn-floating-voice {
 }
 
 .vip-step-title {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #f8fafc !important;
   margin-bottom: 4px;
@@ -6236,10 +6264,10 @@ body.client-mode .btn-floating-voice {
 }
 
 .vip-step-desc {
-  font-size: 11.5px;
-  color: #cbd5e1 !important;
-  line-height: 1.4;
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: #e2e8f0 !important;
+  line-height: 1.5;
+  margin-bottom: 10px;
 }
 
 .vip-step-action-row {
@@ -6249,43 +6277,213 @@ body.client-mode .btn-floating-voice {
 }
 
 .btn-step-test {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  color: var(--text-main);
-  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  border-radius: 9px;
+  color: #ffffff !important;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 7px 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .btn-step-test:hover {
-  background: rgba(212, 175, 55, 0.15);
-  border-color: var(--gold-primary);
-  color: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #ffd175;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
 }
 
 .btn-step-test.btn-gold-step {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.12) 100%);
-  border-color: var(--gold-primary);
-  color: var(--gold-primary);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.35) 0%, rgba(212, 175, 55, 0.18) 100%);
+  border-color: #ffd175;
+  color: #fff2cc !important;
 }
 
 .btn-step-test.btn-gold-step:hover {
   background: var(--gold-gradient);
-  color: #000;
+  color: #000000 !important;
 }
 
 .vip-modal-footer-card {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--glass-border-subtle);
   border-radius: 12px;
   padding: 12px 14px;
   text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   АДАПТАЦИЯ БРИФА И ТЕСТ-ДРАЙВА ДЛЯ СВЕТЛОЙ ТЕМЫ (Light Ceramic & Gold)
+   -------------------------------------------------------------------------- */
+[data-theme="light"] .ulugbek-vip-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fffdf8 45%, #fef3c7 100%);
+  border: 1.5px solid #d97706;
+  box-shadow: 0 10px 28px rgba(217, 119, 6, 0.16), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .ulugbek-vip-card::before {
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.1) 0%, transparent 70%);
+}
+
+[data-theme="light"] .vip-badge-tag {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="light"] .vip-shield-icon {
+  color: #b45309;
+  font-weight: 900;
+}
+
+[data-theme="light"] .vip-engineer-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .vip-engineer-sub {
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+[data-theme="light"] .btn-vip-action-gold {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
+}
+
+[data-theme="light"] .btn-vip-action-gold:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 18px rgba(180, 83, 9, 0.45);
+}
+
+[data-theme="light"] .modal-ulugbek-sheet {
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfa 50%, #fef8ee 100%);
+  border: 1.5px solid #d97706;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2), 0 0 35px rgba(217, 119, 6, 0.15);
+}
+
+[data-theme="light"] .vip-modal-header {
+  border-bottom: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+[data-theme="light"] .vip-modal-badge {
+  color: #b45309;
+  font-weight: 900;
+}
+
+[data-theme="light"] .vip-modal-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .vip-modal-subtitle {
+  color: #92400e;
+  font-weight: 700;
+}
+
+[data-theme="light"] .vip-letter-card {
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-left: 4px solid #d97706;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.08);
+}
+
+[data-theme="light"] .vip-letter-greeting {
+  color: #92400e;
+  font-weight: 900;
+}
+
+[data-theme="light"] .vip-letter-text {
+  color: #1e293b !important;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+[data-theme="light"] .vip-letter-quote {
+  color: #78350f !important;
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 3px solid #d97706;
+  border-top: none;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  line-height: 1.5;
+  text-shadow: none;
+}
+
+[data-theme="light"] .vip-steps-title {
+  color: #92400e;
+  font-weight: 900;
+}
+
+[data-theme="light"] .vip-step-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .vip-step-card:hover {
+  border-color: #d97706;
+  background: #fffdfa;
+}
+
+[data-theme="light"] .vip-step-num {
+  color: #d97706;
+  font-weight: 900;
+  opacity: 1;
+}
+
+[data-theme="light"] .vip-step-title {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+[data-theme="light"] .vip-step-desc {
+  color: #334155 !important;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+[data-theme="light"] .btn-step-test {
+  background: #fffbeb;
+  border: 1.5px solid #d97706;
+  color: #78350f !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .btn-step-test:hover {
+  background: #fef3c7;
+  color: #92400e !important;
+  border-color: #b45309;
+}
+
+[data-theme="light"] .btn-step-test.btn-gold-step {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff !important;
+  border-color: #92400e;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
+}
+
+[data-theme="light"] .btn-step-test.btn-gold-step:hover {
+  background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .vip-modal-footer-card {
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+[data-theme="light"] .vip-modal-footer-card * {
+  color: #78350f !important;
 }
 
 /* 3. Анимация привлечения внимания к тест-драйву Улугбека (v2.4.8) */
@@ -6513,5 +6711,114 @@ body.client-mode .btn-floating-voice {
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-main);
 }
+
+/* ==========================================================================
+   КОМПЛЕКСНОЕ УЛУЧШЕНИЕ КОНТРАСТА СВЕТЛОЙ ТЕМЫ (Light Ceramic Elegance v2.5.5)
+   Безупречная читаемость на солнце • Чёткие карточки и полиграфия
+   ========================================================================== */
+[data-theme="light"] .situation-pill {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .situation-pill:hover {
+  border-color: #d97706;
+  color: #0f172a;
+}
+
+[data-theme="light"] .site-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .site-meta {
+  color: #475569 !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] .btn-contact {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .btn-contact:hover {
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #92400e !important;
+}
+
+[data-theme="light"] .finance-box {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .finance-box-label {
+  color: #475569 !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .finance-box-val {
+  color: #0f172a !important;
+  font-weight: 900;
+}
+
+[data-theme="light"] select#site-selector,
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-select {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+[data-theme="light"] select#site-selector:focus,
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .form-select:focus {
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
+}
+
+[data-theme="light"] .modal-sheet {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.15);
+}
+
+[data-theme="light"] .modal-title {
+  color: #92400e !important;
+}
+
+[data-theme="light"] .modal-sticky-actions {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .voice-assistant-bar {
+  background: #ffffff;
+  border: 1.5px solid #d97706;
+  box-shadow: 0 10px 30px rgba(217, 119, 6, 0.18);
+}
+
+[data-theme="light"] .voice-assistant-bar .voice-assistant-text {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .btn-voice-concierge-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="light"] .btn-voice-concierge-cancel:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 
 

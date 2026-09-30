@@ -8119,7 +8119,7 @@ ${loopsText}
     const barVal = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
     const stageCode = `STG-${site.id || '01'}-16B`;
 
-    const origin = (typeof window !== 'undefined' && window.location) ? (window.location.origin + window.location.pathname) : 'https://liga-master-uz.vercel.app/';
+    const origin = 'https://liga-master-uz.vercel.app/';
     const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}&bar=${barVal}`;
 
     const clientGreeting = site.client ? `Здравствуйте, ${site.client}!` : 'Здравствуйте!';
@@ -8160,7 +8160,7 @@ ${shareUrl}
 
   sendStageAcceptanceTelegram() {
     const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
-    const url = this.currentGeneratedStageUrl || (window.location.origin + window.location.pathname);
+    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/';
     try {
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(shareUrl, '_blank');
@@ -9766,7 +9766,7 @@ ${shareUrl}
     });
 
     try {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?v=2.5.4')}&text=${encodeURIComponent(report)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/')}&text=${encodeURIComponent(report)}`;
       window.open(shareUrl, '_blank');
     } catch (err) {
       console.warn('Telegram share window error:', err);
