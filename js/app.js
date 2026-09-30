@@ -734,6 +734,10 @@ class LigaApp {
     this.setClientMode(true);
   }
 
+  setClientModeFalse() {
+    this.setClientMode(false);
+  }
+
   toggleSafetyBeacon() {
     this.toggleClientMode();
   }
@@ -838,6 +842,48 @@ class LigaApp {
       // Загружаем сохраненные фото объекта
       this.currentPhotos = this.currentSite.photos || { manifold: null, pressure: null, wall: null, floor: null };
     }
+  }
+
+  // Переключение активного объекта (в том числе по голосу мастера)
+  async selectSite(siteId) {
+    this.currentSiteId = parseInt(siteId);
+    await this.loadSites();
+    this.render();
+    await this.renderScreenContent(this.currentScreen);
+    await this.updateNavBadges();
+    const siteSelect = document.getElementById('dashboard-site-select');
+    if (siteSelect) siteSelect.value = String(this.currentSiteId);
+  }
+
+  // Интеллектуальный поиск объекта по русской или английской транслитерации
+  findSiteByQuery(query) {
+    if (!this.sites || this.sites.length === 0 || !query) return null;
+    const q = query.toLowerCase().trim();
+    return this.sites.find(s => {
+      const name = (s.name || '').toLowerCase();
+      const addr = (s.address || '').toLowerCase();
+      if (name.includes(q) || addr.includes(q)) return true;
+      if (q.includes('мирабад') && (name.includes('mirabad') || name.includes('мирабад'))) return true;
+      if (q.includes('инфинити') && (name.includes('infinity') || name.includes('инфинити'))) return true;
+      if ((q.includes('ташкент сити') || q.includes('сити')) && (name.includes('tashkent') || name.includes('city') || name.includes('сити'))) return true;
+      if (q.includes('бульвар') && (name.includes('boulevard') || name.includes('бульвар'))) return true;
+      if ((q.includes('нест') || q.includes('ван')) && (name.includes('nest') || name.includes('нест'))) return true;
+      if (q.includes('коттедж') && (name.includes('коттедж') || name.includes('дом') || name.includes('дача'))) return true;
+      return false;
+    });
+  }
+
+  openPassportPhotosModal() {
+    this.updatePhotoBadges();
+    this.openModal('modal-passport-photos');
+  }
+
+  openPaymentModal(type = 'client_advance', amount = null) {
+    this.openModal('modal-payment');
+    const payTypeEl = document.getElementById('pay-type');
+    if (payTypeEl && type) payTypeEl.value = type;
+    const amtInput = document.getElementById('input-payment-amount') || document.getElementById('pay-amount');
+    if (amtInput && amount) amtInput.value = this.formatNumber(amount);
   }
 
   // Регистрация оффлайн-воркера с немедленной проверкой обновлений (v2.4.8)
@@ -6669,7 +6715,7 @@ ${loopsText}
       };
 
       this.recognition.onresult = (e) => {
-        // v2.5.1: Принимаем сигналы только при активной сессии и открытом окне (голос или консьерж)
+        // Принимаем сигналы только при активной сессии
         if (!this.isRecordingVoice || !this.voiceKeepAliveActive) {
           return;
         }
@@ -6694,12 +6740,35 @@ ${loopsText}
         this.voiceInterimText = interim;
 
         const currentFull = (this.voiceAccumulatedText + (interim ? ' ' + interim : '')).trim();
-        this.handleVoiceResult(currentFull);
+
+        // 1. Если активно окно выбора консьержа: слушаем выбор 1-2-3-4
+        if (isConciergeOpen && this.isConciergeListening) {
+          this.handleConciergeVoiceChoice(currentFull.toLowerCase());
+          return;
+        }
+
+        // 2. Если открыто окно диктовки: плавно выводим слова в поле ввода БЕЗ перебивания!
+        const inputEl = document.getElementById('voice-recognized-input');
+        if (inputEl) inputEl.value = currentFull;
 
         const statusEl = document.getElementById('voice-status-text');
         if (statusEl) {
-          statusEl.innerHTML = '🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю речь...</span> Записываю каждое слово';
+          statusEl.innerHTML = `🟢 <span style="color:var(--neon-emerald); font-weight:800;">Слушаю вас...</span> «${currentFull}»`;
         }
+
+        const finishBtn = document.getElementById('btn-voice-finish-recording');
+        if (finishBtn) finishBtn.style.display = 'block';
+
+        // 3. Умный дебаунсер тишины (1.3 секунды): даем мастеру спокойно договорить всю фразу!
+        clearTimeout(this.voiceSilenceTimer);
+        this.voiceSilenceTimer = setTimeout(() => {
+          if (this.isRecordingVoice && isVoiceOpen) {
+            const finalQuery = (inputEl ? inputEl.value : currentFull).trim();
+            if (finalQuery.length >= 2) {
+              this.stopVoiceRecording(true);
+            }
+          }
+        }, 1300);
       };
 
       this.recognition.onerror = (e) => {
@@ -6799,6 +6868,7 @@ ${loopsText}
   stopVoiceRecording(processText = true) {
     this.voiceKeepAliveActive = false;
     clearTimeout(this.voiceRestartTimeout);
+    clearTimeout(this.voiceSilenceTimer);
 
     if (this.recognition) {
       try {
@@ -6813,16 +6883,40 @@ ${loopsText}
 
     const statusEl = document.getElementById('voice-status-text');
     if (statusEl) {
-      statusEl.innerHTML = '✓ <span style="color:var(--neon-emerald); font-weight:800;">Запись завершена.</span> Проверьте результат ниже:';
+      statusEl.innerHTML = '✓ <span style="color:var(--neon-emerald); font-weight:800;">Запись завершена.</span> Анализирую команду мастера...';
     }
 
     if (processText) {
       const inputEl = document.getElementById('voice-recognized-input');
       const finalText = inputEl ? inputEl.value.trim() : (this.voiceAccumulatedText + ' ' + this.voiceInterimText).trim();
       if (finalText) {
-        this.handleVoiceInputText(finalText);
+        this.executeCompleteVoiceCommand(finalText);
       }
     }
+  }
+
+  // Окончательный анализ и мгновенное выполнение команды мастера БЕЗ промежуточных прерываний
+  async executeCompleteVoiceCommand(text) {
+    if (!text || text.trim().length < 2) return;
+
+    const parsed = this.parseVoiceCommand(text);
+    if (!parsed) return;
+    this.parsedVoiceAction = parsed;
+
+    // 1. Если требуется интерактивный выбор (размытая фраза или список объектов)
+    if (parsed.type === 'concierge_disambiguation') {
+      this.showVoiceConciergeChoice(parsed);
+      return;
+    }
+
+    // 2. Если это быстрое добавление материала на Джами с известной суммой
+    if (parsed.type === 'material') {
+      this.openVoiceFastActionConfirmation(parsed);
+      return;
+    }
+
+    // 3. Прямое действие (смена объекта, фото, паспорт А4, акт, касса, опрессовка, режим клиента)
+    await this.confirmVoiceAction();
   }
 
   clearVoiceText() {
@@ -6871,13 +6965,14 @@ ${loopsText}
 
     const lower = (transcript || '').toLowerCase().trim();
 
-    // 0. Если активно окно LIGA Concierge («Нулевая рутина») — обрабатываем выбор голосом («Один», «Два», «Три»)
+    // Обработка голосом выбора консьержа 1-2-3-4
     const conciergeModal = document.getElementById('modal-voice-concierge-choice');
     if (conciergeModal && conciergeModal.classList.contains('open') && this.isConciergeListening) {
       this.handleConciergeVoiceChoice(lower);
       return;
     }
 
+    // Обработка голосом экспресс-подтверждения чека («Да» / «Отмена» / «Другой объект»)
     const overlay = document.getElementById('voice-confirmation-overlay');
     if (overlay && overlay.style.display === 'flex' && this.pendingFastVoiceAction) {
       if (lower.includes('да') || lower.includes('подтверждаю') || lower.includes('запиши') || lower.includes('верно') || lower.includes('хорошо') || lower.includes('ок') || lower.includes('давай')) {
@@ -6891,74 +6986,6 @@ ${loopsText}
       if (lower.includes('другой объект') || lower.includes('смени объект')) {
         this.switchVoiceConfSite();
         return;
-      }
-    }
-
-    this.handleVoiceInputText(transcript);
-  }
-
-  handleVoiceInputText(text) {
-    if (this.voiceNavTimeout) {
-      clearTimeout(this.voiceNavTimeout);
-      this.voiceNavTimeout = null;
-    }
-
-    if (!text || text.trim().length < 2) {
-      const preview = document.getElementById('voice-parse-preview');
-      const btnConfirm = document.getElementById('btn-voice-confirm');
-      if (preview) preview.style.display = 'none';
-      if (btnConfirm) btnConfirm.style.display = 'none';
-      return;
-    }
-
-    const parsed = this.parseVoiceCommand(text);
-    this.parsedVoiceAction = parsed;
-
-    // Всплывающее интерактивное окно LIGA Concierge для размытых / забытых фраз мастера
-    if (parsed.type === 'concierge_disambiguation') {
-      this.showVoiceConciergeChoice(parsed);
-      return;
-    }
-
-    const preview = document.getElementById('voice-parse-preview');
-    const typeEl = document.getElementById('voice-parse-type');
-    const detailsEl = document.getElementById('voice-parse-details');
-    const btnConfirm = document.getElementById('btn-voice-confirm');
-
-    if (preview && typeEl && detailsEl && btnConfirm) {
-      preview.style.display = 'block';
-      btnConfirm.style.display = 'block';
-      btnConfirm.innerText = '✓ Подтверждаю (Внести)';
-
-      if (parsed.type === 'nav_action' || parsed.type === 'modal_action' || parsed.type === 'direct_func') {
-        typeEl.innerText = parsed.title;
-        detailsEl.innerText = parsed.desc;
-        btnConfirm.innerText = '✓ Перейти сейчас';
-
-        // Автоматический переход «Свободные руки» через 700 мс
-        this.voiceNavTimeout = setTimeout(() => {
-          this.confirmVoiceAction();
-        }, 700);
-      } else if (parsed.type === 'material') {
-        typeEl.innerText = `📦 Запись в Снабжение (${parsed.category})`;
-        detailsEl.innerText = `${parsed.title} • ${this.formatSum(parsed.amount)}`;
-      } else if (parsed.type === 'brigade_pay') {
-        typeEl.innerText = `💰 Выплата помощнику (${parsed.recipient})`;
-        detailsEl.innerText = `Сумма: ${this.formatSum(parsed.amount)}`;
-      } else if (parsed.type === 'client_advance') {
-        typeEl.innerText = `💵 Поступление аванса от заказчика`;
-        detailsEl.innerText = `Зачислено: ${this.formatSum(parsed.amount)}`;
-      } else if (parsed.type === 'press_test') {
-        typeEl.innerText = `🛡️ Фиксация испытания 16 бар`;
-        detailsEl.innerText = `Акт опрессовки на 24 часа успешно подтвержден`;
-      } else if (parsed.type === 'calc_floor') {
-        typeEl.innerText = `📐 Инженерный расчет: Водяной теплый пол`;
-        detailsEl.innerHTML = `Площадь: <b>${parsed.area} м²</b><br>• Труба Rehau/Stout: <b>~${parsed.meters} м</b> (при шаге 150 мм)<br>• Потребуется: <b>${parsed.coils} бухт(ы) по 200 м</b><br>• Контуров: <b>${parsed.loops}</b> (коллектор FAR на ${parsed.loops} выходов)`;
-        btnConfirm.style.display = 'none';
-      } else if (parsed.type === 'currency_conv') {
-        typeEl.innerText = `💵 Экспресс-конвертер валюты`;
-        detailsEl.innerHTML = `<b>$${parsed.usd}</b> = <b style="color:var(--neon-emerald);">${this.formatSum(parsed.som)}</b><br><span style="font-size:11px; color:var(--text-dim);">Курс мастера: ${this.formatNumber(parsed.rate)} сум / $</span>`;
-        btnConfirm.style.display = 'none';
       }
     }
   }
@@ -7041,12 +7068,16 @@ ${loopsText}
     }
   }
 
-  executeConciergeChoice(index) {
+  async executeConciergeChoice(index) {
     const opt = this.activeConciergeOptions ? this.activeConciergeOptions[index] : null;
     if (!opt) return;
 
     this.closeVoiceConciergeModal();
     this.playDiplomaticChime();
+
+    if (opt.siteToSwitch && opt.siteToSwitch !== this.currentSiteId) {
+      await this.selectSite(opt.siteToSwitch);
+    }
 
     if (opt.targetScreen) {
       this.switchScreen(opt.targetScreen);
@@ -7055,7 +7086,12 @@ ${loopsText}
       this.openModal(opt.targetModal);
       this.showToast(`✓ Открываю: ${opt.title}`);
     } else if (opt.targetFunc && typeof this[opt.targetFunc] === 'function') {
-      this[opt.targetFunc]();
+      if (opt.targetArg !== undefined) {
+        this[opt.targetFunc](opt.targetArg);
+      } else {
+        this[opt.targetFunc]();
+      }
+      this.showToast(`✓ Выполняю: ${opt.title}`);
     }
   }
 
@@ -7067,11 +7103,15 @@ ${loopsText}
   }
 
   parseVoiceCommand(text) {
-    const lower = text.toLowerCase();
+    const lower = text.toLowerCase().trim();
 
-    // 0. Навигационные интенты естественного языка мастера («Своими словами • Нулевая рутина»)
-    // 0.0. Персональный тест-драйв и бриф Улугбека Хакимова
-    if (lower.includes('бриф') || lower.includes('тест драйв') || lower.includes('тест-драйв') || lower.includes('паспорт приемки') || lower.includes('паспорт приёмки') || lower.includes('программа приемки') || lower.includes('программа приёмки') || lower.includes('памятка улугбек') || lower.includes('открой бриф') || lower.includes('покажи бриф')) {
+    // 0. Поиск упомянутого объекта (Мирабад, Инфинити, Ташкент Сити, Бульвар, Нест Ван, Коттедж и др.)
+    const siteMatch = this.findSiteByQuery(lower);
+    const siteToSwitch = siteMatch ? siteMatch.id : undefined;
+    const siteName = siteMatch ? siteMatch.name : (this.currentSite ? this.currentSite.name : '');
+
+    // 1. VIP-бриф и персональный тест-драйв Улугбека Хакимова
+    if (lower.includes('бриф') || lower.includes('тест драйв') || lower.includes('тест-драйв') || lower.includes('улугбек') || lower.includes('программа приемки') || lower.includes('памятка мастера') || lower.includes('приемка системы')) {
       return {
         type: 'direct_func',
         target: 'openUlugbekVipBrief',
@@ -7081,18 +7121,20 @@ ${loopsText}
       };
     }
 
-    // 0.0.1. Королевская кнопка факта (3 секунды)
-    if (lower.includes('зафиксируй факт') || lower.includes('королевская кнопка') || lower.includes('фото факта') || lower.includes('быстрое фото') || (lower.includes('факт') && (lower.includes('сфоткай') || lower.includes('сохрани') || lower.includes('сделай')))) {
+    // 2. Королевская кнопка факта (3 секунды) — мгновенная фотокамера
+    const isQuickFact = lower.includes('королевская') || lower.includes('факт') || lower.includes('быстрое фото') || lower.includes('сфоткай') || (lower.includes('камер') && (lower.includes('включи') || lower.includes('открой')));
+    if (isQuickFact) {
       return {
         type: 'direct_func',
         target: 'openQuickFactModal',
+        siteToSwitch: siteToSwitch,
         title: '📸 Факт: Быстрая фотофиксация узла (3 сек)',
         voiceResponse: 'Включаю камеру быстрой фотофиксации скрытого узла до стяжки',
         desc: 'Запускаю быструю камеру для фиксации скрытого узла до стяжки...'
       };
     }
 
-    // 0.0.2. LIGA AI Голосовой Консьерж
+    // 3. LIGA AI Голосовой Консьерж
     if (lower.includes('спроси ии') || lower.includes('ии консьерж') || lower.includes('ии-консьерж') || lower.includes('голосовой ии') || lower.includes('помощник ии') || (lower.includes('ассистент') && !lower.includes('помощнику'))) {
       return {
         type: 'modal_action',
@@ -7103,8 +7145,8 @@ ${loopsText}
       };
     }
 
-    // 0.0.3. Гербовая печать и подпись мастера
-    if (lower.includes('печать') || lower.includes('подпись мастера') || lower.includes('гербовая печать') || lower.includes('распишись')) {
+    // 4. Гербовая печать и подпись мастера
+    if (lower.includes('печать') || lower.includes('подпись мастера') || lower.includes('гербов') || lower.includes('штамп') || lower.includes('распишись')) {
       return {
         type: 'direct_func',
         target: 'testDriveStep3_Seal',
@@ -7114,161 +7156,109 @@ ${loopsText}
       };
     }
 
-    // 0.1. Прямые функции системы
-    if (lower.includes('телеграм') || lower.includes('скинь в тг') || lower.includes('отчет заказчик')) {
+    // 5. Telegram: Отчет заказчику
+    if (lower.includes('телеграм') || lower.includes('скинь в тг') || lower.includes('отчет заказчик') || lower.includes('отправь отчет')) {
       return {
         type: 'direct_func',
         target: 'shareSiteProgressTelegram',
+        siteToSwitch: siteToSwitch,
         title: '✈️ Telegram: Отчет заказчику',
+        voiceResponse: `Формирую отчет для отправки в Telegram ${siteName}`.trim(),
         desc: 'Формирую отчет о ходе монтажа для отправки в Telegram...'
       };
     }
-    if ((lower.includes('сделай') || lower.includes('распечатай') || lower.includes('экспорт') || lower.includes('скачай')) && lower.includes('паспорт')) {
-      return {
-        type: 'direct_func',
-        target: 'generatePassport',
-        title: '🖨️ Экспорт: Паспорт объекта',
-        desc: 'Формирую официальный инженерный паспорт А4 для печати...'
-      };
-    }
-    if (lower.includes('покажи клиент') || lower.includes('режим клиент') || lower.includes('скрой финанс')) {
+
+    // 6. Режим показа клиенту (Безопасность мастера)
+    if (lower.includes('клиент смотрит') || lower.includes('спрячь цен') || lower.includes('скрой деньг') || lower.includes('скрой финанс') || lower.includes('режим клиент') || lower.includes('показ клиент') || lower.includes('секрет')) {
       return {
         type: 'direct_func',
         target: 'setClientModeTrue',
         title: '👁️ Защита: Режим показа клиенту',
+        voiceResponse: 'Режим показа клиенту активирован. Закупочные цены и прибыль скрыты',
         desc: 'Скрываю служебные и финансовые данные мастера...'
       };
     }
-
-    // 0.2. СМЫСЛОВОЙ РОУТИНГ LIGA CONCIERGE («НУЛЕВАЯ РУТИНА» — ВЫБОР БЕЗ ЗУБРЕЖКИ)
-    // Группа А: Расчеты и калькуляторы
-    if (lower.includes('посчитай') || lower.includes('калькулятор') || lower.includes('расчет') || lower.includes('сколько надо') || (lower.includes('смета') && !lower.includes('купил'))) {
+    if (lower.includes('верни цен') || lower.includes('обычный режим') || lower.includes('выключи режим клиент') || lower.includes('покажи цены')) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, какой расчет открыть?',
-        voicePrompt: 'Улугбек, какой расчет открыть? Назовите: один, два или три. Или нажмите на карточку.',
-        options: [
-          { num: 1, title: '♨️ Теплый пол Rehau', desc: 'Площадь, метраж трубы, бухты и число петель', targetFunc: 'openFloorCalculator' },
-          { num: 2, title: '📐 Диаметры труб и коллекторы FAR', desc: 'Гидравлика стояков, разводка и гребенки FAR (DIN 1988)', targetFunc: 'openPipeCalculator' },
-          { num: 3, title: '🔥 Радиаторы отопления', desc: 'Теплопотери, подбор секций и лучевая разводка', targetFunc: 'openRadiatorCalculator' },
-          { num: 4, title: '⚡ Экспресс-смета по точкам', desc: 'Расчет водорозеток, инсталляций и стоимости работ', targetScreen: 'estimate' }
-        ]
+        type: 'direct_func',
+        target: 'setClientModeFalse',
+        title: '🔓 Обычный режим мастера',
+        voiceResponse: 'Обычный режим мастера включен. Финансы и касса доступны',
+        desc: 'Возвращаю отображение цен и служебных данных...'
       };
     }
 
-    // Группа Б: Трубы и коллекторы
-    if ((lower.includes('труб') || lower.includes('коллектор') || lower.includes('гребенк')) && !lower.includes('купил') && !lower.includes('сум') && !lower.includes('тыс')) {
+    // 7. Фотографии скрытых узлов и трасс (Галерея паспорта)
+    const isPhotoRequest = lower.includes('фото') || lower.includes('фотк') || lower.includes('снимок') || lower.includes('галере') || lower.includes('трасс') || lower.includes('скрыт') || lower.includes('аксонометр');
+    if (isPhotoRequest) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, что нужно по трубам и коллекторам?',
-        voicePrompt: 'Улугбек, что открыть по трубам? Назовите: один, два или три.',
-        options: [
-          { num: 1, title: '📐 Диаметры труб и гребенки FAR', desc: 'Расчет диаметров труб Rehau и выходов коллектора', targetFunc: 'openPipeCalculator' },
-          { num: 2, title: '♨️ Петли теплого пола Rehau', desc: 'Расчет бухт по 200м и увязка контуров до 75м', targetFunc: 'openFloorCalculator' },
-          { num: 3, title: '⚖️ Балансировка ротаметров FAR', desc: 'Точные уставки расходомеров для равномерного прогрева', targetFunc: 'openBalancingCalculator' },
-          { num: 4, title: '📦 Склад и список на Джами', desc: 'Учет остатков и закупка фитингов', targetScreen: 'materials' }
-        ]
+        type: 'direct_func',
+        target: 'openPassportPhotosModal',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📸 Фото скрытых узлов: ${siteName}` : '📸 Фотоархив скрытых узлов',
+        voiceResponse: siteName ? `Открываю фотоархив скрытых узлов объекта ${siteName}` : 'Открываю фотоархив скрытых трасс и узлов',
+        desc: 'Открываю исполнительную фотофиксацию скрытых работ до стяжки...'
       };
     }
 
-    // Группа В: Отопление, котел, радиаторы
-    if ((lower.includes('отоплен') || lower.includes('котел') || lower.includes('котёл') || lower.includes('батаре') || lower.includes('бойлер')) && !lower.includes('купил')) {
+    // 8. Исполнительный Инженерный Паспорт А4 (PDF)
+    const isPassportRequest = lower.includes('паспорт') || lower.includes('исполнительный') || (lower.includes('документ') && !lower.includes('акт') && !lower.includes('чеклист') && !lower.includes('печать'));
+    if (isPassportRequest) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, какой узел отопления открыть?',
-        voicePrompt: 'Улугбек, что открыть по отоплению? Назовите номер.',
-        options: [
-          { num: 1, title: '🔥 Радиаторное отопление', desc: 'Подбор секций, теплопотери и лучевая разводка', targetFunc: 'openRadiatorCalculator' },
-          { num: 2, title: '♨️ Водяной теплый пол', desc: 'Контуры, смесительный узел и шаг укладки', targetFunc: 'openFloorCalculator' },
-          { num: 3, title: '⚡ Бойлер ГВС и бак Reflex', desc: 'Объем бойлера косвенного нагрева и мембранный бак', targetFunc: 'openBoilerCalculator' },
-          { num: 4, title: '🌀 Циркуляционный насос котельной', desc: 'Рабочая точка насоса (Q, H) и магистрали', targetFunc: 'openPumpCalculator' }
-        ]
+        type: 'direct_func',
+        target: 'testDriveStep4_Passport',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📄 Паспорт А4: ${siteName}` : '📄 Исполнительный Паспорт Объекта А4',
+        voiceResponse: siteName ? `Формирую официальный инженерный паспорт объекта ${siteName}` : 'Формирую официальный инженерный паспорт А4 для печати',
+        desc: 'Формирую официальный инженерный паспорт А4 для печати и PDF...'
       };
     }
 
-    // Группа Г: Проверка, контроль, стяжка, испытания
-    if ((lower.includes('провер') || lower.includes('контрол') || lower.includes('испытан') || lower.includes('стяжк') || lower.includes('давлен') || lower.includes('опрессов')) && !lower.includes('купил')) {
+    // 9. Официальный Акт опрессовки 16 бар (допуск к стяжке)
+    const isActRequest = lower.includes('акт') || lower.includes('протокол') || lower.includes('допуск к стяжке') || lower.includes('акт стяжки');
+    if (isActRequest) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, какую проверку провести?',
-        voicePrompt: 'Улугбек, какую проверку открыть? Назовите номер.',
-        options: [
-          { num: 1, title: '🛡️ Опрессовка 16 бар на 24 часа', desc: 'Суточный таймер выдержки и протокол допуска', targetFunc: 'testDriveStep2_Pressure' },
-          { num: 2, title: '📋 Чек-лист перед заливкой стяжки', desc: '10 критических пунктов проверки до заливки бетона', targetScreen: 'checklist' },
-          { num: 3, title: '📐 Инженерный экспресс-аудит', desc: 'Проверка надежности узлов по швейцарским стандартам', targetFunc: 'runAiAudit' },
-          { num: 4, title: '📸 Королевская кнопка факта', desc: 'Быстрое фото скрытого узла до стяжки (3 секунды)', targetFunc: 'openQuickFactModal' }
-        ]
+        type: 'direct_func',
+        target: 'exportScreedAct',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `🛡️ Акт 16 бар: ${siteName}` : '🛡️ Официальный Акт опрессовки 16 бар',
+        voiceResponse: siteName ? `Формирую официальный акт опрессовки объекта ${siteName}` : 'Формирую официальный акт опрессовки 16 бар по стандарту DIN 1988',
+        desc: 'Экспортирую юридический акт гидравлических испытаний 16 бар...'
       };
     }
 
-    // Группа Д: Клиент, показ, скрытие цен
-    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('показ') || lower.includes('спряч') || lower.includes('секрет')) {
+    // 10. Чек-лист перед заливкой стяжки (10 пунктов)
+    const isChecklistRequest = lower.includes('чеклист') || lower.includes('чек-лист') || lower.includes('10 пунктов') || lower.includes('проверка до стяжки') || lower.includes('проверь стяжку') || (lower.includes('провер') && lower.includes('стяжк'));
+    if (isChecklistRequest) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, что нужно для заказчика?',
-        voicePrompt: 'Улугбек, что сделать для клиента? Назовите: один или два.',
-        options: [
-          { num: 1, title: '👁️ Режим показа клиенту', desc: 'Мгновенно скрыть закупочные цены, долги и прибыль', targetFunc: 'setClientModeTrue' },
-          { num: 2, title: '📄 Исполнительный Паспорт А4 (PDF)', desc: 'Официальный документ с фотофиксацией трасс и узлов', targetFunc: 'testDriveStep4_Passport' },
-          { num: 3, title: '✈️ Отчет о ходе монтажа в Telegram', desc: 'Отправить статус объекта заказчику в 1 клик', targetFunc: 'shareSiteProgressTelegram' }
-        ]
+        type: 'nav_action',
+        target: 'checklist',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📋 Чек-лист: ${siteName}` : '📋 Чек-лист перед заливкой стяжки',
+        voiceResponse: siteName ? `Открываю чек-лист проверки перед стяжкой ${siteName}` : 'Открываю чек-лист 10 критических узлов перед заливкой стяжки',
+        desc: 'Перехожу к контрольному чек-листу готовности к стяжке...'
       };
     }
 
-    // Группа Е: Документы, акты, паспорта
-    if (lower.includes('документ') || lower.includes('акт') || lower.includes('паспорт') || lower.includes('бумаг')) {
+    // 11. Опрессовка 16 бар на 24 часа (Таймер испытаний)
+    const isPressureRequest = lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('манометр') || (lower.includes('давлен') && !lower.includes('смета')) || lower.includes('гидравлик') || lower.includes('протечк');
+    if (isPressureRequest && !lower.includes('купил')) {
       return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, какой документ сформировать?',
-        voicePrompt: 'Улугбек, какой документ подготовить? Назовите номер.',
-        options: [
-          { num: 1, title: '📄 Исполнительный Паспорт Объекта А4', desc: 'Официальный инженерный паспорт с фото скрытых трасс', targetFunc: 'testDriveStep4_Passport' },
-          { num: 2, title: '🛡️ Официальный Акт опрессовки 16 бар', desc: 'Бланк допуска под стяжку по стандарту DIN 1988', targetFunc: 'exportScreedAct' },
-          { num: 3, title: '✍️ Гербовая печать и подпись мастера', desc: 'Выбрать стиль печати и расписаться пальцем', targetFunc: 'testDriveStep3_Seal' }
-        ]
+        type: 'direct_func',
+        target: 'testDriveStep2_Pressure',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `🛡️ Опрессовка 16 бар: ${siteName}` : '🛡️ Опрессовка 16 бар на 24 часа',
+        voiceResponse: siteName ? `Открываю суточный таймер опрессовки 16 бар объекта ${siteName}` : 'Открываю протокол гидравлических испытаний 16 бар',
+        desc: 'Запускаю протокол суточной опрессовки 16 бар по стандарту DIN 1988...'
       };
     }
 
-    // Группа Ж: Деньги, касса, зарплаты
-    if ((lower.includes('деньг') || lower.includes('касс') || lower.includes('прибыл') || lower.includes('долг') || lower.includes('баланс')) && !lower.includes('купил') && !lower.includes('выдал') && !lower.includes('аванс')) {
-      return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, что открыть по финансам?',
-        voicePrompt: 'Улугбек, что открыть по деньгам? Назовите номер.',
-        options: [
-          { num: 1, title: '💰 Финансовый пульс и касса', desc: 'Баланс объекта, остаток в кармане и прибыль', targetScreen: 'finances' },
-          { num: 2, title: '👥 Зафиксировать выплату помощнику', desc: 'Записать аванс бригаде без бумажной рутины', targetModal: 'modal-payment' },
-          { num: 3, title: '💵 Принять аванс от заказчика', desc: 'Зачисление средств на объект', targetModal: 'modal-payment' },
-          { num: 4, title: '📜 10-летняя хроника выплат', desc: 'История оплат и выполненных работ', targetScreen: 'history' }
-        ]
-      };
-    }
-
-    // Группа З: Помощь, с чего начать, что делать, растерянность
-    if (lower.includes('что делать') || lower.includes('с чего начать') || lower.includes('помоги') || lower.includes('инструкц') || lower.includes('не знаю') || lower.includes('куда нажать') || lower.includes('забыл') || lower.includes('подскажи')) {
-      return {
-        type: 'concierge_disambiguation',
-        question: 'Улугбек, чем помочь вам прямо сейчас?',
-        voicePrompt: 'Улугбек, чем помочь? Назовите номер: один, два или три.',
-        options: [
-          { num: 1, title: '👑 Персональный тест-драйв Улугбека', desc: '5 ключевых контрольных узлов системы LIGA OS', targetFunc: 'openUlugbekVipBrief' },
-          { num: 2, title: '🎬 Инженерный видеогид мастера', desc: 'Подсказки и видеоэкскурсия по всем возможностям', targetFunc: 'openSystemGuideModal' },
-          { num: 3, title: '📖 Памятка мастера', desc: 'Диалоги с дизайнерами, клиентами и скрипты', targetFunc: 'openMasterGuide' },
-          { num: 4, title: '📸 Королевская кнопка факта (3 сек)', desc: 'Мгновенное фото скрытого узла до стяжки', targetFunc: 'openQuickFactModal' }
-        ]
-      };
-    }
-
+    // 12. Парсинг денежных сумм (миллионы, тысячи, доллары, баксы, узбекский)
     let amount = 0;
-
-    // 1. Парсинг сумм на естественном языке мастера (миллионы, тысячи, доллары, узбекский)
     const usdRate = (this.tariffSettings && this.tariffSettings.usdRate) ? this.tariffSettings.usdRate : 12900;
-
-    // Доллары («100 долларов», «50 баксов», «сто баксов», «$50»)
     const usdMatch = lower.match(/(\d+)\s*(доллар|бакс|\$)/);
     if (usdMatch) {
-      const usdVal = parseInt(usdMatch[1]);
-      amount = usdVal * usdRate;
+      amount = parseInt(usdMatch[1]) * usdRate;
     } else if (lower.includes('сто долларов') || lower.includes('сто баксов')) {
       amount = 100 * usdRate;
     } else if (lower.includes('двести долларов') || lower.includes('двести баксов')) {
@@ -7282,8 +7272,7 @@ ${loopsText}
     } else if (lower.includes('миллион') || lower.includes('один миллион') || lower.includes('лям') || lower.includes('лимон')) {
       const mMatch = lower.match(/(\d+[\.,]?\d*)\s*(млн|миллион|лям|лимон)/);
       if (mMatch) {
-        const val = parseFloat(mMatch[1].replace(',', '.'));
-        amount = Math.round(val * 1000000);
+        amount = Math.round(parseFloat(mMatch[1].replace(',', '.')) * 1000000);
       } else {
         amount = 1000000;
       }
@@ -7308,53 +7297,84 @@ ${loopsText}
     } else {
       const thousandsMatch = lower.match(/(\d+[\.,]?\d*)\s*(тыс|тысяч|тыщ|минг)/);
       const plainNumberMatch = lower.match(/(\d{4,9})/);
-
       if (thousandsMatch) {
-        const val = parseFloat(thousandsMatch[1].replace(',', '.'));
-        amount = Math.round(val * 1000);
+        amount = Math.round(parseFloat(thousandsMatch[1].replace(',', '.')) * 1000);
       } else if (plainNumberMatch) {
         amount = parseInt(plainNumberMatch[1]);
       }
     }
 
-    // 2. Определение типа операции: Аванс / Оплата от заказчика (Приоритет №1)
-    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('перевел') || lower.includes('бахром') || lower.includes('поступил аванс') || lower.includes('аванс от')) {
-      return {
-        type: 'client_advance',
-        title: 'Аванс от заказчика',
-        amount: amount || 2000000
-      };
+    // 13. Финансы: Аванс от клиента / Зачисление денег
+    const isClientAdvance = lower.includes('клиент перевел') || lower.includes('заказчик дал') || lower.includes('поступил аванс') || lower.includes('аванс от') || (lower.includes('аванс') && lower.includes('клиент'));
+    if (isClientAdvance) {
+      if (amount > 0) {
+        return {
+          type: 'client_advance',
+          siteToSwitch: siteToSwitch,
+          title: `Аванс от заказчика (${this.formatSum(amount)})`,
+          amount: amount,
+          voiceResponse: `Зачисляю аванс ${this.formatSum(amount)} на объект ${siteName}`.trim()
+        };
+      } else {
+        return {
+          type: 'direct_func',
+          target: 'openPaymentModal',
+          targetArg: 'client_advance',
+          siteToSwitch: siteToSwitch,
+          title: '💵 Принять аванс заказчика',
+          voiceResponse: 'Открываю окно зачисления аванса от заказчика',
+          desc: 'Открываю финансовую форму приема аванса...'
+        };
+      }
     }
 
-    // 3. Определение типа операции: Выплата бригаде / помощнику
-    if (lower.includes('выдал') || lower.includes('аванс') || lower.includes('алишер') || lower.includes('сардор') || lower.includes('рустам') || lower.includes('зарплат') || lower.includes('помощник') || lower.includes('дал денег')) {
+    // 14. Финансы: Выплата помощнику / Зарплата бригаде
+    const isBrigadePay = lower.includes('выдал') || lower.includes('алишер') || lower.includes('сардор') || lower.includes('рустам') || lower.includes('зарплат') || (lower.includes('выплат') && !lower.includes('хроник')) || (lower.includes('аванс') && (lower.includes('помощник') || lower.includes('бригад')));
+    if (isBrigadePay) {
       let recipient = 'Алишер';
       if (lower.includes('сардор')) recipient = 'Сардор';
       else if (lower.includes('рустам')) recipient = 'Рустам';
       else if (lower.includes('помощник') || lower.includes('бригад')) recipient = 'Помощник';
 
+      if (amount > 0) {
+        return {
+          type: 'brigade_pay',
+          siteToSwitch: siteToSwitch,
+          title: `Выплата помощнику (${recipient})`,
+          amount: amount,
+          recipient: recipient,
+          category: 'Бригада',
+          voiceResponse: `Фиксирую выплату ${recipient} ${this.formatSum(amount)}`
+        };
+      } else {
+        return {
+          type: 'direct_func',
+          target: 'openPaymentModal',
+          targetArg: 'brigade_pay',
+          siteToSwitch: siteToSwitch,
+          title: `👥 Выплата помощнику (${recipient})`,
+          voiceResponse: `Открываю кассу для фиксации выплаты ${recipient}`,
+          desc: 'Открываю форму фиксации выплаты бригаде...'
+        };
+      }
+    }
+
+    // 15. Финансы: Касса, баланс объекта, остаток в кармане
+    const isFinanceRequest = lower.includes('касс') || lower.includes('деньг') || lower.includes('баланс') || lower.includes('прибыл') || lower.includes('долг') || lower.includes('карман') || lower.includes('финанс');
+    if (isFinanceRequest && !lower.includes('купил')) {
       return {
-        type: 'brigade_pay',
-        title: `Выплата помощнику (${recipient})`,
-        amount: amount || 300000,
-        recipient: recipient,
-        category: 'Бригада'
+        type: 'nav_action',
+        target: 'finances',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `💰 Касса: ${siteName}` : '💰 Финансовый пульс и касса',
+        voiceResponse: siteName ? `Открываю финансовый пульс объекта ${siteName}` : 'Открываю кассу и финансовый баланс',
+        desc: 'Перехожу к финансовому балансу и кассе...'
       };
     }
 
-    // 4. Определение типа операции: Опрессовка 16 бар
-    if (lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('давление') || lower.includes('гидравлик')) {
-      return {
-        type: 'press_test',
-        title: 'Опрессовка 16 бар',
-        amount: 0
-      };
-    }
-
-    // 5. Определение типа операции: Материалы и Снабжение сантехники (ТОЛЬКО если есть сумма или слова покупки)
+    // 16. Склад и материалы (Рынок Джами / Урикзар)
     const hasPurchaseWords = lower.includes('купил') || lower.includes('взял') || lower.includes('базар') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('рынок') || lower.includes('чек') || lower.includes('расход');
-
-    if (amount > 0 || hasPurchaseWords) {
+    if (amount > 0 || (hasPurchaseWords && !lower.includes('склад'))) {
       let category = 'Трубы и фитинги';
       if (lower.includes('коллектор') || lower.includes('far') || lower.includes('гребенк') || lower.includes('расходомер')) {
         category = 'Коллекторы';
@@ -7378,23 +7398,189 @@ ${loopsText}
 
       return {
         type: 'material',
+        siteToSwitch: siteToSwitch,
         title: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
         amount: amount || 450000,
         category: category,
-        qty: '1 компл'
+        qty: '1 компл',
+        voiceResponse: `Записываю чек: ${cleanName} на сумму ${this.formatSum(amount || 450000)}`
       };
     }
 
-    // 6. УНИВЕРСАЛЬНЫЙ ФОЛБЭК: Если система не поняла фразу мастера, открываем LIGA Concierge («Нулевая рутина»)
+    const isMaterialsList = lower.includes('склад') || lower.includes('материал') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('закупк') || lower.includes('список покупок') || lower.includes('фитинг') || lower.includes('что купить') || lower.includes('остатки');
+    if (isMaterialsList) {
+      return {
+        type: 'nav_action',
+        target: 'materials',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📦 Склад: ${siteName}` : '📦 Склад и закупки (рынок Джами)',
+        voiceResponse: siteName ? `Открываю склад и закупки объекта ${siteName}` : 'Открываю склад и список закупок на рынке Джами',
+        desc: 'Перехожу к складскому учету и списку закупок...'
+      };
+    }
+
+    // 17. Смета по точкам и монтаж
+    const isEstimateRequest = lower.includes('смет') || lower.includes('водорозетк') || lower.includes('точк') || lower.includes('расчет работ') || lower.includes('стоимость монтажа') || lower.includes('прайс');
+    if (isEstimateRequest) {
+      return {
+        type: 'nav_action',
+        target: 'estimate',
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `⚡ Экспресс-смета: ${siteName}` : '⚡ Экспресс-смета по точкам',
+        voiceResponse: siteName ? `Открываю смету объекта ${siteName}` : 'Открываю экспресс-смету по водорозеткам и приборам',
+        desc: 'Перехожу к экспресс-смете по точкам...'
+      };
+    }
+
+    // 18. 10-летняя хроника выплат мастера
+    if (lower.includes('хроник') || lower.includes('история выплат') || lower.includes('10-летняя') || lower.includes('архив выплат')) {
+      return {
+        type: 'nav_action',
+        target: 'history',
+        title: '📜 10-летняя хроника выплат',
+        voiceResponse: 'Открываю 10-летнюю хронику выплат и историю работ мастера',
+        desc: 'Перехожу к 10-летней хронике выплат бригаде...'
+      };
+    }
+
+    // 19. Список всех объектов мастера
+    if ((lower.includes('объект') || lower.includes('квартир') || lower.includes('все объекты') || lower.includes('список')) && !siteMatch) {
+      return {
+        type: 'nav_action',
+        target: 'sites',
+        title: '🏢 Список всех объектов',
+        voiceResponse: 'Открываю список всех инженерных объектов',
+        desc: 'Перехожу к реестру объектов LIGA OS...'
+      };
+    }
+
+    // 20. Инженерные калькуляторы
+    if ((lower.includes('тепл') && lower.includes('пол')) || lower.includes('водяной пол') || lower.includes('петли') || lower.includes('бухт')) {
+      return {
+        type: 'direct_func',
+        target: 'openFloorCalculator',
+        title: '♨️ Калькулятор теплого пола Rehau',
+        voiceResponse: 'Открываю калькулятор теплого пола Rehau',
+        desc: 'Запускаю расчет петель и смесительного узла...'
+      };
+    }
+    if (lower.includes('труб') || lower.includes('диаметр') || lower.includes('коллектор') || lower.includes('гребенк') || lower.includes('far')) {
+      return {
+        type: 'direct_func',
+        target: 'openPipeCalculator',
+        title: '📐 Расчет диаметров труб и гребенок FAR',
+        voiceResponse: 'Открываю гидравлический расчет труб и коллекторов FAR',
+        desc: 'Запускаю подбор диаметров по DIN 1988...'
+      };
+    }
+    if (lower.includes('радиатор') || lower.includes('батаре') || lower.includes('секц')) {
+      return {
+        type: 'direct_func',
+        target: 'openRadiatorCalculator',
+        title: '🔥 Калькулятор радиаторного отопления',
+        voiceResponse: 'Открываю расчет радиаторов и теплопотерь',
+        desc: 'Запускаю расчет секций и лучевой разводки...'
+      };
+    }
+    if (lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер')) {
+      return {
+        type: 'direct_func',
+        target: 'openBalancingCalculator',
+        title: '⚖️ Балансировка ротаметров FAR',
+        voiceResponse: 'Открываю калькулятор балансировки ротаметров',
+        desc: 'Запускаю балансировку расходомеров гребенки...'
+      };
+    }
+    if (lower.includes('насос') || lower.includes('циркуляц')) {
+      return {
+        type: 'direct_func',
+        target: 'openPumpCalculator',
+        title: '🌀 Циркуляционный насос котельной',
+        voiceResponse: 'Открываю расчет рабочей точки циркуляционного насоса',
+        desc: 'Запускаю подбор насоса Grundfos/Wilo...'
+      };
+    }
+    if (lower.includes('бойлер') || lower.includes('бак') || lower.includes('reflex') || lower.includes('гвс')) {
+      return {
+        type: 'direct_func',
+        target: 'openBoilerCalculator',
+        title: '⚡ Бойлер ГВС и расширительный бак',
+        voiceResponse: 'Открываю расчет бойлера ГВС и бака Reflex',
+        desc: 'Запускаю расчет объема бака и теплообменника...'
+      };
+    }
+
+    // 21. Если мастер назвал ТОЛЬКО имя объекта (например «Мирабад», «Инфинити», «Сити»)
+    if (siteMatch) {
+      // Если сказано «перейди», «открой», «включи» — сразу переключаем на этот объект!
+      const isSwitchVerb = lower.includes('открой') || lower.includes('перейди') || lower.includes('включи') || lower.includes('выбери') || lower.includes('покажи');
+      if (isSwitchVerb) {
+        return {
+          type: 'direct_func',
+          target: 'selectSite',
+          targetArg: siteMatch.id,
+          siteToSwitch: siteMatch.id,
+          title: `🏢 Объект: ${siteMatch.name}`,
+          voiceResponse: `Переключаю на объект ${siteMatch.name}`,
+          desc: `Загружаю все данные объекта ${siteMatch.name}...`
+        };
+      }
+
+      // Если названо только имя объекта без глагола — умный выбор действий именно для этого объекта!
+      return {
+        type: 'concierge_disambiguation',
+        question: `Улугбек, что открыть по объекту «${siteMatch.name}»?`,
+        voicePrompt: `Улугбек, что открыть по объекту ${siteMatch.name}? Назовите номер: один, два, три или четыре.`,
+        options: [
+          { num: 1, title: `📸 Скрытые фото и узлы`, desc: `Фотофиксация скрытых трасс до стяжки (${siteMatch.name})`, targetFunc: 'openPassportPhotosModal', siteToSwitch: siteMatch.id },
+          { num: 2, title: `📄 Исполнительный Паспорт А4`, desc: `Официальный инженерный паспорт объекта (${siteMatch.name})`, targetFunc: 'testDriveStep4_Passport', siteToSwitch: siteMatch.id },
+          { num: 3, title: `💰 Касса и баланс объекта`, desc: `Финансовый пульс и остаток в кармане (${siteMatch.name})`, targetScreen: 'finances', siteToSwitch: siteMatch.id },
+          { num: 4, title: `📋 Чек-лист перед стяжкой`, desc: `10 контрольных узлов готовности к заливке (${siteMatch.name})`, targetScreen: 'checklist', siteToSwitch: siteMatch.id }
+        ]
+      };
+    }
+
+    // 22. Смысловые группы консьержа при общих вопросах
+    if (lower.includes('посчитай') || lower.includes('калькулятор') || lower.includes('расчет') || lower.includes('сколько надо')) {
+      return {
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, какой расчет открыть?',
+        voicePrompt: 'Улугбек, какой расчет открыть? Назовите номер.',
+        options: [
+          { num: 1, title: '♨️ Теплый пол Rehau', desc: 'Площадь, метраж трубы, бухты и число петель', targetFunc: 'openFloorCalculator' },
+          { num: 2, title: '📐 Диаметры труб и коллекторы FAR', desc: 'Гидравлика стояков, разводка и гребенки FAR (DIN 1988)', targetFunc: 'openPipeCalculator' },
+          { num: 3, title: '🔥 Радиаторы отопления', desc: 'Теплопотери, подбор секций и лучевая разводка', targetFunc: 'openRadiatorCalculator' },
+          { num: 4, title: '⚡ Экспресс-смета по точкам', desc: 'Расчет водорозеток, инсталляций и стоимости работ', targetScreen: 'estimate' }
+        ]
+      };
+    }
+
+    if (lower.includes('что делать') || lower.includes('с чего начать') || lower.includes('помоги') || lower.includes('инструкц') || lower.includes('не знаю') || lower.includes('куда нажать') || lower.includes('забыл') || lower.includes('подскажи')) {
+      return {
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, чем помочь вам прямо сейчас?',
+        voicePrompt: 'Улугбек, чем помочь? Назовите номер: один, два или три.',
+        options: [
+          { num: 1, title: '👑 Персональный тест-драйв Улугбека', desc: '5 ключевых контрольных узлов системы LIGA OS', targetFunc: 'openUlugbekVipBrief' },
+          { num: 2, title: '🎬 Инженерный видеогид мастера', desc: 'Подсказки и видеоэкскурсия по всем возможностям', targetFunc: 'openSystemGuideModal' },
+          { num: 3, title: '📖 Памятка мастера', desc: 'Диалоги с дизайнерами, клиентами и скрипты', targetFunc: 'openMasterGuide' },
+          { num: 4, title: '📸 Королевская кнопка факта (3 сек)', desc: 'Мгновенное фото скрытого узла до стяжки', targetFunc: 'openQuickFactModal' }
+        ]
+      };
+    }
+
+    // 23. УНИВЕРСАЛЬНЫЙ КОНТЕКСТНЫЙ ФОЛБЭК («Нулевая рутина»)
+    // Появляется ТОЛЬКО когда мастер закончил говорить и ни один интент не совпал
+    const activeSiteTitle = this.currentSite ? this.currentSite.name : 'текущему объекту';
     return {
       type: 'concierge_disambiguation',
-      question: 'Улугбек, что для вас открыть?',
-      voicePrompt: 'Улугбек, что для вас открыть? Назовите номер: один, два, три или четыре.',
+      question: `Улугбек, что открыть по ${activeSiteTitle}?`,
+      voicePrompt: `Улугбек, что открыть по ${activeSiteTitle}? Назовите номер: один, два, три или четыре.`,
       options: [
-        { num: 1, title: '👑 Персональный тест-драйв Улугбека', desc: 'Программа приёмки LIGA OS и 5 контрольных узлов', targetFunc: 'openUlugbekVipBrief' },
-        { num: 2, title: '🛡️ Опрессовка 16 бар на 24 часа', desc: 'Суточный таймер выдержки и протокол испытаний', targetFunc: 'testDriveStep2_Pressure' },
-        { num: 3, title: '♨️ Расчет теплого пола Rehau', desc: 'Калькулятор площади, петель и смесительного узла', targetFunc: 'openFloorCalculator' },
-        { num: 4, title: '📸 Королевская кнопка факта (3 сек)', desc: 'Быстро зафиксировать фото скрытого узла до стяжки', targetFunc: 'openQuickFactModal' }
+        { num: 1, title: '📸 Фото скрытых узлов (до стяжки)', desc: 'Исполнительная фотофиксация трасс и коллекторов', targetFunc: 'openPassportPhotosModal' },
+        { num: 2, title: '📄 Исполнительный Инженерный Паспорт А4', desc: 'Официальный швейцарский паспорт объекта с фото', targetFunc: 'testDriveStep4_Passport' },
+        { num: 3, title: '💰 Касса и баланс объекта', desc: 'Финансовый баланс, расходы и остаток в кармане', targetScreen: 'finances' },
+        { num: 4, title: '👑 Персональный VIP-бриф Улугбека', desc: 'Программа приёмки LIGA OS и 5 контрольных узлов', targetFunc: 'openUlugbekVipBrief' }
       ]
     };
   }
@@ -7403,17 +7589,21 @@ ${loopsText}
     if (!this.parsedVoiceAction) return;
     const action = this.parsedVoiceAction;
 
-    // v2.5.0: Железная защита от зацикливания микрофона («открывается, потому что закрывается»)
+    // Защита от зацикливания микрофона
     if (this.voiceNavTimeout) {
       clearTimeout(this.voiceNavTimeout);
       this.voiceNavTimeout = null;
     }
-    // Немедленно глушим распознавание речи БЕЗ повторного парсинга текста
     this.stopVoiceRecording(false);
     this.voiceAccumulatedText = '';
     this.voiceInterimText = '';
     const inputEl = document.getElementById('voice-recognized-input');
     if (inputEl) inputEl.value = '';
+
+    // Переключение объекта перед выполнением действия, если было указано
+    if (action.siteToSwitch && action.siteToSwitch !== this.currentSiteId) {
+      await this.selectSite(action.siteToSwitch);
+    }
 
     if (action.type === 'material') {
       await window.ligaDB.add('materials', {
@@ -7439,7 +7629,6 @@ ${loopsText}
           recipient: action.recipient,
           date: new Date().toISOString().slice(0, 10)
         });
-        // Также дублируем запись в 10-летнюю хронику выплат мастера (P0-History)
         await window.ligaDB.add('brigade_payouts', {
           siteId: this.currentSiteId,
           employeeName: action.recipient,
@@ -7497,7 +7686,6 @@ ${loopsText}
       return;
     } else if (action.type === 'direct_func') {
       this.closeModal('modal-voice');
-      // Для VIP-брифа Улугбека не вызываем playSwissChime, чтобы не перебивать эксклюзивный аккорд Ре-мажор
       if (action.target !== 'openUlugbekVipBrief') {
         this.playSwissChime();
       }
@@ -7505,15 +7693,24 @@ ${loopsText}
       this.speakVoice(voiceText);
       if (action.target === 'setClientModeTrue') {
         this.setClientMode(true);
+      } else if (action.target === 'setClientModeFalse') {
+        this.setClientMode(false);
+      } else if (action.target === 'openPaymentModal') {
+        this.openPaymentModal(action.targetArg || 'brigade_pay', action.amount || null);
+      } else if (action.target === 'selectSite') {
+        await this.selectSite(action.targetArg);
       } else if (typeof this[action.target] === 'function') {
-        this[action.target]();
+        if (action.targetArg !== undefined) {
+          this[action.target](action.targetArg);
+        } else {
+          this[action.target]();
+        }
       }
       this.parsedVoiceAction = null;
       return;
     }
 
     this.closeModal('modal-voice');
-    this.parsedVoiceAction = null;
     this.parsedVoiceAction = null;
   }
 
