@@ -209,8 +209,8 @@ class LigaApp {
       }
     });
 
-    if (playSound && this.isSoundEnabled && typeof this.playChime === 'function') {
-      this.playChime(660, 0.08);
+    if (playSound && this.isSoundEnabled && typeof this.playSectionSwitchSound === 'function') {
+      this.playSectionSwitchSound();
     }
 
     if (situationKey === 'on-site') {
@@ -354,6 +354,110 @@ class LigaApp {
       }
     } catch (e) {
       console.warn('Ошибка воспроизведения звука VIP Chime:', e);
+    }
+  }
+
+  // Представительный, дипломатичный звук открытия брифа мастера Улугбека (F4 -> C5 -> A5)
+  playDiplomaticChime() {
+    if (!this.isSoundEnabled) return;
+    try {
+      this.initAudioEngine();
+      if (!this.audioCtx) return;
+
+      const runDiplomatic = () => {
+        if (!this.audioCtx) return;
+        const now = this.audioCtx.currentTime;
+
+        // 1. Бархатная басовая основа F4 (349.23 Гц)
+        const osc1 = this.audioCtx.createOscillator();
+        const gain1 = this.audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(349.23, now);
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.linearRampToValueAtTime(0.18, now + 0.03);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        osc1.connect(gain1);
+        gain1.connect(this.audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.65);
+
+        // 2. Благородная квинта C5 (523.25 Гц) через 70мс
+        const osc2 = this.audioCtx.createOscillator();
+        const gain2 = this.audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(523.25, now + 0.07);
+        gain2.gain.setValueAtTime(0.001, now + 0.07);
+        gain2.gain.linearRampToValueAtTime(0.20, now + 0.10);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+        osc2.connect(gain2);
+        gain2.connect(this.audioCtx.destination);
+        osc2.start(now + 0.07);
+        osc2.stop(now + 0.85);
+
+        // 3. Светлый дипломатический обертон A5 (880.00 Гц) через 140мс с мягким швейцарским сустейном
+        const osc3 = this.audioCtx.createOscillator();
+        const gain3 = this.audioCtx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(880.00, now + 0.14);
+        gain3.gain.setValueAtTime(0.001, now + 0.14);
+        gain3.gain.linearRampToValueAtTime(0.22, now + 0.17);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
+        osc3.connect(gain3);
+        gain3.connect(this.audioCtx.destination);
+        osc3.start(now + 0.14);
+        osc3.stop(now + 1.25);
+      };
+
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().then(() => runDiplomatic()).catch(() => {
+          const unlock = () => {
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+              this.audioCtx.resume().then(() => runDiplomatic());
+            } else {
+              runDiplomatic();
+            }
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('click', unlock);
+          };
+          window.addEventListener('pointerdown', unlock, { once: true });
+          window.addEventListener('click', unlock, { once: true });
+        });
+      } else {
+        runDiplomatic();
+      }
+    } catch (e) {
+      console.warn('Ошибка звука playDiplomaticChime:', e);
+    }
+  }
+
+  // Представительный, ненавязчивый звук переключения разделов и окон (бархатный титановый тон)
+  playSectionSwitchSound() {
+    if (!this.isSoundEnabled) return;
+    try {
+      this.initAudioEngine();
+      if (!this.audioCtx) return;
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+      const now = this.audioCtx.currentTime;
+
+      // Мягкий бархатный переход 520 Гц -> 340 Гц со скругленной атакой
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(340, now + 0.055);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.09, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.065);
+    } catch (e) {
+      console.warn('Ошибка звука playSectionSwitchSound:', e);
     }
   }
 
@@ -1366,9 +1470,9 @@ class LigaApp {
       }
     }
 
-    // 5. Швейцарский тихий клик
-    if (this.isSoundEnabled && typeof this.playSubtleClick === 'function') {
-      this.playSubtleClick();
+    // 5. Представительный тактильный звук переключения раздела (не приторный, благородный)
+    if (this.isSoundEnabled && typeof this.playSectionSwitchSound === 'function') {
+      this.playSectionSwitchSound();
     }
 
     // 6. Мгновенная прокрутка наверх экрана для 100% фокуса
@@ -3352,7 +3456,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 🛡️ ТЕРМОСТАБИЛЬНОСТЬ: 100% ВЫДЕРЖАНО.
 Перепад температуры в душе при смыве унитаза или включении стиральной машины исключен!
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3665,7 +3769,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 🛡️ ГИДРАВЛИЧЕСКАЯ УВЯЗКА: 100% ВЫДЕРЖАНО.
 Все петли сбалансированы, перегрев насоса и неравномерный прогрев пола полностью исключены!
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3947,7 +4051,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 🛡️ 100% ЗАЩИТА ОТ ПРОТЕЧЕК В СТЯЖКЕ:
 Лучевая разводка Rehau без единого тройника под полом. Каждая ветка неразрывна от коллектора до радиатора!
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4311,7 +4415,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 🛡️ 100% ЗАЩИТА ЭМАЛИ БОЙЛЕРА:
 Расширительный бак ГВС Reflex Refix объемом 10% от бойлера полностью гасит тепловое расширение воды при нагреве (3.8%), предотвращая постоянный срыв клапана и микротрещины эмали!
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4660,7 +4764,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 🛡️ 100% БЕЗОПАСНОСТЬ ОТ ЗАТОПЛЕНИЯ:
 Время перекрытия стояков: 18-21 сек. Металлические шестерни редуктора исключают заклинивание. Система предотвращает катастрофический ущерб ремонту и соседям снизу!
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -5060,7 +5164,7 @@ ${loopsText}
 3. Вращением гильзы выставить поплавок точно на расчетное деление.
 4. Зафиксировать стопорное кольцо ротаметра.
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -5452,7 +5556,7 @@ ${loopsText}
 🛡️ ИНЖЕНЕРНЫЙ СТАНДАРТ БЕЗОПАСНОСТИ:
 Скорость теплоносителя в пределах 0.3–0.7 м/с гарантирует 100% бесшумность радиаторов, исключает кавитацию и вибрацию труб в стяжке.
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -5785,7 +5889,7 @@ ${loopsText}
 🛡️ ЗОЛОТОЕ ПРАВИЛО МАСТЕРА:
 Давление в воздушной камере бака (P₀ = ${c.p0} бар) настраивается ДО подключения к системе при нулевом давлении теплоносителя. Наличие сервисного крана Reflex SU обязательно для ежегодного ТО без слива всей системы.
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -6145,7 +6249,7 @@ ${loopsText}
 🛡️ ИНЖЕНЕРНАЯ ГАРАНТИЯ МАСТЕРА:
 Разделитель исключает паразитное перетягивание теплоносителя между насосами контуров, снижает шум в радиаторах, защищает теплообменник котла от температурного шока и удаляет микропузырьки воздуха и шлам до попадания в котел.
 
-Сформировано в LIGA OS • https://liga-os-beige.vercel.app/`;
+Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -7349,7 +7453,7 @@ ${loopsText}
     const barVal = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
     const stageCode = `STG-${site.id || '01'}-16B`;
 
-    const origin = (typeof window !== 'undefined' && window.location) ? (window.location.origin + window.location.pathname) : 'https://liga-os-beige.vercel.app/';
+    const origin = (typeof window !== 'undefined' && window.location) ? (window.location.origin + window.location.pathname) : 'https://liga-master-uz.vercel.app/';
     const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}&bar=${barVal}`;
 
     const clientGreeting = site.client ? `Здравствуйте, ${site.client}!` : 'Здравствуйте!';
@@ -7457,7 +7561,7 @@ ${shareUrl}
       stageTitle: 'Черновой монтаж'
     };
     const text = `Улугбек, здравствуйте! Я подтвердил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Давление 16 бар подтверждаю. Разрешаю заливку стяжки пола и дальнейшие работы!`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-os-beige.vercel.app/')}&text=${encodeURIComponent(text)}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/')}&text=${encodeURIComponent(text)}`;
     try {
       window.open(shareUrl, '_blank');
     } catch (e) {
@@ -8212,6 +8316,9 @@ ${shareUrl}
     }
     const m = document.getElementById(modalId);
     if (m) m.classList.add('open');
+    if (this.isSoundEnabled && modalId !== 'modal-ulugbek-vip-brief' && typeof this.playSectionSwitchSound === 'function') {
+      this.playSectionSwitchSound();
+    }
     if (modalId === 'modal-settings') {
       this.loadMasterSealSettings();
     }
@@ -10389,9 +10496,9 @@ ${shareUrl}
       card.classList.add('vip-attention-pulse');
       if (badgePriority) badgePriority.style.display = 'inline-flex';
 
-      // Швейцарский звон привлечения внимания через 600мс
+      // Швейцарский дипломатичный звон привлечения внимания через 600мс
       setTimeout(() => {
-        this.playVipAttentionChime();
+        this.playDiplomaticChime();
       }, 600);
 
       // Автоматически открываем модальный бриф через 1.4 секунды
@@ -10422,6 +10529,7 @@ ${shareUrl}
   // ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ПАСПОРТ ТЕСТ-ДРАЙВА ДЛЯ УЛУГБЕКА ХАКИМОВА
   // ==========================================================================
   openUlugbekVipBrief() {
+    this.playDiplomaticChime();
     this.openModal('modal-ulugbek-vip-brief');
     this.showToast('👑 Персональный бриф тест-драйва для Улугбека Хакимова');
   }
