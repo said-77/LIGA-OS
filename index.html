@@ -19,6 +19,15 @@
       // 2. Восстановление сохраненной темы без белого мерцания
       const savedTheme = localStorage.getItem('liga_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
+
+      // 3. Автоматический сброс устаревшего кэша браузера при обновлении версии (Zero-Friction)
+      const CURRENT_BUILD = 'v2.5.5-ceramic-gold';
+      if (localStorage.getItem('liga_build_ver') !== CURRENT_BUILD) {
+        localStorage.setItem('liga_build_ver', CURRENT_BUILD);
+        if ('caches' in window) {
+          caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+        }
+      }
     })();
   </script>
 
