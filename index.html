@@ -44,8 +44,8 @@
   <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.2">
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
-  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.0 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.5.0">
+  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.1 -->
+  <link rel="stylesheet" href="./css/style.css?v=2.5.1">
 </head>
 <body>
   <div class="app-container">
@@ -1913,6 +1913,36 @@
               <span>✕</span> Отмена
             </button>
           </div>
+        </div>
+      </div>
+    <!-- ====================================================================
+         МОДАЛЬНОЕ ОКНО: 👑 ИНТЕЛЛЕКТУАЛЬНЫЙ КОНСЬЕРЖ УЛУГБЕКА («НУЛЕВАЯ РУТИНА»)
+         Интуитивный выбор без зубрежки названий разделов и опций
+         ==================================================================== -->
+    <div id="modal-voice-concierge-choice" class="modal-overlay" style="z-index: 100010;">
+      <div class="modal-sheet voice-concierge-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="voice-concierge-header">
+          <div class="voice-concierge-badge">👑 LIGA CONCIERGE • НУЛЕВАЯ РУТИНА</div>
+          <button type="button" class="btn-close-modal" onclick="window.app.closeVoiceConciergeModal()">✕</button>
+        </div>
+        <h3 id="voice-concierge-question" class="voice-concierge-title">Улугбек, что для вас открыть?</h3>
+        <p id="voice-concierge-sub" class="voice-concierge-sub">Скажите вслух «Один», «Два» или «Три» — либо нажмите на нужную карточку:</p>
+
+        <!-- Список вариантов выбора с крупными номерами [1], [2], [3] -->
+        <div id="voice-concierge-options-list" class="voice-concierge-options">
+          <!-- Заполняется динамически -->
+        </div>
+
+        <!-- Нижняя панель с микрофоном и кнопкой отмены -->
+        <div class="voice-concierge-footer">
+          <div class="voice-concierge-mic-indicator">
+            <span class="pulse-dot"></span>
+            <span id="voice-concierge-listen-status">Слушаю ответ: «Один», «Два», «Три»...</span>
+          </div>
+          <button type="button" class="btn-voice-concierge-cancel" onclick="window.app.closeVoiceConciergeModal()">
+            ✕ Отмена
+          </button>
         </div>
       </div>
     </div>
@@ -4544,12 +4574,12 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.5.0: Бархатный рояльный дипломатический звук Ре-мажор, ликвидация зацикливания микрофона, 100% надежный старт тест-драйва) -->
-  <script src="./js/image_processor.js?v=2.5.0"></script>
-  <script src="./js/db.js?v=2.5.0"></script>
-  <script src="./js/seal_engine.js?v=2.5.0"></script>
-  <script src="./js/pdf_engine.js?v=2.5.0"></script>
-  <script src="./js/ai_concierge.js?v=2.5.0"></script>
-  <script src="./js/app.js?v=2.5.0"></script>
+  <!-- Скрипты LIGA OS (Версия 2.5.1: LIGA Voice Concierge, нулевая рутина, безотказный микрофон, диалог выбора) -->
+  <script src="./js/image_processor.js?v=2.5.1"></script>
+  <script src="./js/db.js?v=2.5.1"></script>
+  <script src="./js/seal_engine.js?v=2.5.1"></script>
+  <script src="./js/pdf_engine.js?v=2.5.1"></script>
+  <script src="./js/ai_concierge.js?v=2.5.1"></script>
+  <script src="./js/app.js?v=2.5.1"></script>
 </body>
 </html>

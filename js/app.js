@@ -1197,10 +1197,7 @@ class LigaApp {
     // 15. Голосовая диктовка («Свободные руки»), Памятка и ИИ-Аналитик
     const btnVoice = document.getElementById('btn-voice-input');
     if (btnVoice) {
-      btnVoice.addEventListener('click', () => {
-        this.openModal('modal-voice');
-        this.startVoiceRecording();
-      });
+      btnVoice.addEventListener('click', () => this.openVoiceAssistant());
     }
 
     const btnGuide = document.getElementById('btn-guide-top');
@@ -6634,6 +6631,26 @@ ${loopsText}
     this.speakVoice('Запись отменена.');
   }
 
+  ensureFreshVoiceEngine() {
+    const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechClass) return false;
+
+    // Полное безопасное очищение предыдущего экземпляра Web Speech API
+    if (this.recognition) {
+      try {
+        this.recognition.onstart = null;
+        this.recognition.onresult = null;
+        this.recognition.onerror = null;
+        this.recognition.onend = null;
+        this.recognition.abort();
+      } catch (e) {}
+      this.recognition = null;
+    }
+
+    this.initVoiceEngine();
+    return !!this.recognition;
+  }
+
   initVoiceEngine() {
     const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechClass) {
@@ -6652,12 +6669,16 @@ ${loopsText}
       };
 
       this.recognition.onresult = (e) => {
-        // v2.5.0: Отсекаем фантомные события, если запись уже остановлена или окно закрыто
+        // v2.5.1: Принимаем сигналы только при активной сессии и открытом окне (голос или консьерж)
         if (!this.isRecordingVoice || !this.voiceKeepAliveActive) {
           return;
         }
         const modalVoice = document.getElementById('modal-voice');
-        if (!modalVoice || !modalVoice.classList.contains('open')) {
+        const modalConcierge = document.getElementById('modal-voice-concierge-choice');
+        const isVoiceOpen = modalVoice && modalVoice.classList.contains('open');
+        const isConciergeOpen = modalConcierge && modalConcierge.classList.contains('open');
+
+        if (!isVoiceOpen && !isConciergeOpen) {
           return;
         }
 
@@ -6683,7 +6704,6 @@ ${loopsText}
 
       this.recognition.onerror = (e) => {
         console.warn('[LIGA OS Voice] SpeechRecognition event:', e.error);
-        // no-speech возникает, когда мастер думает/молчит перед произнесением следующей фразы
         if (e.error === 'no-speech') {
           const statusEl = document.getElementById('voice-status-text');
           if (statusEl) {
@@ -6702,7 +6722,7 @@ ${loopsText}
       };
 
       this.recognition.onend = () => {
-        // Keep-Alive: если пользователь сам не нажал стоп, мягко возобновляем сессию без потери накопленного текста
+        // Keep-Alive: возобновляем сессию только если запись активна пользователем
         if (this.isRecordingVoice && this.voiceKeepAliveActive) {
           const statusEl = document.getElementById('voice-status-text');
           if (statusEl) {
@@ -6726,6 +6746,12 @@ ${loopsText}
     }
   }
 
+  // Единый метод открытия голосового помощника для обеих кнопок (в шапке и плавающей)
+  openVoiceAssistant() {
+    this.openModal('modal-voice');
+    this.startVoiceRecording();
+  }
+
   toggleVoiceRecording() {
     if (this.isRecordingVoice) {
       this.stopVoiceRecording(true);
@@ -6744,6 +6770,9 @@ ${loopsText}
       return;
     }
 
+    // v2.5.1: Всегда получаем свежий чистый экземпляр Recognition, чтобы второй и последующие клики работали со 100% гарантией
+    this.ensureFreshVoiceEngine();
+
     this.voiceKeepAliveActive = true;
     const inputEl = document.getElementById('voice-recognized-input');
     if (inputEl && inputEl.value.trim().length > 0 && !this.voiceAccumulatedText) {
@@ -6754,7 +6783,7 @@ ${loopsText}
       try {
         this.recognition.start();
       } catch (err) {
-        console.warn('[LIGA OS Voice] Recognition already started or error:', err);
+        console.warn('[LIGA OS Voice] Recognition start warning:', err);
       }
     }
 
@@ -6841,6 +6870,14 @@ ${loopsText}
     if (inputEl) inputEl.value = transcript;
 
     const lower = (transcript || '').toLowerCase().trim();
+
+    // 0. Если активно окно LIGA Concierge («Нулевая рутина») — обрабатываем выбор голосом («Один», «Два», «Три»)
+    const conciergeModal = document.getElementById('modal-voice-concierge-choice');
+    if (conciergeModal && conciergeModal.classList.contains('open') && this.isConciergeListening) {
+      this.handleConciergeVoiceChoice(lower);
+      return;
+    }
+
     const overlay = document.getElementById('voice-confirmation-overlay');
     if (overlay && overlay.style.display === 'flex' && this.pendingFastVoiceAction) {
       if (lower.includes('да') || lower.includes('подтверждаю') || lower.includes('запиши') || lower.includes('верно') || lower.includes('хорошо') || lower.includes('ок') || lower.includes('давай')) {
@@ -6876,6 +6913,12 @@ ${loopsText}
 
     const parsed = this.parseVoiceCommand(text);
     this.parsedVoiceAction = parsed;
+
+    // Всплывающее интерактивное окно LIGA Concierge для размытых / забытых фраз мастера
+    if (parsed.type === 'concierge_disambiguation') {
+      this.showVoiceConciergeChoice(parsed);
+      return;
+    }
 
     const preview = document.getElementById('voice-parse-preview');
     const typeEl = document.getElementById('voice-parse-type');
@@ -6918,6 +6961,106 @@ ${loopsText}
         btnConfirm.style.display = 'none';
       }
     }
+  }
+
+  // ==========================================================================
+  // 👑 LIGA VOICE CONCIERGE • ИНТЕЛЛЕКТУАЛЬНЫЙ ВЫБОР ДЕЙСТВИЯ («НУЛЕВАЯ РУТИНА»)
+  // ==========================================================================
+  showVoiceConciergeChoice(data) {
+    this.closeModal('modal-voice');
+
+    const modal = document.getElementById('modal-voice-concierge-choice');
+    const titleEl = document.getElementById('voice-concierge-question');
+    const subEl = document.getElementById('voice-concierge-sub');
+    const listEl = document.getElementById('voice-concierge-options-list');
+    const statusEl = document.getElementById('voice-concierge-listen-status');
+
+    if (!modal || !listEl) return;
+
+    this.activeConciergeOptions = data.options || [];
+    this.isConciergeListening = true;
+
+    if (titleEl) titleEl.innerText = data.question || 'Улугбек, что для вас открыть?';
+    if (subEl) subEl.innerText = 'Скажите вслух «Один», «Два» или «Три» — либо нажмите на нужную карточку:';
+
+    let html = '';
+    this.activeConciergeOptions.forEach((opt, idx) => {
+      html += `
+        <button type="button" class="voice-concierge-option-card" onclick="window.app.executeConciergeChoice(${idx})">
+          <div class="voice-concierge-badge-num">${opt.num || (idx + 1)}</div>
+          <div class="voice-concierge-opt-text">
+            <div class="voice-concierge-opt-title">${opt.title}</div>
+            <div class="voice-concierge-opt-desc">${opt.desc}</div>
+          </div>
+          <div class="voice-concierge-arrow">→</div>
+        </button>
+      `;
+    });
+    listEl.innerHTML = html;
+
+    this.openModal('modal-voice-concierge-choice');
+    this.playDiplomaticChime();
+
+    // Короткий вежливый голос ассистента без утомительного перечисления вариантов
+    const voicePrompt = data.voicePrompt || 'Улугбек, что открыть? Назовите номер или нажмите на карточку.';
+    this.speakVoice(voicePrompt);
+
+    if (statusEl) {
+      statusEl.innerHTML = '🟢 Слушаю ваш ответ: «Один», «Два», «Три»...';
+    }
+
+    setTimeout(() => {
+      if (this.isConciergeListening) {
+        this.startVoiceRecording();
+      }
+    }, 450);
+  }
+
+  handleConciergeVoiceChoice(lower) {
+    if (!this.activeConciergeOptions || this.activeConciergeOptions.length === 0) return;
+
+    let selectedIdx = -1;
+    if (lower.includes('один') || lower.includes('перв') || lower.includes('1') || lower.includes('да') || lower.includes('давай') || lower.includes('подтвержд') || lower.includes('открывай')) {
+      selectedIdx = 0;
+    } else if (lower.includes('два') || lower.includes('втор') || lower.includes('2')) {
+      selectedIdx = 1;
+    } else if (lower.includes('три') || lower.includes('трет') || lower.includes('3')) {
+      selectedIdx = 2;
+    } else if (lower.includes('четыр') || lower.includes('четверт') || lower.includes('4')) {
+      selectedIdx = 3;
+    } else if (lower.includes('отмена') || lower.includes('нет') || lower.includes('закрой') || lower.includes('не надо')) {
+      this.closeVoiceConciergeModal();
+      return;
+    }
+
+    if (selectedIdx >= 0 && selectedIdx < this.activeConciergeOptions.length) {
+      this.executeConciergeChoice(selectedIdx);
+    }
+  }
+
+  executeConciergeChoice(index) {
+    const opt = this.activeConciergeOptions ? this.activeConciergeOptions[index] : null;
+    if (!opt) return;
+
+    this.closeVoiceConciergeModal();
+    this.playDiplomaticChime();
+
+    if (opt.targetScreen) {
+      this.switchScreen(opt.targetScreen);
+      this.showToast(`✓ Открываю: ${opt.title}`);
+    } else if (opt.targetModal) {
+      this.openModal(opt.targetModal);
+      this.showToast(`✓ Открываю: ${opt.title}`);
+    } else if (opt.targetFunc && typeof this[opt.targetFunc] === 'function') {
+      this[opt.targetFunc]();
+    }
+  }
+
+  closeVoiceConciergeModal() {
+    this.isConciergeListening = false;
+    this.activeConciergeOptions = null;
+    this.stopVoiceRecording(false);
+    this.closeModal('modal-voice-concierge-choice');
   }
 
   parseVoiceCommand(text) {
@@ -6994,185 +7137,122 @@ ${loopsText}
       };
     }
 
-    // 0.2. Вызов специализированных модальных инструментов
-    if ((lower.includes('дизайнер') && (lower.includes('что сказать') || lower.includes('ответ') || lower.includes('памятк'))) || lower.includes('шпаргалк') || lower.includes('возражен')) {
+    // 0.2. СМЫСЛОВОЙ РОУТИНГ LIGA CONCIERGE («НУЛЕВАЯ РУТИНА» — ВЫБОР БЕЗ ЗУБРЕЖКИ)
+    // Группа А: Расчеты и калькуляторы
+    if (lower.includes('посчитай') || lower.includes('калькулятор') || lower.includes('расчет') || lower.includes('сколько надо') || (lower.includes('смета') && !lower.includes('купил'))) {
       return {
-        type: 'modal_action',
-        target: 'modal-master-guide',
-        title: '📖 Инструмент: Памятка мастера',
-        voiceResponse: 'Открываю памятку мастера и диалоги с дизайнерами',
-        desc: 'Открываю шпаргалку диалогов с дизайнерами и заказчиками...'
-      };
-    }
-    if (lower.includes('фотк') || (lower.includes('фото') && (lower.includes('узел') || lower.includes('узлов') || lower.includes('скрыт') || lower.includes('покажи')))) {
-      return {
-        type: 'modal_action',
-        target: 'modal-passport-photos',
-        title: '📸 Инструмент: Фотофиксация узлов',
-        voiceResponse: 'Открываю галерею скрытых инженерных узлов',
-        desc: 'Открываю галерею скрытых узлов для инженерного паспорта...'
-      };
-    }
-    if (lower.includes('протокол 16') || lower.includes('акт опрессовк') || lower.includes('манометр фото') || (lower.includes('опрессовк') && !lower.includes('завершен') && !lower.includes('готов'))) {
-      return {
-        type: 'modal_action',
-        target: 'modal-pressure-test',
-        title: '🛡️ Инструмент: Протокол 16 бар',
-        voiceResponse: 'Открываю протокол гидравлических испытаний 16 бар на 24 часа',
-        spotlightId: 'modal-pressure-test',
-        desc: 'Открываю протокол гидравлических испытаний 16 бар / 24ч...'
-      };
-    }
-    if (lower.includes('экспресс аудит') || lower.includes('аудит проекта') || lower.includes('проверь проект')) {
-      return {
-        type: 'modal_action',
-        target: 'modal-ai-audit',
-        title: '📐 Инструмент: Экспресс-аудит',
-        voiceResponse: 'Запускаю экспресс-аудит по швейцарским стандартам надежности',
-        desc: 'Запускаю проверку по швейцарским стандартам надежности...'
-      };
-    }
-    if ((lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер') || (lower.includes('настро') && (lower.includes('коллектор') || lower.includes('гребенк'))) || (lower.includes('баланс') && (lower.includes('коллектор') || lower.includes('пол')))) && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openBalancingCalculator',
-        title: '⚖️ Инструмент: Балансировка ротаметров коллектора',
-        voiceResponse: 'Открываю расчет уставок ротаметров FAR и петель теплого пола',
-        desc: 'Открываю расчет точных уставок ротаметров FAR / Caleffi и гидравлики петель теплого пола...'
-      };
-    }
-    if ((lower.includes('калькулятор труб') || lower.includes('расчет труб') || lower.includes('расчет коллектор') || lower.includes('подбор труб') || lower.includes('подбор far') || lower.includes('диаметр труб') || lower.includes('диаметр ввод') || lower.includes('посчитай диаметр') || lower.includes('гребенк')) && !lower.includes('ротаметр') && !lower.includes('расходомер') && !lower.includes('балансировк')) {
-      return {
-        type: 'direct_func',
-        target: 'openPipeCalculator',
-        title: '📐 Инструмент: Калькулятор труб и коллекторов',
-        voiceResponse: 'Открываю калькулятор диаметров труб и гребенок FAR',
-        desc: 'Открываю гидравлический расчет диаметров труб и гребенок FAR (DIN 1988)...'
-      };
-    }
-    if (lower.includes('калькулятор теплого пола') || lower.includes('калькулятор отопления') || lower.includes('расчет теплого пола') || lower.includes('расчет отопления') || lower.includes('расчет петель') || lower.includes('подбор нсу') || lower.includes('смесительный узел') || lower.includes('водяной теплый пол') || lower.includes('петли теплого пола')) {
-      return {
-        type: 'direct_func',
-        target: 'openFloorCalculator',
-        title: '♨️ Инструмент: Калькулятор теплого пола и НСУ',
-        voiceResponse: 'Открываю расчет петель и смесительного узла водяного теплого пола',
-        desc: 'Открываю расчет петель, бухт и смесительного узла (увязка петель <= 75-80 м)...'
-      };
-    }
-    if ((lower.includes('радиатор') && !lower.includes('купил')) || lower.includes('калькулятор радиатор') || lower.includes('расчет радиатор') || lower.includes('подбор радиатор') || lower.includes('посчитай радиатор') || lower.includes('лучевая разводка') || lower.includes('секции радиатор') || lower.includes('биметалл') || lower.includes('панельные радиатор')) {
-      return {
-        type: 'direct_func',
-        target: 'openRadiatorCalculator',
-        title: '🔥 Инструмент: Калькулятор радиаторного отопления',
-        voiceResponse: 'Открываю расчет радиаторов и лучевой разводки Rehau',
-        desc: 'Открываю расчет радиаторов, лучевой разводки Rehau и узлов нижнего подключения...'
-      };
-    }
-    if ((lower.includes('бойлер') || lower.includes('водонагревател') || (lower.includes('расширительн') && lower.includes('гвс')) || lower.includes('рециркуляци') || lower.includes('бак гвс')) && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openBoilerCalculator',
-        title: '⚡ Инструмент: Калькулятор бойлера и бака ГВС',
-        voiceResponse: 'Открываю расчет объема бойлера и мембранного бака Reflex',
-        desc: 'Открываю расчет объема бойлера, мембранного бака Reflex и рециркуляции ГВС...'
-      };
-    }
-    if ((lower.includes('протечк') || lower.includes('нептун') || lower.includes('гидролок') || lower.includes('электропривод') || lower.includes('датчик протечки') || lower.includes('аквасторож')) && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openLeakCalculator',
-        title: '🛡️ Инструмент: Защита от протечек Neptun / Gidrolock',
-        voiceResponse: 'Открываю расчет системы защиты от протечек Neptun',
-        desc: 'Открываю расчет кранов с электроприводом, радиодатчиков и блока питания LiFePO4...'
-      };
-    }
-    if ((lower.includes('подбор насоса') || lower.includes('калькулятор насоса') || lower.includes('напор насоса') || (lower.includes('циркуляционн') && lower.includes('насос')) || (lower.includes('какой') && lower.includes('насос')) || lower.includes('магистрал') || (lower.includes('насос') && (lower.includes('расчет') || lower.includes('отоплени')))) && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openPumpCalculator',
-        title: '🌀 Инструмент: Подбор циркуляционного насоса и магистралей',
-        voiceResponse: 'Открываю расчет рабочей точки насоса и диаметров магистралей',
-        desc: 'Открываю расчет рабочей точки насоса (Q, H), скорости теплоносителя и диаметров Rehau...'
-      };
-    }
-    if ((lower.includes('расширительн') || lower.includes('reflex') || lower.includes('рефлекс') || (lower.includes('бак') && (lower.includes('отоплен') || lower.includes('мембран'))) || lower.includes('предохранительн') || lower.includes('сбросн') || lower.includes('caleffi')) && !lower.includes('гвс') && !lower.includes('бойлер') && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openExpansionTankCalculator',
-        title: '🛑 Инструмент: Расширительный бак Reflex и клапан DIN EN 12828',
-        voiceResponse: 'Открываю расчет объема бака Reflex и сбросного клапана',
-        desc: 'Открываю расчет объема бака Reflex, давления азота P₀ и сбросного клапана...'
-      };
-    }
-    if ((lower.includes('гидрострелк') || lower.includes('гидравлический разделител') || lower.includes('первичное кольц') || (lower.includes('стрелк') && lower.includes('котельн')) || lower.includes('разделитель котельн')) && !lower.includes('купил')) {
-      return {
-        type: 'direct_func',
-        target: 'openSeparatorCalculator',
-        title: '🛡️ Инструмент: Гидрострелка и первичное кольцо котельной',
-        voiceResponse: 'Открываю расчет гидрострелки и первичного кольца котельной',
-        desc: 'Открываю расчет гидравлического разделителя, правила 3d и баланса контуров...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, какой расчет открыть?',
+        voicePrompt: 'Улугбек, какой расчет открыть? Назовите: один, два или три. Или нажмите на карточку.',
+        options: [
+          { num: 1, title: '♨️ Теплый пол Rehau', desc: 'Площадь, метраж трубы, бухты и число петель', targetFunc: 'openFloorCalculator' },
+          { num: 2, title: '📐 Диаметры труб и коллекторы FAR', desc: 'Гидравлика стояков, разводка и гребенки FAR (DIN 1988)', targetFunc: 'openPipeCalculator' },
+          { num: 3, title: '🔥 Радиаторы отопления', desc: 'Теплопотери, подбор секций и лучевая разводка', targetFunc: 'openRadiatorCalculator' },
+          { num: 4, title: '⚡ Экспресс-смета по точкам', desc: 'Расчет водорозеток, инсталляций и стоимости работ', targetScreen: 'estimate' }
+        ]
       };
     }
 
-    // 0.3. Переключение экранов / разделов без точных названий
-    if (lower.includes('покажи деньг') || lower.includes('открой касс') || lower.includes('сколько должн') || lower.includes('баланс') || (lower.includes('деньги') && !lower.includes('купил') && !lower.includes('выдал') && !lower.includes('аванс'))) {
+    // Группа Б: Трубы и коллекторы
+    if ((lower.includes('труб') || lower.includes('коллектор') || lower.includes('гребенк')) && !lower.includes('купил') && !lower.includes('сум') && !lower.includes('тыс')) {
       return {
-        type: 'nav_action',
-        target: 'finances',
-        title: '💰 Навигация: Финансы объекта',
-        voiceResponse: 'Открываю финансовый пульс и кассу объекта',
-        spotlightId: 'dashboard-finances-card',
-        desc: 'Перехожу в финансовый пульс и кассу объекта...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, что нужно по трубам и коллекторам?',
+        voicePrompt: 'Улугбек, что открыть по трубам? Назовите: один, два или три.',
+        options: [
+          { num: 1, title: '📐 Диаметры труб и гребенки FAR', desc: 'Расчет диаметров труб Rehau и выходов коллектора', targetFunc: 'openPipeCalculator' },
+          { num: 2, title: '♨️ Петли теплого пола Rehau', desc: 'Расчет бухт по 200м и увязка контуров до 75м', targetFunc: 'openFloorCalculator' },
+          { num: 3, title: '⚖️ Балансировка ротаметров FAR', desc: 'Точные уставки расходомеров для равномерного прогрева', targetFunc: 'openBalancingCalculator' },
+          { num: 4, title: '📦 Склад и список на Джами', desc: 'Учет остатков и закупка фитингов', targetScreen: 'materials' }
+        ]
       };
     }
-    if (lower.includes('где базар') || lower.includes('открой базар') || lower.includes('список покупок') || (lower.includes('базар') && !lower.includes('купил')) || (lower.includes('склад') && !lower.includes('купил')) || (lower.includes('материал') && !lower.includes('купил') && !lower.includes('сум') && !lower.includes('тыс') && !lower.includes('млн'))) {
+
+    // Группа В: Отопление, котел, радиаторы
+    if ((lower.includes('отоплен') || lower.includes('котел') || lower.includes('котёл') || lower.includes('батаре') || lower.includes('бойлер')) && !lower.includes('купил')) {
       return {
-        type: 'nav_action',
-        target: 'materials',
-        title: '📦 Навигация: Склад и снабжение',
-        voiceResponse: 'Открываю склад материалов и снабжение',
-        spotlightId: 'screen-materials',
-        desc: 'Открываю склад материалов и список на базар Урикзор...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, какой узел отопления открыть?',
+        voicePrompt: 'Улугбек, что открыть по отоплению? Назовите номер.',
+        options: [
+          { num: 1, title: '🔥 Радиаторное отопление', desc: 'Подбор секций, теплопотери и лучевая разводка', targetFunc: 'openRadiatorCalculator' },
+          { num: 2, title: '♨️ Водяной теплый пол', desc: 'Контуры, смесительный узел и шаг укладки', targetFunc: 'openFloorCalculator' },
+          { num: 3, title: '⚡ Бойлер ГВС и бак Reflex', desc: 'Объем бойлера косвенного нагрева и мембранный бак', targetFunc: 'openBoilerCalculator' },
+          { num: 4, title: '🌀 Циркуляционный насос котельной', desc: 'Рабочая точка насоса (Q, H) и магистрали', targetFunc: 'openPumpCalculator' }
+        ]
       };
     }
-    if (lower.includes('перед стяжкой') || lower.includes('до стяжки') || lower.includes('до заливки') || lower.includes('чек лист') || lower.includes('чек-лист') || (lower.includes('контроль') && !lower.includes('купил'))) {
+
+    // Группа Г: Проверка, контроль, стяжка, испытания
+    if ((lower.includes('провер') || lower.includes('контрол') || lower.includes('испытан') || lower.includes('стяжк') || lower.includes('давлен') || lower.includes('опрессов')) && !lower.includes('купил')) {
       return {
-        type: 'nav_action',
-        target: 'checklist',
-        title: '📋 Навигация: Чек-лист контроля',
-        voiceResponse: 'Открываю чек-лист контроля перед заливкой стяжки',
-        spotlightId: 'screen-checklist',
-        desc: 'Открываю чек-лист 10 критических пунктов перед заливкой стяжки...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, какую проверку провести?',
+        voicePrompt: 'Улугбек, какую проверку открыть? Назовите номер.',
+        options: [
+          { num: 1, title: '🛡️ Опрессовка 16 бар на 24 часа', desc: 'Суточный таймер выдержки и протокол допуска', targetFunc: 'testDriveStep2_Pressure' },
+          { num: 2, title: '📋 Чек-лист перед заливкой стяжки', desc: '10 критических пунктов проверки до заливки бетона', targetScreen: 'checklist' },
+          { num: 3, title: '📐 Инженерный экспресс-аудит', desc: 'Проверка надежности узлов по швейцарским стандартам', targetFunc: 'runAiAudit' },
+          { num: 4, title: '📸 Королевская кнопка факта', desc: 'Быстрое фото скрытого узла до стяжки (3 секунды)', targetFunc: 'openQuickFactModal' }
+        ]
       };
     }
-    if (lower.includes('открой смет') || lower.includes('посчитай квартир') || lower.includes('калькулятор смет') || (lower.includes('смета') && !lower.includes('купил'))) {
+
+    // Группа Д: Клиент, показ, скрытие цен
+    if (lower.includes('клиент') || lower.includes('заказчик') || lower.includes('показ') || lower.includes('спряч') || lower.includes('секрет')) {
       return {
-        type: 'nav_action',
-        target: 'estimate',
-        title: '⚡ Навигация: Экспресс-смета',
-        voiceResponse: 'Открываю экспресс-смету и расценки на точки',
-        spotlightId: 'screen-estimate',
-        desc: 'Открываю калькулятор сметы и расценок на точки...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, что нужно для заказчика?',
+        voicePrompt: 'Улугбек, что сделать для клиента? Назовите: один или два.',
+        options: [
+          { num: 1, title: '👁️ Режим показа клиенту', desc: 'Мгновенно скрыть закупочные цены, долги и прибыль', targetFunc: 'setClientModeTrue' },
+          { num: 2, title: '📄 Исполнительный Паспорт А4 (PDF)', desc: 'Официальный документ с фотофиксацией трасс и узлов', targetFunc: 'testDriveStep4_Passport' },
+          { num: 3, title: '✈️ Отчет о ходе монтажа в Telegram', desc: 'Отправить статус объекта заказчику в 1 клик', targetFunc: 'shareSiteProgressTelegram' }
+        ]
       };
     }
-    if (lower.includes('открой истор') || lower.includes('хроник') || lower.includes('кто работал') || lower.includes('журнал работ')) {
+
+    // Группа Е: Документы, акты, паспорта
+    if (lower.includes('документ') || lower.includes('акт') || lower.includes('паспорт') || lower.includes('бумаг')) {
       return {
-        type: 'nav_action',
-        target: 'history',
-        title: '📜 Навигация: Хроника объекта',
-        voiceResponse: 'Открываю хронику вех и 10-летнюю историю объекта',
-        spotlightId: 'timeline-events-container',
-        desc: 'Открываю 10-летнюю историю и журнал вех объекта...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, какой документ сформировать?',
+        voicePrompt: 'Улугбек, какой документ подготовить? Назовите номер.',
+        options: [
+          { num: 1, title: '📄 Исполнительный Паспорт Объекта А4', desc: 'Официальный инженерный паспорт с фото скрытых трасс', targetFunc: 'testDriveStep4_Passport' },
+          { num: 2, title: '🛡️ Официальный Акт опрессовки 16 бар', desc: 'Бланк допуска под стяжку по стандарту DIN 1988', targetFunc: 'exportScreedAct' },
+          { num: 3, title: '✍️ Гербовая печать и подпись мастера', desc: 'Выбрать стиль печати и расписаться пальцем', targetFunc: 'testDriveStep3_Seal' }
+        ]
       };
     }
-    if (lower.includes('на главн') || lower.includes('дашборд') || lower.includes('к объект') || lower.includes('домой')) {
+
+    // Группа Ж: Деньги, касса, зарплаты
+    if ((lower.includes('деньг') || lower.includes('касс') || lower.includes('прибыл') || lower.includes('долг') || lower.includes('баланс')) && !lower.includes('купил') && !lower.includes('выдал') && !lower.includes('аванс')) {
       return {
-        type: 'nav_action',
-        target: 'dashboard',
-        title: '🏢 Навигация: Главный экран',
-        voiceResponse: 'Возвращаюсь к карточке объекта',
-        spotlightId: 'dashboard-finances-card',
-        desc: 'Возвращаюсь к карточке текущего объекта...'
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, что открыть по финансам?',
+        voicePrompt: 'Улугбек, что открыть по деньгам? Назовите номер.',
+        options: [
+          { num: 1, title: '💰 Финансовый пульс и касса', desc: 'Баланс объекта, остаток в кармане и прибыль', targetScreen: 'finances' },
+          { num: 2, title: '👥 Зафиксировать выплату помощнику', desc: 'Записать аванс бригаде без бумажной рутины', targetModal: 'modal-payment' },
+          { num: 3, title: '💵 Принять аванс от заказчика', desc: 'Зачисление средств на объект', targetModal: 'modal-payment' },
+          { num: 4, title: '📜 10-летняя хроника выплат', desc: 'История оплат и выполненных работ', targetScreen: 'history' }
+        ]
+      };
+    }
+
+    // Группа З: Помощь, с чего начать, что делать, растерянность
+    if (lower.includes('что делать') || lower.includes('с чего начать') || lower.includes('помоги') || lower.includes('инструкц') || lower.includes('не знаю') || lower.includes('куда нажать') || lower.includes('забыл') || lower.includes('подскажи')) {
+      return {
+        type: 'concierge_disambiguation',
+        question: 'Улугбек, чем помочь вам прямо сейчас?',
+        voicePrompt: 'Улугбек, чем помочь? Назовите номер: один, два или три.',
+        options: [
+          { num: 1, title: '👑 Персональный тест-драйв Улугбека', desc: '5 ключевых контрольных узлов системы LIGA OS', targetFunc: 'openUlugbekVipBrief' },
+          { num: 2, title: '🎬 Инженерный видеогид мастера', desc: 'Подсказки и видеоэкскурсия по всем возможностям', targetFunc: 'openSystemGuideModal' },
+          { num: 3, title: '📖 Памятка мастера', desc: 'Диалоги с дизайнерами, клиентами и скрипты', targetFunc: 'openMasterGuide' },
+          { num: 4, title: '📸 Королевская кнопка факта (3 сек)', desc: 'Мгновенное фото скрытого узла до стяжки', targetFunc: 'openQuickFactModal' }
+        ]
       };
     }
 
@@ -7268,69 +7348,51 @@ ${loopsText}
       };
     }
 
-    // 4.1. Определение типа операции: Инженерный расчет теплого пола
-    if (lower.includes('теплый пол') || lower.includes('теплого пола') || (lower.includes('труб') && (lower.includes('квадрат') || lower.includes('кв м') || lower.includes('метр')))) {
-      const areaMatch = lower.match(/(\d+[\.,]?\d*)\s*(кв|квадрат|м2|метр)?/);
-      const area = areaMatch ? Math.round(parseFloat(areaMatch[1].replace(',', '.'))) : 50;
-      const meters = Math.round(area * 6.5);
-      const coils = Math.ceil(meters / 200);
-      const loops = Math.max(1, Math.ceil(meters / 75));
+    // 5. Определение типа операции: Материалы и Снабжение сантехники (ТОЛЬКО если есть сумма или слова покупки)
+    const hasPurchaseWords = lower.includes('купил') || lower.includes('взял') || lower.includes('базар') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('рынок') || lower.includes('чек') || lower.includes('расход');
+
+    if (amount > 0 || hasPurchaseWords) {
+      let category = 'Трубы и фитинги';
+      if (lower.includes('коллектор') || lower.includes('far') || lower.includes('гребенк') || lower.includes('расходомер')) {
+        category = 'Коллекторы';
+      } else if (lower.includes('инсталляц') || lower.includes('трап') || lower.includes('geberit') || lower.includes('геберит') || lower.includes('tece') || lower.includes('теце') || lower.includes('viega')) {
+        category = 'Инсталляции';
+      } else if (lower.includes('нептун') || lower.includes('neptun') || lower.includes('протечк') || lower.includes('gidrolock') || lower.includes('гидролок') || lower.includes('сервопривод')) {
+        category = 'Защита от протечек';
+      } else if (lower.includes('канализац') || lower.includes('ostendorf') || lower.includes('остендорф') || lower.includes('фанов')) {
+        category = 'Канализация';
+      } else if (lower.includes('теплый пол') || lower.includes('насос') || lower.includes('grundfos') || lower.includes('bwt') || lower.includes('фильтр')) {
+        category = 'Отопление и фильтрация';
+      } else if (lower.includes('клей') || lower.includes('герметик') || lower.includes('изоляц') || lower.includes('k-flex') || lower.includes('лен') || lower.includes('паста') || lower.includes('unipak')) {
+        category = 'Расходники';
+      }
+
+      let cleanName = text
+        .replace(/(купил|купили|взял|на базаре|на джами|на урикзаре|за|на сумму|сум|суммов|тысяч|тыщ|миллион|миллиона|рублей|долларов|баксов)/gi, '')
+        .replace(/\d+/g, '')
+        .trim();
+      if (cleanName.length < 3) cleanName = 'Материалы сантехники';
 
       return {
-        type: 'calc_floor',
-        title: `Расчет теплого пола (${area} м²)`,
-        area: area,
-        meters: meters,
-        coils: coils,
-        loops: loops,
-        amount: 0
+        type: 'material',
+        title: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+        amount: amount || 450000,
+        category: category,
+        qty: '1 компл'
       };
     }
 
-    // 4.2. Определение типа операции: Конвертер валюты (USD <-> UZS)
-    if (lower.includes('курс') || (lower.includes('сколько') && (lower.includes('доллар') || lower.includes('бакс')))) {
-      const usdMatch = lower.match(/(\d+)\s*(доллар|бакс|\$)/);
-      const usdVal = usdMatch ? parseInt(usdMatch[1]) : 100;
-      const somVal = usdVal * usdRate;
-
-      return {
-        type: 'currency_conv',
-        title: `Конвертер валют ($${usdVal})`,
-        usd: usdVal,
-        som: somVal,
-        rate: usdRate,
-        amount: somVal
-      };
-    }
-
-    // 5. Определение типа операции: Материалы и Снабжение сантехники
-    let category = 'Трубы и фитинги';
-    if (lower.includes('коллектор') || lower.includes('far') || lower.includes('гребенк') || lower.includes('расходомер')) {
-      category = 'Коллекторы';
-    } else if (lower.includes('инсталляц') || lower.includes('трап') || lower.includes('geberit') || lower.includes('геберит') || lower.includes('tece') || lower.includes('теце') || lower.includes('viega')) {
-      category = 'Инсталляции';
-    } else if (lower.includes('нептун') || lower.includes('neptun') || lower.includes('протечк') || lower.includes('gidrolock') || lower.includes('гидролок') || lower.includes('сервопривод')) {
-      category = 'Защита от протечек';
-    } else if (lower.includes('канализац') || lower.includes('ostendorf') || lower.includes('остендорф') || lower.includes('фанов')) {
-      category = 'Канализация';
-    } else if (lower.includes('теплый пол') || lower.includes('насос') || lower.includes('grundfos') || lower.includes('bwt') || lower.includes('фильтр')) {
-      category = 'Отопление и фильтрация';
-    } else if (lower.includes('клей') || lower.includes('герметик') || lower.includes('изоляц') || lower.includes('k-flex') || lower.includes('лен') || lower.includes('паста') || lower.includes('unipak')) {
-      category = 'Расходники';
-    }
-
-    let cleanName = text
-      .replace(/(купил|купили|взял|на базаре|на джами|на урикзаре|за|на сумму|сум|суммов|тысяч|тыщ|миллион|миллиона|рублей|долларов|баксов)/gi, '')
-      .replace(/\d+/g, '')
-      .trim();
-    if (cleanName.length < 3) cleanName = 'Материалы сантехники';
-
+    // 6. УНИВЕРСАЛЬНЫЙ ФОЛБЭК: Если система не поняла фразу мастера, открываем LIGA Concierge («Нулевая рутина»)
     return {
-      type: 'material',
-      title: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-      amount: amount || 450000,
-      category: category,
-      qty: '1 компл'
+      type: 'concierge_disambiguation',
+      question: 'Улугбек, что для вас открыть?',
+      voicePrompt: 'Улугбек, что для вас открыть? Назовите номер: один, два, три или четыре.',
+      options: [
+        { num: 1, title: '👑 Персональный тест-драйв Улугбека', desc: 'Программа приёмки LIGA OS и 5 контрольных узлов', targetFunc: 'openUlugbekVipBrief' },
+        { num: 2, title: '🛡️ Опрессовка 16 бар на 24 часа', desc: 'Суточный таймер выдержки и протокол испытаний', targetFunc: 'testDriveStep2_Pressure' },
+        { num: 3, title: '♨️ Расчет теплого пола Rehau', desc: 'Калькулятор площади, петель и смесительного узла', targetFunc: 'openFloorCalculator' },
+        { num: 4, title: '📸 Королевская кнопка факта (3 сек)', desc: 'Быстро зафиксировать фото скрытого узла до стяжки', targetFunc: 'openQuickFactModal' }
+      ]
     };
   }
 
@@ -8451,6 +8513,11 @@ ${shareUrl}
       const inputEl = document.getElementById('voice-recognized-input');
       if (inputEl) inputEl.value = '';
     }
+    if (modalId === 'modal-voice-concierge-choice') {
+      this.isConciergeListening = false;
+      this.activeConciergeOptions = null;
+      this.stopVoiceRecording(false);
+    }
     if (modalId === 'modal-video-tour' && this.videoTourState) {
       this.videoTourState.isOpen = false;
       this.videoTourState.isPlaying = false;
@@ -8917,8 +8984,7 @@ ${shareUrl}
   }
 
   toggleVoiceInput() {
-    this.openModal('modal-voice');
-    this.startVoiceRecording();
+    this.openVoiceAssistant();
   }
 
   initHandsFreeVoice() {

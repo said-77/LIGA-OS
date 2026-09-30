@@ -6336,3 +6336,182 @@ body.client-mode .btn-floating-voice {
   }
 }
 
+/* ==========================================================================
+   👑 LIGA VOICE CONCIERGE • ИНТЕЛЛЕКТУАЛЬНЫЙ ВЫБОР ДЕЙСТВИЯ («НУЛЕВАЯ РУТИНА»)
+   Дипломатичный швейцарский стиль: Dark Titanium + Gold Leaf + 3D Glass
+   ========================================================================== */
+.voice-concierge-sheet {
+  background: linear-gradient(180deg, rgba(22, 27, 34, 0.98) 0%, rgba(13, 17, 23, 0.99) 100%);
+  border: 1px solid rgba(255, 209, 117, 0.35);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.75), 0 0 30px rgba(255, 209, 117, 0.15);
+  padding: 16px 18px 24px 18px;
+  max-width: 540px;
+  margin: 0 auto;
+  color: var(--text-main);
+}
+
+.voice-concierge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.voice-concierge-badge {
+  background: linear-gradient(135deg, rgba(255, 209, 117, 0.18) 0%, rgba(255, 209, 117, 0.05) 100%);
+  border: 1px solid rgba(255, 209, 117, 0.4);
+  color: var(--gold-primary);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-concierge-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 4px 0 6px 0;
+  line-height: 1.3;
+}
+
+.voice-concierge-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 14px 0;
+  line-height: 1.4;
+}
+
+.voice-concierge-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.voice-concierge-option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  font-family: inherit;
+  position: relative;
+}
+
+.voice-concierge-option-card:hover,
+.voice-concierge-option-card:active {
+  background: linear-gradient(135deg, rgba(255, 209, 117, 0.14) 0%, rgba(255, 209, 117, 0.04) 100%);
+  border-color: rgba(255, 209, 117, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.voice-concierge-badge-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--gold-gradient);
+  color: #0b0f17;
+  font-weight: 900;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 209, 117, 0.3);
+}
+
+.voice-concierge-opt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.voice-concierge-opt-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.voice-concierge-opt-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.voice-concierge-arrow {
+  font-size: 16px;
+  color: var(--gold-primary);
+  font-weight: 900;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.voice-concierge-option-card:hover .voice-concierge-arrow {
+  transform: translateX(3px);
+}
+
+.voice-concierge-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.voice-concierge-mic-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--neon-emerald);
+  font-weight: 800;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-emerald);
+  box-shadow: 0 0 10px var(--neon-emerald);
+  animation: pulseDotAnim 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseDotAnim {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.btn-voice-concierge-cancel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border-subtle);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-voice-concierge-cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+}
+
+
