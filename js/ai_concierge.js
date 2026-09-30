@@ -15,6 +15,9 @@ class LigaAIConcierge {
   constructor() {
     // ── Состояние ────────────────────────────────────────────────────────────
     this.apiKey = localStorage.getItem('liga_ai_key') || '';
+    this.backupProvider = localStorage.getItem('liga_ai_backup_provider') || 'openai';
+    this.backupApiKey = localStorage.getItem('liga_ai_backup_key') || '';
+    this.autoFailover = localStorage.getItem('liga_ai_autofailover') !== 'false';
     this.isOnline = navigator.onLine;
     this.isEnabled = localStorage.getItem('liga_ai_enabled') !== 'false';
     this.voiceEnabled = localStorage.getItem('liga_ai_voice') !== 'false';
@@ -175,6 +178,22 @@ class LigaAIConcierge {
     const btnSaveKey = document.getElementById('btn-save-ai-key');
     if (btnSaveKey) btnSaveKey.addEventListener('click', () => this._saveApiKey());
 
+    // Сохранение резервного API ключа (Failover)
+    const btnSaveBackupKey = document.getElementById('btn-save-ai-backup-key');
+    if (btnSaveBackupKey) btnSaveBackupKey.addEventListener('click', () => this._saveBackupApiKey());
+
+    const selectBackupProvider = document.getElementById('select-ai-backup-provider');
+    if (selectBackupProvider) selectBackupProvider.addEventListener('change', (e) => {
+      this.backupProvider = e.target.value;
+      localStorage.setItem('liga_ai_backup_provider', this.backupProvider);
+    });
+
+    const toggleFailover = document.getElementById('toggle-ai-autofailover');
+    if (toggleFailover) toggleFailover.addEventListener('change', (e) => {
+      this.autoFailover = e.target.checked;
+      localStorage.setItem('liga_ai_autofailover', this.autoFailover ? 'true' : 'false');
+    });
+
     // Тоггл AI enabled
     const toggleAI = document.getElementById('toggle-ai-enabled');
     if (toggleAI) toggleAI.addEventListener('change', (e) => {
@@ -308,6 +327,16 @@ class LigaAIConcierge {
     const keyInput = document.getElementById('ai-api-key-input');
     if (keyInput && this.apiKey) keyInput.value = this.apiKey;
 
+    // Синхронизация резервного оператора (Failover)
+    const selectBackupProvider = document.getElementById('select-ai-backup-provider');
+    if (selectBackupProvider) selectBackupProvider.value = this.backupProvider;
+
+    const backupKeyInput = document.getElementById('ai-backup-key-input');
+    if (backupKeyInput && this.backupApiKey) backupKeyInput.value = this.backupApiKey;
+
+    const toggleFailover = document.getElementById('toggle-ai-autofailover');
+    if (toggleFailover) toggleFailover.checked = this.autoFailover;
+
     // Синхронизация темы
     const toggleTheme = document.getElementById('toggle-theme-settings');
     if (toggleTheme) {
@@ -343,6 +372,27 @@ class LigaAIConcierge {
     }
   }
 
+  _saveBackupApiKey() {
+    const keyInput = document.getElementById('ai-backup-key-input');
+    if (!keyInput) return;
+
+    const key = keyInput.value.trim();
+    this.backupApiKey = key;
+    localStorage.setItem('liga_ai_backup_key', key);
+
+    const sel = document.getElementById('select-ai-backup-provider');
+    if (sel) {
+      this.backupProvider = sel.value;
+      localStorage.setItem('liga_ai_backup_provider', this.backupProvider);
+    }
+
+    if (key) {
+      this._showToast('✅ Резервный ключ сохранён! Режим бесперебойности (Failover) готов.');
+    } else {
+      this._showToast('🗑️ Резервный ключ удалён.');
+    }
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   // Восстановление подсказки новичка
   // ════════════════════════════════════════════════════════════════════════════
@@ -375,8 +425,8 @@ class LigaAIConcierge {
       this._addSystemMessage('⚪ Нет интернета. LIGA AI недоступен — ядро LIGA OS работает автономно.');
       return;
     }
-    if (!this.apiKey) {
-      this._addSystemMessage('⚙️ Укажите Google AI API ключ в Настройках LIGA OS (кнопка ⚙️).');
+    if (!this.apiKey && !this.backupApiKey) {
+      this._addSystemMessage('⚙️ Укажите API ключ в Настройках LIGA OS (Google AI Studio бесплатно или OpenAI/Groq).');
       return;
     }
     if (!this.isEnabled) {
@@ -392,7 +442,7 @@ class LigaAIConcierge {
     this.chatHistory.push({ role: 'user', parts: [{ text }] });
 
     try {
-      const response = await this._callGeminiAPI(text);
+      const response = await this._callAIWithFailover(text);
       this._removeTypingIndicator(typingEl);
       this.isThinking = false;
 
@@ -407,6 +457,132 @@ class LigaAIConcierge {
       console.error('[LIGA AI] Error:', err);
       this._addSystemMessage('❌ Ошибка связи с LIGA AI: ' + (err.message || 'Проверьте API ключ.'));
     }
+  }
+
+  // Интеллектуальный роутер с авто-переключением (Failover) при сбоях или лимитах
+  async _callAIWithFailover(userText) {
+    let lastErr = null;
+
+    // 1. Попытка основного оператора (Google Gemini — бесплатный)
+    if (this.apiKey) {
+      try {
+        return await this._callGeminiAPI(userText);
+      } catch (err) {
+        console.warn('[LIGA AI] Gemini error:', err.message);
+        lastErr = err;
+        // Если авто-переключение не настроено — сразу пробрасываем ошибку
+        if (!this.autoFailover || !this.backupApiKey) {
+          throw err;
+        }
+        this._showToast('⚡ Лимит Gemini исчерпан. Переключаю на резервного оператора...');
+      }
+    }
+
+    // 2. Резервный оператор (OpenAI GPT-4o-mini или Groq Cloud)
+    if (this.backupApiKey) {
+      try {
+        if (this.backupProvider === 'groq') {
+          return await this._callGroqAPI(userText);
+        } else {
+          return await this._callOpenAIAPI(userText);
+        }
+      } catch (backupErr) {
+        console.error('[LIGA AI] Backup provider error:', backupErr);
+        throw new Error(`Ошибка резервного канала (${this.backupProvider}): ${backupErr.message}`);
+      }
+    }
+
+    throw lastErr || new Error('API ключ не указан в настройках.');
+  }
+
+  async _callOpenAIAPI(userText) {
+    const URL = 'https://api.openai.com/v1/chat/completions';
+    let activePrompt = this.SYSTEM_PROMPT;
+    if (window.app && window.app.currentSite) {
+      const s = window.app.currentSite;
+      activePrompt += `\n\nТЕКУЩИЙ АКТИВНЫЙ ОБЪЕКТ МАСТЕРА:
+- ЖК: ${s.title || s.address || 'Не указано'}
+- Заказчик: ${s.clientName || 'Не указан'}
+- Опрессовка 16 бар: ${s.pressureTest?.passed ? 'ПРОЙДЕНА' : 'В процессе'}`;
+    }
+
+    const messages = [
+      { role: 'system', content: activePrompt },
+      ...this.chatHistory.slice(-6).map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.parts?.[0]?.text || m.content || ''
+      })),
+      { role: 'user', content: userText }
+    ];
+
+    const res = await fetch(URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.backupApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 600
+      }),
+      signal: AbortSignal.timeout(25000)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      if (res.status === 429) throw new Error('Превышен лимит запросов OpenAI');
+      throw new Error(`OpenAI HTTP ${res.status}: ${errText.slice(0, 100)}`);
+    }
+
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content;
+    if (!reply) throw new Error('Пустой ответ от OpenAI');
+    return reply.trim();
+  }
+
+  async _callGroqAPI(userText) {
+    const URL = 'https://api.groq.com/openai/v1/chat/completions';
+    let activePrompt = this.SYSTEM_PROMPT;
+    if (window.app && window.app.currentSite) {
+      const s = window.app.currentSite;
+      activePrompt += `\n\nТЕКУЩИЙ ОБЪЕКТ: ${s.title || s.address || 'Объект LIGA OS'}`;
+    }
+
+    const messages = [
+      { role: 'system', content: activePrompt },
+      ...this.chatHistory.slice(-6).map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.parts?.[0]?.text || m.content || ''
+      })),
+      { role: 'user', content: userText }
+    ];
+
+    const res = await fetch(URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.backupApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 600
+      }),
+      signal: AbortSignal.timeout(25000)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Groq HTTP ${res.status}: ${errText.slice(0, 100)}`);
+    }
+
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content;
+    if (!reply) throw new Error('Пустой ответ от Groq');
+    return reply.trim();
   }
 
   async _callGeminiAPI(userText) {

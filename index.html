@@ -22,30 +22,31 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico">
   <link rel="apple-touch-icon" href="./icons/logo.svg">
 
-  <!-- Open Graph / Telegram / WhatsApp / iMessage Preview Card -->
+  <!-- Open Graph / Telegram / WhatsApp / iMessage Preview Card (v2.5.4) -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LIGA OS">
   <meta property="og:title" content="LIGA OS — Операционная Система Инженерного Мастера">
   <meta property="og:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, цифровой паспорт объекта, голосовой учет.">
   <meta property="og:url" content="https://liga-master-uz.vercel.app/">
-  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.2">
-  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.2">
+  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.4">
+  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.4">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1376">
   <meta property="og:image:height" content="768">
   <meta property="og:image:alt" content="LIGA OS — Операционная Система Инженерного Мастера 16 БАР">
-  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.2">
+  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.4">
+  <meta itemprop="image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.4">
   <meta property="og:locale" content="ru_RU">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="LIGA OS — Операционная Система Инженерного Мастера">
+  <meta name="twitter:title" content="LIGA OS — Операционная Система Инженерного Мастера 16 БАР">
   <meta name="twitter:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Опрессовка 16 бар / 24ч, цифровой паспорт объекта.">
-  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.2">
+  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.4">
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Гидравлические испытания 16 бар / 24ч, исполнительный паспорт объекта, голосовой ввод.">
 
-  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.2 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.5.2">
+  <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.4 -->
+  <link rel="stylesheet" href="./css/style.css?v=2.5.4">
 </head>
 <body>
   <div class="app-container">
@@ -929,7 +930,7 @@
         </p>
 
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <a href="https://liga-masterov.vercel.app" target="_blank" rel="noopener" class="item-row" style="text-decoration:none; cursor:pointer;">
+          <a href="https://liga-master-uz.vercel.app" target="_blank" rel="noopener" class="item-row" style="text-decoration:none; cursor:pointer;">
             <div class="item-left">
               <div class="item-name" style="display:flex; align-items:center; gap:6px;">
                 <span>🏛️</span> Основной сайт LIGA MASTEROV
@@ -1818,16 +1819,43 @@
           </button>
 
           <!-- Переключатель машинной озвучки (Тихий режим по умолчанию) -->
-          <div style="margin-top:10px;">
+          <div style="margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:6px;">
             <button id="btn-toggle-voice-tts" type="button" onclick="window.app.toggleVoiceTts()" style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:5px 14px; font-size:11.5px; color:var(--text-muted); cursor:pointer; transition:all 0.2s ease;">
               <span id="voice-tts-status-icon">🔇</span>
               <span id="voice-tts-status-text">Озвучка ответов: ВЫКЛ (тихий режим)</span>
             </button>
+            <div id="voice-wake-lock-badge" style="display:none; align-items:center; gap:5px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); border-radius:12px; padding:3px 10px; font-size:11px; font-weight:700; color:var(--neon-emerald);">
+              🚗 В дороге / Hands-Free: экран удерживается активным
+            </div>
           </div>
 
-          <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Примеры: «Купил на Джами коллектор FAR за 1 800 000», «Выдал аванс Алишеру 400 тысяч» или «Опрессовка 16 бар завершена»</div>
-          <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.4; padding:6px 10px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.18); border-radius:8px;">
-            🌐 <b>Сетевая зависимость:</b> Голосовой ввод (Web Speech) требует подключения к интернету. Система работает в режиме непрерывной диктовки: слушает речь, накапливает текст и не гаснет при паузах. В экранированных монолитах и подвалах без сети вводите текст вручную в поле ниже.
+          <!-- Быстрые команды чтения вслух (Hands-Free в авто) -->
+          <div style="margin-top:12px; padding:10px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:12px; text-align:left;">
+            <div style="font-size:11px; font-weight:800; color:var(--gold-primary); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+              <span>📢</span> Голосовой бриф в дорогу (скажите вслух или нажмите):
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              <button type="button" class="btn-voice-template" style="padding:4px 9px; font-size:11px; border-radius:8px;" onclick="window.app.readEstimateBrief()">
+                ⚡ «Прочитай смету»
+              </button>
+              <button type="button" class="btn-voice-template" style="padding:4px 9px; font-size:11px; border-radius:8px;" onclick="window.app.readFinanceBrief()">
+                💰 «Сколько денег в кассе»
+              </button>
+              <button type="button" class="btn-voice-template" style="padding:4px 9px; font-size:11px; border-radius:8px;" onclick="window.app.readChecklistBrief()">
+                📋 «Прочитай чеклист»
+              </button>
+              <button type="button" class="btn-voice-template" style="padding:4px 9px; font-size:11px; border-radius:8px;" onclick="window.app.readMaterialsBrief()">
+                📦 «Что купить на Джами»
+              </button>
+              <button type="button" class="btn-voice-template" style="padding:4px 9px; font-size:11px; border-radius:8px;" onclick="window.app.readPressureBrief()">
+                🛡️ «Статус опрессовки»
+              </button>
+            </div>
+          </div>
+
+          <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Примеры расходов: «Купил на Джами коллектор FAR за 1 800 000», «Выдал аванс Алишеру 400 тысяч»</div>
+          <div style="font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.4; padding:6px 10px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.18); border-radius:8px;">
+            🌐 <b>Авто-режим на торпеде:</b> телефон на держателе держит экран включенным (WakeLock). Скажите: <i>«Прочитай смету»</i> или <i>«Сколько в кассе»</i> — система озвучит цифры прямо в динамик авто или Bluetooth-наушник.
           </div>
         </div>
 
@@ -4122,6 +4150,43 @@
                 <input type="checkbox" id="toggle-ai-voice" checked>
                 <span class="toggle-track"></span>
               </label>
+            </div>
+          </div>
+
+          <!-- Секция: Резервный ИИ-оператор (Auto-Failover) v2.5.4 -->
+          <div class="settings-section">
+            <div class="settings-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Резервный ИИ-оператор (Failover)</span>
+              <span class="ai-model-badge" style="background:rgba(16,185,129,0.15); color:var(--neon-emerald); border-color:rgba(16,185,129,0.3);">Бесперебойность</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-dim); margin-bottom:10px; line-height:1.4;">
+              Если основной бесплатный лимит Gemini исчерпан или сеть перегружена — система мгновенно переключается на резервного оператора (OpenAI / Groq) без сбоев для мастера.
+            </div>
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-info">
+                <div class="settings-toggle-label">Авто-переключение (Failover)</div>
+                <div class="settings-toggle-desc">Автоматический подхват при лимите Gemini</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-ai-autofailover" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div style="margin-top:10px;">
+              <label class="form-label" style="margin-bottom:4px; font-size:11px;">Резервный провайдер:</label>
+              <select id="select-ai-backup-provider" class="form-input" style="padding:8px 10px; font-size:12px; margin-bottom:8px; cursor:pointer;">
+                <option value="openai">OpenAI (GPT-4o-mini — ультра-экономный)</option>
+                <option value="groq">Groq Cloud (Llama 3.3 70B — сверхбыстрый)</option>
+              </select>
+              <div class="settings-toggle-label" style="margin-bottom:4px;">Резервный API ключ (OpenAI / Groq):</div>
+              <input class="ai-api-key-field" type="password" id="ai-backup-key-input"
+                placeholder="sk-proj-... или gsk_..." autocomplete="off">
+              <button id="btn-save-ai-backup-key" type="button"
+                style="margin-top:8px; width:100%; padding:9px; background:rgba(255,255,255,0.08);
+                border:1px solid rgba(255,255,255,0.18); border-radius:10px; color:var(--text-main); font-size:12px;
+                font-weight:700; cursor:pointer;">
+                💾 Сохранить резервный ключ
+              </button>
             </div>
           </div>
 

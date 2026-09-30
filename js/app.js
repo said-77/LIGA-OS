@@ -82,6 +82,10 @@ class LigaApp {
     // Машинная озвучка ответов (TTS SpeechSynthesis) — ПО УМОЛЧАНИЮ СТРОГО ВЫКЛЮЧЕНА (Тихий швейцарский режим)
     this.isVoiceTtsEnabled = localStorage.getItem('liga_voice_tts_enabled') === 'true'; // false по умолчанию
 
+    // Удержание экрана активным в автомобиле (Screen Wake Lock API)
+    this.wakeLock = null;
+    this.isDriveModeEnabled = localStorage.getItem('liga_drive_mode_enabled') === 'true';
+
     // Ситуации мастера (v2.1.0: on-site / voice-create / ahead-work / designer-project)
     this.currentSituation = localStorage.getItem('liga_os_situation') || 'on-site';
   }
@@ -2688,7 +2692,7 @@ ${isAllPassed ? '🟢 СТЯЖКУ ЗАЛИВАТЬ РАЗРЕШЕНО. Инже
 
 Инженер технадзора: Улугбек Хакимов
 Телефон: ${s.phone || '+998 90 900-00-00'}
-Сайт: https://liga-masterov.vercel.app`;
+Сайт: https://liga-master-uz.vercel.app/`;
 
     try {
       await this.copyToClipboard(message);
@@ -2830,7 +2834,7 @@ ${itemsText}
 
 Ориентировочная сумма закупки: 💰 ${this.formatSum(sum)}
 
-Сформировано в LIGA OS: https://liga-masterov.vercel.app`;
+Сформировано в LIGA OS: https://liga-master-uz.vercel.app/`;
 
     try {
       await this.copyToClipboard(message);
@@ -3392,7 +3396,7 @@ ${itemsText}
 ✓ Исполнительный фотопаспорт скрытых трасс с лазерными привязками
 ✓ Официальный договор и гарантия
 
-Сайт-портфолио: https://liga-masterov.vercel.app/`;
+Сайт-портфолио: https://liga-master-uz.vercel.app/`;
 
     this.copyToClipboard(message).then(() => {
       this.showToast('✓ Смета скопирована! Вставьте её в чат Telegram.');
@@ -6565,17 +6569,20 @@ ${loopsText}
   // МОДУЛЬ ГОЛОСОВОГО КОНСЬЕРЖА («СВОБОДНЫЕ РУКИ НА ОБЪЕКТЕ») — LIGA VOICE VIP
   // Естественный синтез речи, живой диалог, подтверждения в 1 тап и подсветка
   // ==========================================================================
-  // Машинный голосовой синтез речи (TTS) — строго подчиняется переключателю (по умолчанию ВЫКЛ)
-  speakVoice(text) {
-    if (!this.isVoiceTtsEnabled || !this.isSoundEnabled || !window.speechSynthesis) return;
+  // Машинный голосовой синтез речи (TTS) — по умолчанию ВЫКЛ. Если force === true, воспроизводит по прямому запросу («Прочитай...»)
+  speakVoice(text, force = false, maxChars = 320) {
+    if ((!this.isVoiceTtsEnabled && !force) || !this.isSoundEnabled || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
-      const clean = text.replace(/[*#`_~[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 150);
+      const clean = text
+        .replace(/[*#`_~[\]()]/g, '')
+        .replace(/\n+/g, ' ')
+        .slice(0, maxChars);
       const utt = new SpeechSynthesisUtterance(clean);
       utt.lang = 'ru-RU';
-      utt.rate = 1.1; // динамичнее
-      utt.pitch = 0.98; // солиднее
-      utt.volume = 0.85;
+      utt.rate = 1.05; // комфортный и солидный темп
+      utt.pitch = 0.98; // уверенный тембр
+      utt.volume = 0.9;
 
       const voices = window.speechSynthesis.getVoices();
       const preferred = voices.find(v =>
@@ -6613,6 +6620,218 @@ ${loopsText}
         btn.style.color = 'var(--text-muted)';
         btn.style.background = 'rgba(255,255,255,0.06)';
       }
+    }
+  }
+
+  // ==========================================================================
+  // ГОЛОСОВОЙ БРИФИНГ «ЧТЕНИЕ ВСЛУХ В ДОРОГЕ / HANDS-FREE» (v2.5.4)
+  // Мастер за рулем или в наушниках просит: «Прочитай смету», «Сколько в кассе»
+  // ==========================================================================
+  async readEstimateBrief(siteId) {
+    const site = (siteId && this.sites) ? this.sites.find(s => s.id === siteId) : (this.currentSite || (this.sites && this.sites[0]));
+    if (site && site.id !== this.currentSiteId) {
+      await this.selectSite(site.id);
+    }
+    this.switchScreen('estimate');
+    this.closeModal('modal-voice');
+
+    if (!site) {
+      const msg = 'Объект не выбран. Открываю экран сметы.';
+      this.showToast(msg);
+      this.speakVoice(msg, true);
+      return;
+    }
+
+    const contract = site.contractSum || 0;
+    const advance = site.advanceSum || 0;
+    const debt = Math.max(0, contract - advance);
+    const siteTitle = site.name || 'Объект';
+
+    let brief = '';
+    if (contract > 0) {
+      brief = `Смета по объекту ${siteTitle}. Общая стоимость работ: ${this.formatSum(contract)}. Получен аванс: ${this.formatSum(advance)}. Остаток к получению с заказчика: ${this.formatSum(debt)}.`;
+    } else {
+      brief = `По объекту ${siteTitle} смета ещё не заполнена. Открыл форму экспресс-расчета по точкам.`;
+    }
+
+    this.showToast(`📢 Озвучиваю смету: ${siteTitle}`);
+    this.speakVoice(brief, true, 350);
+  }
+
+  async readFinanceBrief(siteId) {
+    const site = (siteId && this.sites) ? this.sites.find(s => s.id === siteId) : (this.currentSite || (this.sites && this.sites[0]));
+    if (site && site.id !== this.currentSiteId) {
+      await this.selectSite(site.id);
+    }
+    this.switchScreen('finances');
+    this.closeModal('modal-voice');
+
+    if (!site) {
+      const msg = 'Объект не выбран. Открываю кассу.';
+      this.showToast(msg);
+      this.speakVoice(msg, true);
+      return;
+    }
+
+    const siteTitle = site.name || 'Объект';
+    const advance = site.advanceSum || 0;
+    const brigade = site.brigadeOwed || 0;
+
+    let matSum = 0;
+    try {
+      if (window.ligaDB) {
+        const mats = await window.ligaDB.getBySiteId('materials', site.id);
+        matSum = mats.reduce((acc, m) => acc + (m.price || 0), 0);
+      }
+    } catch (e) {}
+
+    const balance = advance - matSum;
+    const brief = `Касса объекта ${siteTitle}. Получено от заказчика: ${this.formatSum(advance)}. Расход на материалы: ${this.formatSum(matSum)}. Выплаты бригаде: ${this.formatSum(brigade)}. Чистый остаток в кассе мастера: ${this.formatSum(balance)}.`;
+
+    this.showToast(`📢 Озвучиваю кассу: ${siteTitle}`);
+    this.speakVoice(brief, true, 350);
+  }
+
+  async readChecklistBrief(siteId) {
+    const site = (siteId && this.sites) ? this.sites.find(s => s.id === siteId) : (this.currentSite || (this.sites && this.sites[0]));
+    if (site && site.id !== this.currentSiteId) {
+      await this.selectSite(site.id);
+    }
+    this.switchScreen('checklist');
+    this.closeModal('modal-voice');
+
+    if (!site) {
+      const msg = 'Объект не выбран. Открываю чек-лист.';
+      this.showToast(msg);
+      this.speakVoice(msg, true);
+      return;
+    }
+
+    const siteTitle = site.name || 'Объект';
+    let checkedCount = 0;
+    const totalCount = 10;
+    try {
+      if (window.ligaDB) {
+        const items = await window.ligaDB.getBySiteId('checklists', site.id);
+        checkedCount = items.filter(i => i.isDone).length;
+      }
+    } catch (e) {}
+
+    let brief = '';
+    if (checkedCount >= totalCount) {
+      brief = `Чек-лист перед заливкой стяжки по объекту ${siteTitle}. Все десять пунктов выполнены! Опрессовка 16 бар подтверждена, фотофиксация завершена. Допуск к стяжке разрешен.`;
+    } else {
+      const remaining = totalCount - checkedCount;
+      brief = `Чек-лист перед стяжкой объекта ${siteTitle}. Выполнено ${checkedCount} из десяти пунктов. Осталось проверить ${remaining} узлов перед заливкой пола.`;
+    }
+
+    this.showToast(`📋 Чек-лист: ${checkedCount} из 10 проверено`);
+    this.speakVoice(brief, true, 350);
+  }
+
+  async readMaterialsBrief(siteId) {
+    const site = (siteId && this.sites) ? this.sites.find(s => s.id === siteId) : (this.currentSite || (this.sites && this.sites[0]));
+    if (site && site.id !== this.currentSiteId) {
+      await this.selectSite(site.id);
+    }
+    this.switchScreen('materials');
+    this.closeModal('modal-voice');
+
+    if (!site) {
+      const msg = 'Открываю склад и закупки.';
+      this.showToast(msg);
+      this.speakVoice(msg, true);
+      return;
+    }
+
+    const siteTitle = site.name || 'Объект';
+    let mats = [];
+    try {
+      if (window.ligaDB) {
+        mats = await window.ligaDB.getBySiteId('materials', site.id);
+      }
+    } catch (e) {}
+
+    const totalCost = mats.reduce((acc, m) => acc + (m.price || 0), 0);
+    const unbought = mats.filter(m => !m.isPurchased);
+
+    let brief = '';
+    if (unbought.length > 0) {
+      const unboughtCost = unbought.reduce((acc, m) => acc + (m.price || 0), 0);
+      const topNames = unbought.slice(0, 3).map(m => m.name).join(', ');
+      brief = `Снабжение объекта ${siteTitle}. К закупке на рынке Джами: ${unbought.length} позиций на сумму ${this.formatSum(unboughtCost)}. В списке: ${topNames}.`;
+    } else if (mats.length > 0) {
+      brief = `Склад объекта ${siteTitle}. Всего зафиксировано ${mats.length} позиций на общую сумму ${this.formatSum(totalCost)}. Все необходимые материалы закуплены.`;
+    } else {
+      brief = `Склад объекта ${siteTitle}. Список материалов пока пуст. Вы можете продиктовать закупку голосом.`;
+    }
+
+    this.showToast(`📦 Снабжение: ${siteTitle}`);
+    this.speakVoice(brief, true, 350);
+  }
+
+  async readPressureBrief(siteId) {
+    const site = (siteId && this.sites) ? this.sites.find(s => s.id === siteId) : (this.currentSite || (this.sites && this.sites[0]));
+    if (site && site.id !== this.currentSiteId) {
+      await this.selectSite(site.id);
+    }
+    this.closeModal('modal-voice');
+    this.openModal('modal-pressure-test');
+
+    if (!site) {
+      const msg = 'Открываю таймер и протокол опрессовки 16 бар.';
+      this.showToast(msg);
+      this.speakVoice(msg, true);
+      return;
+    }
+
+    const siteTitle = site.name || 'Объект';
+    const isPassed = site.pressTestPassed;
+    const bar = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
+
+    let brief = '';
+    if (isPassed) {
+      brief = `Опрессовка объекта ${siteTitle} успешно выдержана. Контрольное давление ${bar} бар стояло 24 часа без падения стрелки манометра. Сформирован юридический акт допуска.`;
+    } else {
+      brief = `Объект ${siteTitle}. Испытание давлением ${bar} бар в процессе или ожидает фиксации. Стандарт LIGA OS требует выдержки 24 часа перед заливкой стяжки.`;
+    }
+
+    this.showToast(`🛡️ Опрессовка: ${siteTitle}`);
+    this.speakVoice(brief, true, 350);
+  }
+
+  // ==========================================================================
+  // УДЕРЖАНИЕ ЭКРАНА АКТИВНЫМ (SCREEN WAKE LOCK API) — ДЛЯ АВТОМОБИЛЯ НА ТОРПЕДЕ
+  // ==========================================================================
+  async requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        this.wakeLock = await navigator.wakeLock.request('screen');
+        this.wakeLock.addEventListener('release', () => {
+          this.wakeLock = null;
+          this.updateWakeLockUI(false);
+        });
+        this.updateWakeLockUI(true);
+      } catch (err) {
+        console.warn('[LIGA OS] WakeLock request warning:', err.message);
+      }
+    }
+  }
+
+  async releaseWakeLock() {
+    if (this.wakeLock) {
+      try {
+        await this.wakeLock.release();
+        this.wakeLock = null;
+      } catch (e) {}
+    }
+    this.updateWakeLockUI(false);
+  }
+
+  updateWakeLockUI(isActive) {
+    const badge = document.getElementById('voice-wake-lock-badge');
+    if (badge) {
+      badge.style.display = isActive ? 'inline-flex' : 'none';
     }
   }
 
@@ -7137,6 +7356,70 @@ ${loopsText}
     const siteMatch = this.findSiteByQuery(lower);
     const siteToSwitch = siteMatch ? siteMatch.id : undefined;
     const siteName = siteMatch ? siteMatch.name : (this.currentSite ? this.currentSite.name : '');
+
+    // 0.1. ГОЛОСОВОЙ БРИФИНГ «ЧТЕНИЕ ВСЛУХ В ДОРОГЕ / HANDS-FREE» (v2.5.4)
+    // Мастер за рулем просит: «Прочитай смету», «Озвучь кассу», «Прочитай чеклист», «Что купить на Джами»
+    const isReadCmd = lower.includes('прочитай') || lower.includes('озвучь') || lower.includes('зачитай') || lower.includes('скажи вслух') || lower.includes('расскажи про') || lower.includes('что там по') || lower.includes('сколько денег') || lower.includes('сколько по смет');
+
+    // Смета вслух
+    if (isReadCmd && (lower.includes('смет') || lower.includes('расчет') || lower.includes('по точкам') || lower.includes('сколько стоит') || lower.includes('стоимост') || lower.includes('сколько по смет'))) {
+      return {
+        type: 'direct_func',
+        target: 'readEstimateBrief',
+        targetArg: siteToSwitch,
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📢 Смета: ${siteName}` : '📢 Озвучить смету объекта',
+        desc: 'Зачитываю голосовой бриф по смете и расчетам...'
+      };
+    }
+
+    // Касса и финансы вслух
+    if (isReadCmd && (lower.includes('касс') || lower.includes('деньг') || lower.includes('баланс') || lower.includes('карман') || lower.includes('остаток') || lower.includes('сколько денег'))) {
+      return {
+        type: 'direct_func',
+        target: 'readFinanceBrief',
+        targetArg: siteToSwitch,
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📢 Касса: ${siteName}` : '📢 Озвучить финансовый пульс',
+        desc: 'Зачитываю голосовой бриф по кассе и выплатам...'
+      };
+    }
+
+    // Чек-лист перед стяжкой вслух
+    if (isReadCmd && (lower.includes('чеклист') || lower.includes('чек-лист') || lower.includes('проверк') || lower.includes('стяжк') || lower.includes('пункт'))) {
+      return {
+        type: 'direct_func',
+        target: 'readChecklistBrief',
+        targetArg: siteToSwitch,
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📢 Чек-лист: ${siteName}` : '📢 Озвучить чек-лист перед стяжкой',
+        desc: 'Зачитываю готовность 10 контрольных узлов перед стяжкой...'
+      };
+    }
+
+    // Снабжение и Джами вслух
+    if (isReadCmd && (lower.includes('материал') || lower.includes('базар') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('склад') || lower.includes('купить') || lower.includes('список') || lower.includes('что купить'))) {
+      return {
+        type: 'direct_func',
+        target: 'readMaterialsBrief',
+        targetArg: siteToSwitch,
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📢 Закупки: ${siteName}` : '📢 Озвучить список закупок Джами',
+        desc: 'Зачитываю позиции снабжения и сумму закупки...'
+      };
+    }
+
+    // Опрессовка и акт вслух
+    if (isReadCmd && (lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('давлен') || lower.includes('акт') || lower.includes('испытан') || lower.includes('манометр'))) {
+      return {
+        type: 'direct_func',
+        target: 'readPressureBrief',
+        targetArg: siteToSwitch,
+        siteToSwitch: siteToSwitch,
+        title: siteName ? `📢 Опрессовка: ${siteName}` : '📢 Озвучить статус опрессовки 16 бар',
+        desc: 'Зачитываю суточный протокол гидравлики 16 бар...'
+      };
+    }
 
     // 1. VIP-бриф и персональный тест-драйв Улугбека Хакимова
     if (lower.includes('бриф') || lower.includes('тест драйв') || lower.includes('тест-драйв') || lower.includes('улугбек') || lower.includes('программа приемки') || lower.includes('памятка мастера') || lower.includes('приемка системы')) {
@@ -7698,11 +7981,14 @@ ${loopsText}
       return;
     } else if (action.type === 'direct_func') {
       this.closeModal('modal-voice');
-      if (action.target !== 'openUlugbekVipBrief') {
+      const isBriefFunc = typeof action.target === 'string' && action.target.startsWith('read') && action.target.endsWith('Brief');
+      if (action.target !== 'openUlugbekVipBrief' && !isBriefFunc) {
         this.playSwissChime();
       }
-      const voiceText = action.voiceResponse || `Выполняю ${action.title}`.trim();
-      this.speakVoice(voiceText);
+      if (!isBriefFunc) {
+        const voiceText = action.voiceResponse || `Выполняю ${action.title}`.trim();
+        this.speakVoice(voiceText);
+      }
       if (action.target === 'setClientModeTrue') {
         this.setClientMode(true);
       } else if (action.target === 'setClientModeFalse') {
@@ -9471,7 +9757,7 @@ ${shareUrl}
 💰 Финансовый статус: оплачено ${this.formatSum(site.advanceSum || 0)} из ${this.formatSum(site.contractSum || 0)}${debt > 0 ? ' (остаток: ' + this.formatSum(debt) + ')' : ' (полный расчет)'}
 
 Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
-Сайт мастера: https://liga-masterov.vercel.app/`;
+Официальный портал: https://liga-master-uz.vercel.app/`;
 
     this.copyToClipboard(report).then(() => {
       this.showToast('✓ Официальный отчет с гербовой печатью скопирован!');
@@ -9480,7 +9766,7 @@ ${shareUrl}
     });
 
     try {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-masterov.vercel.app/')}&text=${encodeURIComponent(report)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?v=2.5.4')}&text=${encodeURIComponent(report)}`;
       window.open(shareUrl, '_blank');
     } catch (err) {
       console.warn('Telegram share window error:', err);
