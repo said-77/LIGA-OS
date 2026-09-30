@@ -402,7 +402,7 @@
       </div>
 
       <!-- VIP-БРИФ И ТЕСТ-ДРАЙВ ДЛЯ УЛУГБЕКА ХАКИМОВА («ЛИГА ОПЫТНЫХ МАСТЕРОВ») -->
-      <div class="ulugbek-vip-card" id="card-ulugbek-brief">
+      <div class="ulugbek-vip-card" id="card-ulugbek-brief" onclick="window.app.openUlugbekVipBrief()" style="cursor:pointer;" title="Нажмите, чтобы открыть бриф тест-драйва">
         <div class="vip-top-row">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div class="vip-badge-tag">👑 ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ТЕСТ-ДРАЙВ</div>
@@ -415,7 +415,7 @@
             <h2 class="vip-engineer-name">Улугбек Хакимов • «Лига Опытных Мастеров»</h2>
             <p class="vip-engineer-sub">Персональная программа приёмки системы LIGA OS ведущим инженером Ташкента. 5 ключевых узлов надежности.</p>
           </div>
-          <button type="button" class="btn-vip-action-gold" onclick="window.app.openUlugbekVipBrief()">
+          <button type="button" class="btn-vip-action-gold" onclick="event.stopPropagation(); window.app.openUlugbekVipBrief()">
             <span>📋</span> Открыть бриф мастера →
           </button>
         </div>
@@ -4544,12 +4544,12 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS (Версия 2.4.9: Дипломатичный швейцарский звук, шелковый тон разделов и домен liga-master-uz.vercel.app) -->
-  <script src="./js/image_processor.js?v=2.4.9"></script>
-  <script src="./js/db.js?v=2.4.9"></script>
-  <script src="./js/seal_engine.js?v=2.4.9"></script>
-  <script src="./js/pdf_engine.js?v=2.4.9"></script>
-  <script src="./js/ai_concierge.js?v=2.4.9"></script>
-  <script src="./js/app.js?v=2.4.9"></script>
+  <!-- Скрипты LIGA OS (Версия 2.5.0: Бархатный рояльный дипломатический звук Ре-мажор, ликвидация зацикливания микрофона, 100% надежный старт тест-драйва) -->
+  <script src="./js/image_processor.js?v=2.5.0"></script>
+  <script src="./js/db.js?v=2.5.0"></script>
+  <script src="./js/seal_engine.js?v=2.5.0"></script>
+  <script src="./js/pdf_engine.js?v=2.5.0"></script>
+  <script src="./js/ai_concierge.js?v=2.5.0"></script>
+  <script src="./js/app.js?v=2.5.0"></script>
 </body>
 </html>

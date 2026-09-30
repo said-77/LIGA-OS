@@ -245,47 +245,73 @@ class LigaApp {
       }
     }
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
+      this.audioCtx.resume().catch(() => {});
+    }
+    // Автоматическая глобальная разблокировка звука при первом же касании экрана (User Gesture для мобильных Safari/Chrome)
+    if (!this.audioUnlockAttached && typeof window !== 'undefined') {
+      this.audioUnlockAttached = true;
+      const unlockAudio = () => {
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume().catch(() => {});
+        }
+      };
+      window.addEventListener('pointerdown', unlockAudio, { passive: true, once: true });
+      window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
+      window.addEventListener('click', unlockAudio, { passive: true, once: true });
     }
   }
 
   // Благородный швейцарский двухтональный аккорд (опрессовка 16 бар / успешный этап)
+  // v2.5.0: бархатные средние частоты G4 (392 Гц) -> C5 (523 Гц) с защитой от резкого звона
   playSwissChime() {
     if (!this.isSoundEnabled) return;
     try {
       this.initAudioEngine();
       if (!this.audioCtx) return;
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
       const now = this.audioCtx.currentTime;
 
-      // Первый тон (A5 - 880Hz)
+      // Мягкий обрезной фильтр низких частот (срезает металлический писк выше 650 Гц)
+      const filter = this.audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(650, now);
+
+      // Первый тон (G4 - 392.00 Hz)
       const osc1 = this.audioCtx.createOscillator();
       const gain1 = this.audioCtx.createGain();
       osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(880, now);
-      gain1.gain.setValueAtTime(0.2, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc1.frequency.setValueAtTime(392.0, now);
+      gain1.gain.setValueAtTime(0.001, now);
+      gain1.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
       osc1.connect(gain1);
-      gain1.connect(this.audioCtx.destination);
+      gain1.connect(filter);
       osc1.start(now);
-      osc1.stop(now + 0.5);
+      osc1.stop(now + 0.45);
 
-      // Второй тон (A6 - 1760Hz) с благородным затуханием
+      // Второй благородный тон (C5 - 523.25 Hz)
       const osc2 = this.audioCtx.createOscillator();
       const gain2 = this.audioCtx.createGain();
       osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(1760, now + 0.08);
-      gain2.gain.setValueAtTime(0.25, now + 0.08);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc2.frequency.setValueAtTime(523.25, now + 0.06);
+      gain2.gain.setValueAtTime(0.001, now + 0.06);
+      gain2.gain.linearRampToValueAtTime(0.19, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.60);
       osc2.connect(gain2);
-      gain2.connect(this.audioCtx.destination);
-      osc2.start(now + 0.08);
-      osc2.stop(now + 0.65);
+      gain2.connect(filter);
+      osc2.start(now + 0.06);
+      osc2.stop(now + 0.60);
+
+      filter.connect(this.audioCtx.destination);
     } catch (e) {
       console.warn('Ошибка воспроизведения звука chime:', e);
     }
   }
 
-  // Благородный кристальный звон привлечения внимания к тест-драйву Улугбека (E5 -> B5 -> G#6)
+  // Благородный кристальный звон привлечения внимания к тест-драйву Улугбека (F3 -> A3 -> C4)
+  // v2.5.0: бархатное теплое арпеджио без пронзительных высоких нот
   playVipAttentionChime() {
     if (!this.isSoundEnabled) return;
     try {
@@ -296,41 +322,50 @@ class LigaApp {
         if (!this.audioCtx) return;
         const now = this.audioCtx.currentTime;
 
-        // Нота 1: E5 (659.25 Hz)
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(500, now);
+
+        // Нота 1: F3 (174.61 Hz)
         const osc1 = this.audioCtx.createOscillator();
         const gain1 = this.audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(659.25, now);
-        gain1.gain.setValueAtTime(0.22, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(174.61, now);
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.linearRampToValueAtTime(0.20, now + 0.025);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.50);
         osc1.connect(gain1);
-        gain1.connect(this.audioCtx.destination);
+        gain1.connect(filter);
         osc1.start(now);
-        osc1.stop(now + 0.45);
+        osc1.stop(now + 0.50);
 
-        // Нота 2: B5 (987.77 Hz) через 130мс
+        // Нота 2: A3 (220.00 Hz) через 90мс
         const osc2 = this.audioCtx.createOscillator();
         const gain2 = this.audioCtx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(987.77, now + 0.13);
-        gain2.gain.setValueAtTime(0.24, now + 0.13);
+        osc2.frequency.setValueAtTime(220.00, now + 0.09);
+        gain2.gain.setValueAtTime(0.001, now + 0.09);
+        gain2.gain.linearRampToValueAtTime(0.18, now + 0.11);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
         osc2.connect(gain2);
-        gain2.connect(this.audioCtx.destination);
-        osc2.start(now + 0.13);
+        gain2.connect(filter);
+        osc2.start(now + 0.09);
         osc2.stop(now + 0.65);
 
-        // Нота 3: G#6 (1661.22 Hz) через 260мс с кристальным швейцарским резонансом
+        // Нота 3: C4 (261.63 Hz) через 180мс
         const osc3 = this.audioCtx.createOscillator();
         const gain3 = this.audioCtx.createGain();
         osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(1661.22, now + 0.26);
-        gain3.gain.setValueAtTime(0.26, now + 0.26);
-        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+        osc3.frequency.setValueAtTime(261.63, now + 0.18);
+        gain3.gain.setValueAtTime(0.001, now + 0.18);
+        gain3.gain.linearRampToValueAtTime(0.17, now + 0.20);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
         osc3.connect(gain3);
-        gain3.connect(this.audioCtx.destination);
-        osc3.start(now + 0.26);
-        osc3.stop(now + 1.15);
+        gain3.connect(filter);
+        osc3.start(now + 0.18);
+        osc3.stop(now + 0.85);
+
+        filter.connect(this.audioCtx.destination);
       };
 
       if (this.audioCtx.state === 'suspended') {
@@ -345,9 +380,9 @@ class LigaApp {
             window.removeEventListener('touchstart', unlockHandler);
             window.removeEventListener('click', unlockHandler);
           };
-          window.addEventListener('pointerdown', unlockHandler, { once: true });
-          window.addEventListener('touchstart', unlockHandler, { once: true });
-          window.addEventListener('click', unlockHandler, { once: true });
+          window.addEventListener('pointerdown', unlockHandler, { once: true, passive: true });
+          window.addEventListener('touchstart', unlockHandler, { once: true, passive: true });
+          window.addEventListener('click', unlockHandler, { once: true, passive: true });
         });
       } else {
         runSound();
@@ -357,7 +392,9 @@ class LigaApp {
     }
   }
 
-  // Представительный, дипломатичный звук открытия брифа мастера Улугбека (F4 -> C5 -> A5)
+  // Представительный, дипломатичный звук открытия брифа мастера Улугбека (v2.5.0)
+  // Бархатный низкий Ре-мажорный аккорд рояля (D3 -> F#3 -> A3 -> D4) с аналоговым Lowpass-фильтром 420 Гц.
+  // Абсолютно благородное, статусное, приятное звучание представительского класса — ноль писка и раздражения.
   playDiplomaticChime() {
     if (!this.isSoundEnabled) return;
     try {
@@ -368,44 +405,64 @@ class LigaApp {
         if (!this.audioCtx) return;
         const now = this.audioCtx.currentTime;
 
-        // 1. Бархатная басовая основа F4 (349.23 Гц)
+        // Мастер-фильтр низких частот: срезает все частоты выше 420 Гц для теплого рояльного резонанса
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(420, now);
+        filter.Q.setValueAtTime(0.7, now);
+
+        // Общий мастер-гейн с шелковой огибающей (мягкая атака 35мс, глубокий спад 1.15с)
+        const masterGain = this.audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0.001, now);
+        masterGain.gain.linearRampToValueAtTime(0.24, now + 0.035);
+        masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+
+        filter.connect(masterGain);
+        masterGain.connect(this.audioCtx.destination);
+
+        // 1. Бархатная фундаментальная басовая основа: D3 (146.83 Гц, треугольная волна теплого дерева)
         const osc1 = this.audioCtx.createOscillator();
         const gain1 = this.audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(349.23, now);
-        gain1.gain.setValueAtTime(0.001, now);
-        gain1.gain.linearRampToValueAtTime(0.18, now + 0.03);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(146.83, now);
+        gain1.gain.setValueAtTime(0.30, now);
         osc1.connect(gain1);
-        gain1.connect(this.audioCtx.destination);
+        gain1.connect(filter);
         osc1.start(now);
-        osc1.stop(now + 0.65);
+        osc1.stop(now + 1.15);
 
-        // 2. Благородная квинта C5 (523.25 Гц) через 70мс
+        // 2. Благородная мажорная терция: F#3 (185.00 Гц, чистый синус)
         const osc2 = this.audioCtx.createOscillator();
         const gain2 = this.audioCtx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(523.25, now + 0.07);
-        gain2.gain.setValueAtTime(0.001, now + 0.07);
-        gain2.gain.linearRampToValueAtTime(0.20, now + 0.10);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+        osc2.frequency.setValueAtTime(185.00, now + 0.02);
+        gain2.gain.setValueAtTime(0.22, now + 0.02);
         osc2.connect(gain2);
-        gain2.connect(this.audioCtx.destination);
-        osc2.start(now + 0.07);
-        osc2.stop(now + 0.85);
+        gain2.connect(filter);
+        osc2.start(now + 0.02);
+        osc2.stop(now + 1.15);
 
-        // 3. Светлый дипломатический обертон A5 (880.00 Гц) через 140мс с мягким швейцарским сустейном
+        // 3. Статусная квинта надежности: A3 (220.00 Гц, чистый синус)
         const osc3 = this.audioCtx.createOscillator();
         const gain3 = this.audioCtx.createGain();
         osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(880.00, now + 0.14);
-        gain3.gain.setValueAtTime(0.001, now + 0.14);
-        gain3.gain.linearRampToValueAtTime(0.22, now + 0.17);
-        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
+        osc3.frequency.setValueAtTime(220.00, now + 0.04);
+        gain3.gain.setValueAtTime(0.20, now + 0.04);
         osc3.connect(gain3);
-        gain3.connect(this.audioCtx.destination);
-        osc3.start(now + 0.14);
-        osc3.stop(now + 1.25);
+        gain3.connect(filter);
+        osc3.start(now + 0.04);
+        osc3.stop(now + 1.15);
+
+        // 4. Мягкий шелковистый октавный оттенок: D4 (293.66 Гц, тихий синус)
+        const osc4 = this.audioCtx.createOscillator();
+        const gain4 = this.audioCtx.createGain();
+        osc4.type = 'sine';
+        osc4.frequency.setValueAtTime(293.66, now + 0.06);
+        gain4.gain.setValueAtTime(0.14, now + 0.06);
+        osc4.connect(gain4);
+        gain4.connect(filter);
+        osc4.start(now + 0.06);
+        osc4.stop(now + 1.15);
       };
 
       if (this.audioCtx.state === 'suspended') {
@@ -417,10 +474,12 @@ class LigaApp {
               runDiplomatic();
             }
             window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('touchstart', unlock);
             window.removeEventListener('click', unlock);
           };
-          window.addEventListener('pointerdown', unlock, { once: true });
-          window.addEventListener('click', unlock, { once: true });
+          window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+          window.addEventListener('touchstart', unlock, { once: true, passive: true });
+          window.addEventListener('click', unlock, { once: true, passive: true });
         });
       } else {
         runDiplomatic();
@@ -431,6 +490,7 @@ class LigaApp {
   }
 
   // Представительный, ненавязчивый звук переключения разделов и окон (бархатный титановый тон)
+  // v2.5.0: мягкий тактильный клик (280 Гц -> 190 Гц) без резких щелчков
   playSectionSwitchSound() {
     if (!this.isSoundEnabled) return;
     try {
@@ -441,21 +501,21 @@ class LigaApp {
       }
       const now = this.audioCtx.currentTime;
 
-      // Мягкий бархатный переход 520 Гц -> 340 Гц со скругленной атакой
+      // Мягкий тактильный спад 280 Гц -> 190 Гц со скругленной атакой 6мс
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.exponentialRampToValueAtTime(340, now + 0.055);
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.exponentialRampToValueAtTime(190, now + 0.050);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.09, now + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+      gain.gain.linearRampToValueAtTime(0.065, now + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
 
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
       osc.start(now);
-      osc.stop(now + 0.065);
+      osc.stop(now + 0.055);
     } catch (e) {
       console.warn('Ошибка звука playSectionSwitchSound:', e);
     }
@@ -6592,6 +6652,15 @@ ${loopsText}
       };
 
       this.recognition.onresult = (e) => {
+        // v2.5.0: Отсекаем фантомные события, если запись уже остановлена или окно закрыто
+        if (!this.isRecordingVoice || !this.voiceKeepAliveActive) {
+          return;
+        }
+        const modalVoice = document.getElementById('modal-voice');
+        if (!modalVoice || !modalVoice.classList.contains('open')) {
+          return;
+        }
+
         let interim = '';
         for (let i = e.resultIndex; i < e.results.length; ++i) {
           const transcriptPiece = e.results[i][0].transcript;
@@ -6659,7 +6728,7 @@ ${loopsText}
 
   toggleVoiceRecording() {
     if (this.isRecordingVoice) {
-      this.stopVoiceRecording();
+      this.stopVoiceRecording(true);
     } else {
       this.startVoiceRecording();
     }
@@ -6698,7 +6767,7 @@ ${loopsText}
     }
   }
 
-  stopVoiceRecording() {
+  stopVoiceRecording(processText = true) {
     this.voiceKeepAliveActive = false;
     clearTimeout(this.voiceRestartTimeout);
 
@@ -6718,10 +6787,12 @@ ${loopsText}
       statusEl.innerHTML = '✓ <span style="color:var(--neon-emerald); font-weight:800;">Запись завершена.</span> Проверьте результат ниже:';
     }
 
-    const inputEl = document.getElementById('voice-recognized-input');
-    const finalText = inputEl ? inputEl.value.trim() : (this.voiceAccumulatedText + ' ' + this.voiceInterimText).trim();
-    if (finalText) {
-      this.handleVoiceInputText(finalText);
+    if (processText) {
+      const inputEl = document.getElementById('voice-recognized-input');
+      const finalText = inputEl ? inputEl.value.trim() : (this.voiceAccumulatedText + ' ' + this.voiceInterimText).trim();
+      if (finalText) {
+        this.handleVoiceInputText(finalText);
+      }
     }
   }
 
@@ -7267,6 +7338,18 @@ ${loopsText}
     if (!this.parsedVoiceAction) return;
     const action = this.parsedVoiceAction;
 
+    // v2.5.0: Железная защита от зацикливания микрофона («открывается, потому что закрывается»)
+    if (this.voiceNavTimeout) {
+      clearTimeout(this.voiceNavTimeout);
+      this.voiceNavTimeout = null;
+    }
+    // Немедленно глушим распознавание речи БЕЗ повторного парсинга текста
+    this.stopVoiceRecording(false);
+    this.voiceAccumulatedText = '';
+    this.voiceInterimText = '';
+    const inputEl = document.getElementById('voice-recognized-input');
+    if (inputEl) inputEl.value = '';
+
     if (action.type === 'material') {
       await window.ligaDB.add('materials', {
         siteId: this.currentSiteId,
@@ -7322,20 +7405,7 @@ ${loopsText}
       }
     } else if (action.type === 'press_test') {
       await this.togglePressureTest();
-    } else if (action.type === 'material') {
-      if (this.voiceNavTimeout) {
-        clearTimeout(this.voiceNavTimeout);
-        this.voiceNavTimeout = null;
-      }
-      this.closeModal('modal-voice');
-      this.showVoiceFastConfirmation(action);
-      this.parsedVoiceAction = null;
-      return;
     } else if (action.type === 'nav_action') {
-      if (this.voiceNavTimeout) {
-        clearTimeout(this.voiceNavTimeout);
-        this.voiceNavTimeout = null;
-      }
       this.closeModal('modal-voice');
       this.switchScreen(action.target);
       this.playSwissChime();
@@ -7349,10 +7419,6 @@ ${loopsText}
       this.parsedVoiceAction = null;
       return;
     } else if (action.type === 'modal_action') {
-      if (this.voiceNavTimeout) {
-        clearTimeout(this.voiceNavTimeout);
-        this.voiceNavTimeout = null;
-      }
       this.closeModal('modal-voice');
       this.openModal(action.target);
       this.playSwissChime();
@@ -7365,12 +7431,11 @@ ${loopsText}
       this.parsedVoiceAction = null;
       return;
     } else if (action.type === 'direct_func') {
-      if (this.voiceNavTimeout) {
-        clearTimeout(this.voiceNavTimeout);
-        this.voiceNavTimeout = null;
-      }
       this.closeModal('modal-voice');
-      this.playSwissChime();
+      // Для VIP-брифа Улугбека не вызываем playSwissChime, чтобы не перебивать эксклюзивный аккорд Ре-мажор
+      if (action.target !== 'openUlugbekVipBrief') {
+        this.playSwissChime();
+      }
       const voiceText = action.voiceResponse || `Выполняю ${action.title}`.trim();
       this.speakVoice(voiceText);
       if (action.target === 'setClientModeTrue') {
@@ -7382,11 +7447,8 @@ ${loopsText}
       return;
     }
 
-    if (this.voiceNavTimeout) {
-      clearTimeout(this.voiceNavTimeout);
-      this.voiceNavTimeout = null;
-    }
     this.closeModal('modal-voice');
+    this.parsedVoiceAction = null;
     this.parsedVoiceAction = null;
   }
 
@@ -8378,9 +8440,16 @@ ${shareUrl}
 
   closeModal(modalId) {
     this.stopAllVoices();
-    if (modalId === 'modal-voice' && this.voiceNavTimeout) {
-      clearTimeout(this.voiceNavTimeout);
-      this.voiceNavTimeout = null;
+    if (modalId === 'modal-voice') {
+      if (this.voiceNavTimeout) {
+        clearTimeout(this.voiceNavTimeout);
+        this.voiceNavTimeout = null;
+      }
+      this.stopVoiceRecording(false);
+      this.voiceAccumulatedText = '';
+      this.voiceInterimText = '';
+      const inputEl = document.getElementById('voice-recognized-input');
+      if (inputEl) inputEl.value = '';
     }
     if (modalId === 'modal-video-tour' && this.videoTourState) {
       this.videoTourState.isOpen = false;
@@ -10526,7 +10595,7 @@ ${shareUrl}
   }
 
   // ==========================================================================
-  // АВТО-ОНБОРДИНГ И ПРИВЛЕЧЕНИЕ ВНИМАНИЯ К ТЕСТ-ДРАЙВУ УЛУГБЕКА (v2.4.8)
+  // АВТО-ОНБОРДИНГ И ПРИВЛЕЧЕНИЕ ВНИМАНИЯ К ТЕСТ-ДРАЙВУ УЛУГБЕКА (v2.5.0)
   // ==========================================================================
   initUlugbekBriefOnboarding() {
     const card = document.getElementById('card-ulugbek-brief');
@@ -10536,21 +10605,42 @@ ${shareUrl}
     const isAcknowledged = localStorage.getItem('liga_ulugbek_testdrive_ack') === 'true';
 
     if (!isAcknowledged) {
-      // Первое открытие: привлекаем внимание мастера пульсацией и бейджем
+      // Первое открытие: привлекаем внимание мастера пульсацией и бейджем первого приоритета
       card.classList.add('vip-attention-pulse');
       if (badgePriority) badgePriority.style.display = 'inline-flex';
 
-      // Швейцарский дипломатичный звон привлечения внимания через 600мс
-      setTimeout(() => {
-        this.playDiplomaticChime();
-      }, 600);
+      // v2.5.0: Отказ от слепого таймера 1400мс. В мобильных браузерах звук блокируется до первого касания экрана (Autoplay Policy).
+      // Настраиваем мгновенный разблокировщик: при первом же касании экрана (тап / клик) аудиосистема активируется,
+      // распахивается VIP-бриф и звучит бархатный рояльный аккорд Ре-мажор представительского класса со 100% гарантией!
+      let touchTriggered = false;
+      const firstTouchHandler = (e) => {
+        if (touchTriggered) return;
+        if (localStorage.getItem('liga_ulugbek_testdrive_ack') === 'true') return;
 
-      // Автоматически открываем модальный бриф через 1.4 секунды
-      setTimeout(() => {
-        if (localStorage.getItem('liga_ulugbek_testdrive_ack') !== 'true') {
-          this.openUlugbekVipBrief();
+        // Если открыт микрофон или модалка видеотура — не перебиваем
+        const modalVoice = document.getElementById('modal-voice');
+        if (modalVoice && modalVoice.classList.contains('open')) return;
+
+        touchTriggered = true;
+        // Разблокируем аудиоконтекст
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume().catch(() => {});
         }
-      }, 1400);
+
+        // Если пользователь не нажал напрямую на кнопку или карточку брифа (они сами вызовут метод):
+        const isClickOnBriefCard = e.target && (e.target.closest('#card-ulugbek-brief') || e.target.closest('#modal-ulugbek-vip-brief'));
+        if (!isClickOnBriefCard) {
+          setTimeout(() => {
+            const briefModal = document.getElementById('modal-ulugbek-vip-brief');
+            if (briefModal && !briefModal.classList.contains('open')) {
+              this.openUlugbekVipBrief();
+            }
+          }, 120);
+        }
+      };
+
+      window.addEventListener('pointerdown', firstTouchHandler, { passive: true });
+      window.addEventListener('touchstart', firstTouchHandler, { passive: true });
     } else {
       card.classList.remove('vip-attention-pulse');
       if (badgePriority) badgePriority.style.display = 'none';
