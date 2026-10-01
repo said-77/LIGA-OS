@@ -240,3 +240,10 @@
 - Полный набор `python -m pytest tests/ -v`: **79/79 тестов пройдены (259,97 с)**. Синтаксис JavaScript/Python и `git diff --check` проверены.
 - Проверенные локальные изменения не выпущены: публичный Vercel и предпросмотр Telegram остаются без обновления до отдельного деплоя.
 
+
+## XVII. ПУБЛИКАЦИЯ И ПРОВЕРКА v2.5.7 (01.10.2026)
+- Коммит `b813cb6` опубликован в `origin/main`.
+- Продакшен `https://liga-master-uz.vercel.app/` подтверждён: HTML содержит v2.5.7 и Open Graph JPEG с параметром версии `v2.5.7`.
+- Публичные `icons/og-preview.jpg?v=2.5.7`, `sw.js` и `js/app.js?v=2.5.7` вернули HTTP 200; Service Worker содержит кэш `liga-os-v2.5.7-accurate-sharing`.
+- Полные тесты: 79/79; JS/Python-синтаксис и `git diff --check` прошли.
+- Ограничение: карточка ещё не проверялась внутри Telegram. Мессенджер может держать старый предпросмотр; ссылка на релиз: `https://liga-master-uz.vercel.app/`.
