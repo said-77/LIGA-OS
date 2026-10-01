@@ -118,9 +118,8 @@ def test_v244_mobile_guide_modal_and_spotlight_viewport(http_server):
         btn_guide = page.locator("#btn-video-tour-open")
         assert btn_guide.is_visible(), "Кнопка гида должна быть видна в шапке на мобильном"
         
-        # Проверяем, что надпись 'ГИД' не скрыта
-        label = page.locator("#btn-video-tour-open .btn-video-label")
-        assert label.is_visible(), "Надпись 'ГИД' должна быть видна на мобильном экране"
+        # На узком экране кнопка компактная; её назначение доступно через aria-label.
+        assert page.locator("#btn-video-tour-open").get_attribute("aria-label") == "Инженерный гид и подсказки мастера"
 
         # 2. Клик открывает модальное окно выбора формата 'Инженерный Гид LIGA OS'
         btn_guide.click()

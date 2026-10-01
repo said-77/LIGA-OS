@@ -47,10 +47,10 @@ def test_official_pressure_act_workflow(http_server):
         page.goto(f"{http_server}/index.html")
         page.wait_for_selector(".bottom-nav")
 
-        # 1. Проверка кнопки Акта 16 бар на главном экране
+        # 1. Проверка кнопки фактического протокола испытаний
         btn_act_main = page.locator("#btn-generate-act")
-        assert btn_act_main.is_visible(), "Кнопка 'Официальный Акт испытания 16 бар' должна быть видна на дашборде"
-        assert "16 БАР" in btn_act_main.inner_text().upper() and "АКТ" in btn_act_main.inner_text().upper()
+        assert btn_act_main.is_visible(), "Кнопка протокола испытаний должна быть видна на дашборде"
+        assert "ПРОТОКОЛ" in btn_act_main.inner_text().upper()
 
         # 2. Проверка валидации при клике до опрессовки
         page.evaluate("""() => {
@@ -78,7 +78,7 @@ def test_official_pressure_act_workflow(http_server):
         page.fill("#pt-end-date", "2026-09-19")
         page.fill("#pt-end-time", "10:00")
         page.fill("#pt-pressure-bar", "16.0")
-        page.fill("#pt-notes", "Давление 16.0 бар выдержано 24 часа без падения (0.0 бар). Все узлы ввода FAR и трубы Rehau герметичны. Разрешена заливка стяжки.")
+        page.fill("#pt-notes", "Начальное показание 16.0 бар, конечное показание 16.0 бар. При осмотре соединений следов влаги не выявлено.")
 
         # Эмулируем загрузку фото манометра (Data URL)
         sample_photo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -104,23 +104,23 @@ def test_official_pressure_act_workflow(http_server):
         act_page = new_page_info.value
         act_page.wait_for_load_state("domcontentloaded")
 
-        # 6. Проверка ключевых юридических и технических разделов в сгенерированном Акте 16 бар
+        # 6. Проверка ключевых юридических и технических разделов по фактической записи
         act_html = act_page.content()
 
         # Шапка и герб Лиги
         assert "Лига Опытных Мастеров" in act_html, "Акт должен содержать бренд Лиги Мастеров"
-        assert "АКТ-16Б-" in act_html, "Акт должен иметь уникальный номер формата АКТ-16Б-*"
+        assert "АКТ-ИСП-" in act_html, "Акт должен иметь общий номер, не привязанный к одному значению давления"
         assert "Официальный Акт гидравлического испытания" in act_html, "Заголовок документа должен быть точным"
 
         # Нормативы и параметры
-        assert "DIN 1988" in act_html, "Акт должен ссылаться на норматив DIN 1988"
+        assert "Параметры испытания определены мастером" in act_html
         assert "16.0 бар" in act_html, "Акт должен фиксировать испытательное давление 16.0 бар"
-        assert "24 часа" in act_html, "Акт должен фиксировать выдержку 24 часа"
-        assert "0.0 бар" in act_html, "Акт должен фиксировать отсутствие падения давления (0.0 бар)"
+        assert "24 ч 0 мин" in act_html, "Акт должен показывать фактический интервал испытания"
+        assert "конечное показание 16.0 бар" in act_html
 
         # Резолюция допуска под стяжку
-        assert "РАЗРЕШАЕТСЯ ПРОИЗВОДСТВО РАБОТ ПО ЗАЛИВКЕ ЦЕМЕНТНО-ПЕСЧАНОЙ СТЯЖКИ ПОЛА" in act_html, \
-            "Акт обязан содержать официальную резолюцию допуска к стяжке пола"
+        assert "Допуск к закрытию скрытых работ оформляется отдельно" in act_html, \
+            "Акт испытания не должен автоматически разрешать закрытие скрытых работ"
 
         # Честный статус и подтверждение мастером
         assert "Результаты испытания внесены и подтверждены мастером" in act_html, \
@@ -130,7 +130,7 @@ def test_official_pressure_act_workflow(http_server):
 
         # Подписи сторон
         assert "Хакимов Улугбек" in act_html, "Ведущий инженер Улугбек Хакимов должен быть указан в подписях"
-        assert "ЛИГА" in act_html and "16 BAR" in act_html, "Акт должен содержать факсимиле мастера 16 BAR"
+        assert "ЛИГА" in act_html and "ПРОТОКОЛ" in act_html, "Акт должен содержать нейтральную печать LIGA OS"
         assert "Производитель стяжки / Прораб" in act_html, "Акт должен предусматривать подпись стяжечника"
 
         # 7. Проверка доступности кнопки вызова в чек-листе стяжки

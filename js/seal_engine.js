@@ -69,7 +69,7 @@ class LigaSealEngine {
     for (let i = 0; i < 4; i++) {
       hash += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return `LMO-${siteId}-${hash}-16B`;
+    return `LMO-${siteId}-${hash}-DOC`;
   }
 
   /**
@@ -166,7 +166,7 @@ class LigaSealEngine {
         <!-- Латинский защитный микротекст безопасности -->
         <text font-family="'Segoe UI', Roboto, sans-serif" font-size="4.6" font-weight="900" letter-spacing="1.2" fill="${secondaryColor}" opacity="0.85">
           <textPath href="#${uid}_micro_top" startOffset="50%" text-anchor="middle">
-            ★ SWISS HYDRAULIC STANDARD • 16.0 BAR PRESSURE GUARANTEE • ISO VERIFIED ★
+            ★ LIGA OS • ENGINEERING RECORD • SITE-SPECIFIC TESTS ★
           </textPath>
         </text>
         <text font-family="'Segoe UI', Roboto, sans-serif" font-size="4.6" font-weight="900" letter-spacing="1.1" fill="${secondaryColor}" opacity="0.85">
@@ -182,14 +182,14 @@ class LigaSealEngine {
         <!-- Верхний круговой представительский текст -->
         <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.2" font-weight="900" letter-spacing="1.3" fill="${primaryColor}">
           <textPath href="#${uid}_top_path" startOffset="50%" text-anchor="middle">
-            ★ ${companyDisplay} • 16 BAR • LIGA OS ★
+            ★ ${companyDisplay} • LIGA OS ★
           </textPath>
         </text>
 
         <!-- Нижний круговой текст стандарта Лиги -->
         <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.0" font-weight="800" letter-spacing="1.1" fill="${primaryColor}">
           <textPath href="#${uid}_bottom_path" startOffset="50%" text-anchor="middle">
-            ★ СТАНДАРТ ГИДРОИСПЫТАНИЙ 16.0 БАР ★
+            ★ ИНЖЕНЕРНЫЙ ПРОТОКОЛ ОБЪЕКТА ★
           </textPath>
         </text>
 
@@ -224,10 +224,10 @@ class LigaSealEngine {
           ${timestamp}
         </text>
 
-        <!-- Штамп статуса опрессовки -->
+        <!-- Печать подтверждает бренд мастера, но не подменяет данные испытания -->
         <rect x="82" y="151" width="56" height="12.5" rx="3" fill="${primaryColor}" />
         <text x="110" y="160.2" font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="6.6" font-weight="900" text-anchor="middle" fill="${ribbonText}" letter-spacing="0.6">
-          ✓ ВЫДЕРЖАНО 16 БАР
+          ИНЖЕНЕРНЫЙ КОНТРОЛЬ LIGA
         </text>
       </g>
     </svg>
@@ -257,7 +257,7 @@ class LigaSealEngine {
         </div>
         <div class="signature-caption-row" style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">
           <span class="sign-name-label">${signText}</span>
-          <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">✓ ЭЦП VERIFIED</span>
+          <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">ПОДПИСЬ МАСТЕРА</span>
         </div>
       </div>
       `.trim();
@@ -280,7 +280,7 @@ class LigaSealEngine {
       </svg>
       <div class="signature-caption-row" style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">
         <span class="sign-name-label">${signText}</span>
-        <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">✓ ЭЦП VERIFIED</span>
+        <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">ПОДПИСЬ МАСТЕРА</span>
       </div>
     </div>
     `.trim();
@@ -314,7 +314,7 @@ class LigaSealEngine {
       </div>
       <div class="seal-container-inner ${stampClass}${draftClass} ${extraClass}" style="position:relative; margin-left:-35px; margin-bottom:-6px; transform:rotate(-3.5deg); z-index:2; pointer-events:auto;" title="Официальный штамп технического контроля LIGA OS">
         ${sealHtml}
-        <span class="facsimile-stamp-text" style="display:none;">ЛИГА МАСТЕРОВ 16 BAR ${isDraft ? 'ЧЕРНОВИК БЕЗ ТЕСТА 16 BAR' : ''}</span>
+        <span class="facsimile-stamp-text" style="display:none;">ЛИГА МАСТЕРОВ ${isDraft ? 'ЧЕРНОВИК • ИСПЫТАНИЕ НЕ ЗАФИКСИРОВАНО' : 'ИНЖЕНЕРНЫЙ ПРОТОКОЛ'}</span>
       </div>
     </div>
     `.trim();
@@ -332,34 +332,49 @@ class LigaSealEngine {
     const title = this.settings.title || 'Ведущий инженер сантехники и отопления';
     const cert = this.settings.licenseNumber || 'LMO-UZ-2011/2026';
 
-    const barVal = (s.pressureTest && s.pressureTest.pressureBar) ? Number(s.pressureTest.pressureBar).toFixed(1) : '16.0';
-    const isPassed = s.pressTestPassed ? 'ВЫДЕРЖАНО (24 часа без падения стрелки)' : 'Ожидает суточной выдержки';
+    const pressureBar = Number(s.pressureTest && s.pressureTest.pressureBar);
+    const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+    const barVal = hasPressureReading ? `${pressureBar.toFixed(1)} БАР` : 'НЕ ЗАФИКСИРОВАНО';
+    const isPassed = s.pressTestPassed && hasPressureReading
+      ? 'ВЫДЕРЖАНО (результат отмечен мастером)'
+      : hasPressureReading
+        ? 'ОЖИДАЕТ ПОДТВЕРЖДЕНИЯ МАСТЕРА'
+        : 'ДАННЫЕ ИСПЫТАНИЯ НЕ ВНЕСЕНЫ';
+    const siteName = s.name || 'Не указано';
+    const unitName = s.unit ? ` (${s.unit})` : '';
+    const clientName = s.client || 'Не указан';
+    const contractSum = Number(s.contractSum);
+    const advanceSum = Number(s.advanceSum);
+    const debtSum = Number.isFinite(contractSum) && Number.isFinite(advanceSum)
+      ? Math.max(0, contractSum - advanceSum)
+      : null;
+    const money = (value) => Number.isFinite(value) ? `${value.toLocaleString('ru-RU')} сум` : 'не указана';
 
     return `
 🏛️ <b>LIGA MASTER OS • ОФИЦИАЛЬНОЕ ЗАКЛЮЧЕНИЕ</b>
 ────────────────────────────
-📍 <b>ОБЪЕКТ:</b> ${s.name || 'ЖК Mirabad Avenue'} (${s.unit || 'кв. 142'})
-👤 <b>ЗАКАЗЧИК:</b> ${s.client || 'Уважаемый клиент'}
+📍 <b>ОБЪЕКТ:</b> ${siteName}${unitName}
+👤 <b>ЗАКАЗЧИК:</b> ${clientName}
 👨‍🔧 <b>ВЕДУЩИЙ ИНЖЕНЕР:</b> ${master}
 🏢 <b>ОРГАНИЗАЦИЯ:</b> ${company}
 📜 <b>КВАЛИФИКАЦИЯ:</b> ${title}
 
-🛡️ <b>ГИДРОИСПЫТАНИЯ:</b> ${barVal} БАР
+🛡️ <b>ГИДРОИСПЫТАНИЯ:</b> ${barVal}
 ⏱️ <b>РЕЗУЛЬТАТ:</b> ${isPassed}
-📐 <b>СТАНДАРТ:</b> DIN 1988 / Швейцарский эталон Лиги (в 4 раза строже СНиП)
+📐 <b>НОРМАТИВ:</b> ${(s.pressureTest && s.pressureTest.standardNorm) || 'по параметрам конкретного объекта'}
 
 💰 <b>ФИНАНСОВЫЙ БАЛАНС ОБЪЕКТА:</b>
-• Сумма договора: ${s.contractSum || '18 500 000'} сум
-• Получено авансом: ${s.advanceSum || '12 000 000'} сум
-• Остаток к получению: ${s.debtSum || '6 500 000'} сум
+• Сумма договора: ${money(contractSum)}
+• Получено авансом: ${money(advanceSum)}
+• Остаток к получению: ${debtSum === null ? 'не рассчитан (нет обеих сумм)' : money(debtSum)}
 
 ────────────────────────────
 🏛️ <b>ГЕРБОВАЯ ПЕЧАТЬ:</b> № ${cert}
-✍️ <b>ЦИФРОВАЯ ПОДПИСЬ:</b> ${this.settings.signatureText} (VERIFIED)
+✍️ <b>ПОДПИСЬ МАСТЕРА:</b> ${this.settings.signatureText}
 ⏱️ <b>ФИКСАЦИЯ:</b> ${timestamp} (Ташкент, UTC+5)
-🔐 <b>ВЕРИФИКАЦИОННЫЙ ХЭШ:</b> <code>${verCode}</code>
+🔖 <b>ЛОКАЛЬНЫЙ НОМЕР ДОКУМЕНТА:</b> <code>${verCode}</code>
 ────────────────────────────
-<i>Гарантия на инженерные трассы: 10 лет по официальному договору.</i>
+<i>Гарантийные условия определяются договором.</i>
 `.trim();
   }
 }

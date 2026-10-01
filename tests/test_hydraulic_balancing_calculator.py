@@ -186,6 +186,7 @@ def test_copy_cheat_sheet_and_cabinet_sticker(http_server):
         assert "Лига Опытных Мастеров" in sticker_text
         assert "Улугбека Хакимова" in sticker_text
         assert "Коллекторный шкаф" in sticker_text
-        assert "16 бар" in sticker_text
+        assert "Гарантийные условия — по договору" in sticker_text
+        assert "Стандарт 16 бар" not in sticker_text
 
         browser.close()

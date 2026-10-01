@@ -62,7 +62,7 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         indicator = page.locator("#passport-status-indicator")
         indicator_text = indicator.inner_text().strip()
         assert "Паспорт в режиме черновика" in indicator_text, f"Ожидался статус черновика, получено: {indicator_text}"
-        assert "не подтверждены фотофиксацией" in indicator_text
+        assert "протокол испытаний или фото манометра не подтверждены" in indicator_text
 
         # Проверяем генерацию черновика
         with context.expect_page() as new_page_info:
@@ -87,7 +87,7 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         assert "рабочим черновиком" in content
 
         # Проверяем блок гарантии и факсимиле
-        assert "НЕ АКТИВИРОВАНА до проведения гидравлического испытания" in content
+        assert "паспорт остается черновиком" in content.lower()
         draft_facsimile = draft_page.locator(".facsimile-stamp.draft")
         assert draft_facsimile.is_visible(), "Штамп факсимиле черновика не найден"
         assert "ЧЕРНОВИК" in draft_facsimile.inner_text()
@@ -106,13 +106,17 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
 
         # Проверяем поля протокола
         page.fill("#pt-pressure-bar", "16.0")
-        page.fill("#pt-notes", "Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.")
+        page.fill("#pt-start-date", "2026-09-30")
+        page.fill("#pt-start-time", "08:00")
+        page.fill("#pt-end-date", "2026-09-30")
+        page.fill("#pt-end-time", "16:00")
+        page.fill("#pt-notes", "Начальное показание 16.0 бар, конечное показание 16.0 бар. При осмотре соединений следов влаги не выявлено.")
         page.locator("#form-pressure-test .btn-submit-modal").click()
         page.wait_for_timeout(500)
 
         # Теперь индикатор на дашборде обязан стать зеленым
         indicator_text_verified = indicator.inner_text().strip()
-        assert "Паспорт готов к сдаче (16 бар подтверждено)" in indicator_text_verified, f"Ожидалась готовность, получено: {indicator_text_verified}"
+        assert "Паспорт готов к сдаче (16.0 бар подтверждено)" in indicator_text_verified, f"Ожидалась готовность, получено: {indicator_text_verified}"
 
         # Открываем паспорт и проверяем подтвержденный статус
         with context.expect_page() as new_page_info2:
@@ -123,17 +127,17 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         # Проверяем зеленый штамп
         verified_stamp = verified_page.locator(".stamp-badge.stamp-badge-passed")
         assert verified_stamp.is_visible(), "Зеленый штамп подтверждения 16 бар не найден"
-        assert "✓ 16 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)" in verified_stamp.inner_text()
+        assert "ИСПЫТАНИЕ ЗАФИКСИРОВАНО • 16.0 БАР" in verified_stamp.inner_text()
 
         # Штамп черновика обязан отсутствовать
         assert not verified_page.locator(".stamp-badge.stamp-badge-draft").is_visible(), "Штамп черновика не должен отображаться!"
 
         # Проверяем подтвержденную таблицу протокола и комментарий инженера
         v_content = verified_page.content()
-        assert "16.0 АТМОСФЕР (BAR) • ТЕСТ x4" in v_content
-        assert "24 ЧАСА ПОД ДАВЛЕНИЕМ" in v_content
-        assert "ВЫДЕРЖАНО" in v_content
-        assert "Заключение инженера" in v_content
+        assert "16.0 бар" in v_content
+        assert "8 ч 0 мин" in v_content
+        assert "ЗАФИКСИРОВАНО" in v_content
+        assert "Заключение мастера" in v_content
 
         # Проверяем наличие реального фото манометра
         real_photos = verified_page.locator("img.passport-real-photo")

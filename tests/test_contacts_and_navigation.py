@@ -259,7 +259,7 @@ def test_phase_stepper_milestones_and_timeline(http_server):
         btn_force.click()
         page.wait_for_timeout(600)
 
-        assert "16 бар" in status_badge.inner_text(), "После подтверждения допуска статус должен стать 3. Опрессовка 16 бар"
+        assert "Испытание давлением" in status_badge.inner_text(), "После подтверждения допуска статус должен отражать этап испытания"
         assert "active" in (step_3.get_attribute("class") or ""), "Шаг 3 должен получить класс active"
 
         # Если открылось модальное окно опрессовки по подсказке — закрываем его

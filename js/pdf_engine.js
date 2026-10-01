@@ -1,6 +1,6 @@
 /* ==========================================================================
-   LIGA OS — Генератор Исполнительного Инженерного Паспорта и Акта 16 бар
-   Формат А4 • Опрессовка 16 бар / 24ч • Двухстраничный Паспорт • Без серверов
+   LIGA OS — Генератор Исполнительного Инженерного Паспорта и протокола испытаний
+   Формат А4 • Фактические параметры объекта • Двухстраничный Паспорт • Без серверов
    Швейцарский стандарт верстки • Защита от разрыва страниц при печати
    ========================================================================== */
 
@@ -19,75 +19,31 @@ class LigaPdfEngine {
     if (!hasPhoto) return false;
     const pt = site.pressureTest;
     if (!pt || typeof pt !== 'object') return false;
+    if (pt.passed !== true) return false;
     if (!pt.startDate || !pt.startTime || !pt.endDate || !pt.endTime) return false;
     const bar = parseFloat(pt.pressureBar);
     if (isNaN(bar) || bar < 1.5) return false;
     if (!pt.notes || typeof pt.notes !== 'string' || !pt.notes.trim()) return false;
+    if (/\[(?:заполнить|внести|указать)[^\]]*\]/i.test(pt.notes)) return false;
+    const startAt = new Date(`${pt.startDate}T${pt.startTime}`).getTime();
+    const endAt = new Date(`${pt.endDate}T${pt.endTime}`).getTime();
+    if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || endAt <= startAt || endAt > Date.now() + 60_000) return false;
     return true;
   }
 
-  // Генератор векторного QR-кода верификации подлинности (чистый SVG, 100% офлайн)
-  getSvgQrBadge(label = "LIGA 16 BAR", code = "CH-UZ-16BAR") {
+  // Это локальный номер документа, а не QR-код и не внешняя проверка подлинности.
+  getSvgQrBadge(label = "КОД ДОКУМЕНТА", code = "LIGA-LOCAL") {
     return `
       <div class="qr-verify-badge">
         <svg class="qr-svg-graphic" viewBox="0 0 85 85" width="62" height="62" xmlns="http://www.w3.org/2000/svg">
-          <rect width="85" height="85" fill="#ffffff" rx="4"/>
-          <!-- Позиционные маркеры QR -->
-          <rect x="5" y="5" width="22" height="22" fill="#0f172a" rx="2"/>
-          <rect x="8" y="8" width="16" height="16" fill="#ffffff" rx="1"/>
-          <rect x="11" y="11" width="10" height="10" fill="#b8832a"/>
-
-          <rect x="58" y="5" width="22" height="22" fill="#0f172a" rx="2"/>
-          <rect x="61" y="8" width="16" height="16" fill="#ffffff" rx="1"/>
-          <rect x="64" y="11" width="10" height="10" fill="#b8832a"/>
-
-          <rect x="5" y="58" width="22" height="22" fill="#0f172a" rx="2"/>
-          <rect x="8" y="61" width="16" height="16" fill="#ffffff" rx="1"/>
-          <rect x="11" y="64" width="10" height="10" fill="#b8832a"/>
-
-          <!-- Модули данных -->
-          <rect x="32" y="7" width="5" height="5" fill="#0f172a"/>
-          <rect x="42" y="7" width="5" height="5" fill="#0f172a"/>
-          <rect x="48" y="7" width="5" height="5" fill="#b8832a"/>
-          <rect x="35" y="15" width="5" height="5" fill="#0f172a"/>
-          <rect x="45" y="15" width="5" height="5" fill="#0f172a"/>
-          <rect x="32" y="22" width="5" height="5" fill="#b8832a"/>
-          <rect x="40" y="22" width="5" height="5" fill="#0f172a"/>
-
-          <rect x="7" y="32" width="5" height="5" fill="#0f172a"/>
-          <rect x="15" y="32" width="5" height="5" fill="#b8832a"/>
-          <rect x="22" y="32" width="5" height="5" fill="#0f172a"/>
-          <rect x="7" y="42" width="5" height="5" fill="#b8832a"/>
-          <rect x="18" y="42" width="5" height="5" fill="#0f172a"/>
-          <rect x="12" y="48" width="5" height="5" fill="#0f172a"/>
-
-          <!-- Центральный чип LIGA -->
-          <rect x="32" y="32" width="21" height="21" fill="#0f172a" rx="2"/>
-          <rect x="34" y="34" width="17" height="17" fill="#b8832a" rx="1"/>
-          <path d="M38,40 L44,40 M41,37 L41,47 M46,45 L50,40" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-
-          <rect x="58" y="32" width="5" height="5" fill="#0f172a"/>
-          <rect x="68" y="32" width="5" height="5" fill="#0f172a"/>
-          <rect x="74" y="35" width="5" height="5" fill="#b8832a"/>
-          <rect x="62" y="42" width="5" height="5" fill="#b8832a"/>
-          <rect x="72" y="42" width="5" height="5" fill="#0f172a"/>
-
-          <rect x="32" y="58" width="5" height="5" fill="#0f172a"/>
-          <rect x="42" y="58" width="5" height="5" fill="#b8832a"/>
-          <rect x="48" y="64" width="5" height="5" fill="#0f172a"/>
-          <rect x="36" y="70" width="5" height="5" fill="#0f172a"/>
-          <rect x="44" y="72" width="5" height="5" fill="#b8832a"/>
-
-          <rect x="58" y="58" width="5" height="5" fill="#b8832a"/>
-          <rect x="68" y="58" width="5" height="5" fill="#0f172a"/>
-          <rect x="62" y="66" width="5" height="5" fill="#0f172a"/>
-          <rect x="72" y="66" width="5" height="5" fill="#b8832a"/>
-          <rect x="58" y="74" width="5" height="5" fill="#0f172a"/>
-          <rect x="68" y="74" width="5" height="5" fill="#0f172a"/>
+          <rect width="85" height="85" fill="#0f172a" rx="8"/>
+          <path d="M42.5 8 67 17v20c0 18-10 31-24.5 40C28 68 18 55 18 37V17z" fill="#b8832a"/>
+          <path d="m30 42 8 8 17-18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <div class="qr-verify-text">
           <span class="qr-tag">${label}</span>
           <span class="qr-code">${code}</span>
+          <small>Локальная нумерация • онлайн-проверка не предусмотрена</small>
         </div>
       </div>
     `;
@@ -97,6 +53,16 @@ class LigaPdfEngine {
   generatePassport(site, photos = {}) {
     if (!site) return;
     const isPressureVerified = this.isPressureVerified(site, photos);
+    const pressureRecord = site.pressureTest || {};
+    const recordedBar = Number(pressureRecord.pressureBar);
+    const startAt = new Date(`${pressureRecord.startDate || ''}T${pressureRecord.startTime || ''}`).getTime();
+    const endAt = new Date(`${pressureRecord.endDate || ''}T${pressureRecord.endTime || ''}`).getTime();
+    const intervalMins = Number.isFinite(startAt) && Number.isFinite(endAt) && endAt > startAt
+      ? Math.round((endAt - startAt) / 60000)
+      : 0;
+    const durationLabel = intervalMins > 0
+      ? `${Math.floor(intervalMins / 60)} ч ${intervalMins % 60} мин`
+      : 'не зафиксировано';
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра и печати PDF-паспорта.');
@@ -123,7 +89,7 @@ class LigaPdfEngine {
           isSheet2: false,
           timestamp: isPressureVerified ? window.ligaSealEngine.getFormattedTimestamp() : 'ЧЕРНОВИК (БЕЗ ТЕСТА)'
         })
-      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>ПРОТОКОЛ</div>`;
 
     const sealBlockSheet2 = window.ligaSealEngine
       ? window.ligaSealEngine.renderCombinedStampAndSignHTML({
@@ -136,7 +102,7 @@ class LigaPdfEngine {
           isSheet2: true,
           timestamp: window.ligaSealEngine.getFormattedTimestamp()
         })
-      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="engineer-seal-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="engineer-seal-stamp">ЛИГА<br>МАСТЕРОВ<br>ПРОТОКОЛ</div>`;
 
     const sealBlock = sealBlockSheet1;
 
@@ -176,7 +142,7 @@ class LigaPdfEngine {
       `;
     };
 
-    const qrBadge = this.getSvgQrBadge("LIGA PASSPORT", passportNumber);
+    const qrBadge = this.getSvgQrBadge("КОД ПАСПОРТА", passportNumber);
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -746,7 +712,7 @@ class LigaPdfEngine {
         </div>
         <div class="header-status-box">
           ${isPressureVerified 
-            ? `<div class="stamp-badge stamp-badge-passed">✓ ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)') : '16 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)'}</div>`
+            ? `<div class="stamp-badge stamp-badge-passed">✓ ИСПЫТАНИЕ ЗАФИКСИРОВАНО • ${recordedBar.toFixed(1)} БАР</div>`
             : '<div class="stamp-badge stamp-badge-draft">ЧЕРНОВИК / ИСПЫТАНИЯ НЕ ПРОВОДИЛИСЬ</div>'
           }
           <div class="passport-num">Паспорт № LIGA-${site.id}-${new Date().getFullYear()}</div>
@@ -787,7 +753,7 @@ class LigaPdfEngine {
 
       <!-- Официальный протокол гидравлических испытаний -->
       <div class="section-title">
-        <span>2. Протокол гидравлических испытаний (Акт опрессовки ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' бар') : '16 бар'})</span>
+        <span>2. Протокол гидравлических испытаний (${isPressureVerified ? `${recordedBar.toFixed(1)} бар` : 'давление не внесено'})</span>
         <span style="font-size:9px; color:#64748b; font-weight:normal;">Норматив ${(site.pressureTest && site.pressureTest.standardNorm) || 'DIN 1988 (ч. 2)'}</span>
       </div>
       <div class="protocol-box">
@@ -802,26 +768,20 @@ class LigaPdfEngine {
           <tr>
             <td>Испытательное гидростатическое давление</td>
             <td>1.5 x рабочее (~6 бар)</td>
-            <td><strong>${(() => {
-              const pt = site.pressureTest || {};
-              const bar = parseFloat(pt.pressureBar) || 16.0;
-              if (bar >= 15.0) return '16.0 АТМОСФЕР (BAR) • ТЕСТ x4';
-              const factor = pt.safetyFactor || (bar / 3.5).toFixed(1);
-              return `${bar.toFixed(1)} АТМОСФЕР (BAR) • ТЕСТ x${factor}`;
-            })()}</strong></td>
-            <td class="highlight-cell">ВЫДЕРЖАНО</td>
+            <td><strong>${recordedBar.toFixed(1)} бар</strong></td>
+            <td class="highlight-cell">ЗАФИКСИРОВАНО</td>
           </tr>
           <tr>
             <td>Время экспозиции под давлением</td>
             <td>1 час</td>
-            <td><strong>24 ЧАСА ПОД ДАВЛЕНИЕМ</strong>${site.pressureTest && site.pressureTest.startDate ? `<br><small style="color:#64748b; font-weight:normal;">Интервал: ${site.pressureTest.startDate} ${site.pressureTest.startTime} — ${site.pressureTest.endDate} ${site.pressureTest.endTime}</small>` : ''}</td>
-            <td class="highlight-cell">БЕЗ ПАДЕНИЯ</td>
+            <td><strong>${durationLabel}</strong><br><small style="color:#64748b; font-weight:normal;">${pressureRecord.startDate} ${pressureRecord.startTime} — ${pressureRecord.endDate} ${pressureRecord.endTime}</small></td>
+            <td class="highlight-cell">ПО ЗАПИСИ МАСТЕРА</td>
           </tr>
           <tr>
             <td>Визуальный осмотр соединений (Rehau/FAR)</td>
             <td>Отсутствие течи</td>
-            <td><strong>100% герметичность узлов</strong>${site.pressureTest && site.pressureTest.notes ? `<br><small style="color:#334155; font-weight:600;">Заключение инженера: ${site.pressureTest.notes}</small>` : ''}</td>
-            <td class="highlight-cell">СООТВЕТСТВУЕТ</td>
+            <td><strong>Заключение мастера</strong>${pressureRecord.notes ? `<br><small style="color:#334155; font-weight:600;">${pressureRecord.notes}</small>` : ''}</td>
+            <td class="highlight-cell">СМ. ЗАКЛЮЧЕНИЕ</td>
           </tr>
         </table>
         <div style="margin-top: 6px; padding: 5px 8px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 9.5px; color: #475569; line-height: 1.35;">
@@ -836,13 +796,13 @@ class LigaPdfEngine {
             <th>Статус</th>
           </tr>
           <tr>
-            <td>Испытательное гидростатическое давление (16 бар)</td>
+            <td>Испытательное гидростатическое давление</td>
             <td>1.5 x рабочее (~6 бар)</td>
             <td><strong>ИСПЫТАНИЯ НЕ ПРОВОДИЛИСЬ</strong></td>
             <td class="highlight-draft">НЕ ПОДТВЕРЖДЕНО</td>
           </tr>
           <tr>
-            <td>Время экспозиции под давлением (24 часа)</td>
+            <td>Интервал испытания</td>
             <td>1 час</td>
             <td><strong>ОТСУТСТВУЕТ ФОТОФИКСАЦИЯ</strong></td>
             <td class="highlight-draft">ТРЕБУЕТ ТЕСТА</td>
@@ -855,7 +815,7 @@ class LigaPdfEngine {
           </tr>
         </table>
         <div style="margin-top: 6px; padding: 6px 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; font-size: 9.5px; color: #92400e; line-height: 1.35;">
-          ⚠️ <strong>Внимание:</strong> Гидравлические испытания давлением 16 бар не зафиксированы или отсутствует фото манометра. Данный документ является предварительным <strong>рабочим черновиком</strong> и не подтверждает готовность скрытых систем к заливке стяжки или обшивке.
+          ⚠️ <strong>Внимание:</strong> Протокол испытаний не прошёл проверку полноты или отсутствует фото манометра. Данный документ является предварительным <strong>рабочим черновиком</strong> и не подтверждает готовность скрытых систем к заливке стяжки или обшивке.
         </div>
         `}
       </div>
@@ -876,7 +836,7 @@ class LigaPdfEngine {
       ${isPressureVerified ? `
       <p style="font-size:10px; color:#475569; margin-bottom: 8px; line-height: 1.35;">
         1. <strong>Заводская гарантия:</strong> на оригинальные европейские материалы (Rehau, FAR, Geberit) составляет от 10 до 50 лет согласно паспортам заводов-изготовителей.<br>
-        2. <strong>Монтажная гарантия:</strong> предоставляется по индивидуальному договору под проект на основании успешного прохождения гидравлического испытания ${(site.pressureTest && parseFloat(site.pressureTest.pressureBar) < 15.0) ? (parseFloat(site.pressureTest.pressureBar).toFixed(1) + ' бар') : '16 бар'}.
+        2. <strong>Монтажная гарантия:</strong> определяется индивидуальным договором и условиями проекта; протокол испытания содержит фактическое давление ${recordedBar.toFixed(1)} бар.
       </p>
 
       <div class="signatures-block">
@@ -897,7 +857,7 @@ class LigaPdfEngine {
       ` : `
       <p style="font-size:10px; color:#b45309; margin-bottom: 8px; font-weight: 600; line-height: 1.35;">
         1. Заводская гарантия на оригинальные европейские материалы сохраняется согласно паспортам заводов-изготовителей.<br>
-        2. ⚠️ ВНИМАНИЕ: Официальная гарантия на качество монтажных работ НЕ АКТИВИРОВАНА до проведения гидравлического испытания давлением 16 бар и фотофиксации манометра.
+        2. ⚠️ ВНИМАНИЕ: Паспорт остается черновиком, пока протокол испытания не заполнен по фактическим данным и не приложено фото манометра.
       </p>
 
       <div class="signatures-block">
@@ -947,7 +907,7 @@ class LigaPdfEngine {
       <!-- Сетка 4 фотопривязок -->
       <div class="photo-grid">
         ${renderPhotoBox(photos.manifold, 'Узел ввода и коллекторы FAR', 'Распределительный узел ГВС/ХВС с манометрами и редукторами Caleffi', 'Узел № 1')}
-        ${renderPhotoBox(photos.pressure, 'Контрольный манометр 16 BAR', 'Показания опрессовочного гидропресса под пломбой (выдержка 24 часа)', '16.0 BAR')}
+        ${renderPhotoBox(photos.pressure, `Контрольный манометр ${recordedBar > 0 ? recordedBar.toFixed(1) : '—'} BAR`, `Фото показаний фактического испытательного давления`, recordedBar > 0 ? `${recordedBar.toFixed(1)} BAR` : 'Давление не внесено')}
         ${renderPhotoBox(photos.wall, 'Трассы в стенах с рулеткой', 'Привязка водорозеток и выводов канализации к чистовым углам', 'По рулетке')}
         ${renderPhotoBox(photos.floor, 'Трассы в полу перед стяжкой', 'Раскладка труб отопления/водоснабжения в теплоизоляции, шаг крепления', 'До стяжки')}
       </div>
@@ -1001,18 +961,18 @@ class LigaPdfEngine {
     printWindow.document.close();
   }
 
-  // Генерация Официального Акта гидравлических испытаний 16 бар / 24 часа (Строгий 1 лист А4)
+  // Генерация официального акта гидравлических испытаний по фактическим данным объекта
   generatePressureAct(site, photos = {}) {
     if (!site) return;
     const isVerified = this.isPressureVerified(site, photos);
     if (!isVerified) {
-      alert('⚠️ Акт гидравлических испытаний не может быть сформирован:\nСначала зафиксируйте успешное прохождение испытания 16 бар (экспозиция 24 часа) и загрузите фото манометра в протоколе опрессовки.');
+      alert('⚠️ Акт испытаний нельзя сформировать: заполните фактический протокол, приложите фото манометра и укажите прошедший интервал испытания.');
       return false;
     }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert('Пожалуйста, разрешите всплывающие окна в браузере для просмотра и печати Официального Акта 16 бар.');
+      alert('Разрешите всплывающие окна для просмотра и печати официального акта испытаний.');
       return false;
     }
 
@@ -1026,17 +986,19 @@ class LigaPdfEngine {
       day: 'numeric'
     });
 
-    const barVal = parseFloat(pt.pressureBar) || 16.0;
+    const barVal = Number(pt.pressureBar);
     const isSwissGrade = barVal >= 15.0;
-    const actNumber = isSwissGrade
-      ? `АКТ-16Б-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`
-      : `АКТ-ОПР-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
+    const actNumber = `АКТ-ИСП-${String(site.id || '01').padStart(3, '0')}-${new Date().getFullYear()}`;
 
-    const normText = pt.standardNorm || (isSwissGrade 
-      ? 'Швейцарский эталон LIGA OS (DIN 1988)' 
-      : (barVal >= 9.0 ? 'Стандарт Rehau (DIN 1988-2)' : (barVal >= 5.5 ? 'Стандарт СНиП 3.05.01-85' : 'Рабочее давление сети Ташкента')));
+    const normText = pt.standardNorm || 'Параметры испытания определены мастером для объекта';
 
     const safetyFactor = pt.safetyFactor || (barVal / 3.5).toFixed(1);
+    const startAt = new Date(`${pt.startDate}T${pt.startTime}`).getTime();
+    const endAt = new Date(`${pt.endDate}T${pt.endTime}`).getTime();
+    const intervalMins = Number.isFinite(startAt) && Number.isFinite(endAt) && endAt > startAt
+      ? Math.round((endAt - startAt) / 60000)
+      : 0;
+    const durationLabel = `${Math.floor(intervalMins / 60)} ч ${intervalMins % 60} мин`;
 
     const renderPhotoBox = (photoData, defaultTitle, defaultSubtitle) => {
       if (photoData) {
@@ -1060,7 +1022,7 @@ class LigaPdfEngine {
       `;
     };
 
-    const qrBadge = this.getSvgQrBadge(isSwissGrade ? "DIN 1988 VERIFIED" : "PRESSURE VERIFIED", actNumber);
+    const qrBadge = this.getSvgQrBadge("КОД АКТА", actNumber);
 
     const masterSettings = window.ligaSealEngine ? window.ligaSealEngine.settings : { masterName: 'Улугбек Хакимов', signatureText: 'Хакимов У.А.' };
     const sealBlock = window.ligaSealEngine
@@ -1072,7 +1034,7 @@ class LigaPdfEngine {
           stampStyle: masterSettings.stampStyle || 'blue_seal',
           timestamp: window.ligaSealEngine.getFormattedTimestamp()
         })
-      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>16 BAR</div>`;
+      : `<span>${masterSettings.masterName}</span><span>(подпись) ________</span><div class="facsimile-stamp">ЛИГА<br>МАСТЕРОВ<br>ПРОТОКОЛ</div>`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -1568,7 +1530,7 @@ class LigaPdfEngine {
           </div>
         </div>
         <div class="act-badge-box">
-          <div class="act-badge-passed">✓ ${isSwissGrade ? '16 БАР / 24Ч ПОДТВЕРЖДЕНО' : `${barVal.toFixed(1)} БАР / 24Ч ПОДТВЕРЖДЕНО`}</div>
+          <div class="act-badge-passed">✓ ИСПЫТАНИЕ ЗАФИКСИРОВАНО • ${barVal.toFixed(1)} БАР</div>
           <div class="act-num">${actNumber}</div>
         </div>
       </div>
@@ -1576,7 +1538,7 @@ class LigaPdfEngine {
       <!-- Заголовок документа -->
       <div class="doc-title-block">
         <h2>Официальный Акт гидравлического испытания системы</h2>
-        <p>СТАНДАРТ ${isSwissGrade ? 'DIN 1988 (Ч. 2) / СНиП' : normText.toUpperCase()} • ИСПЫТАНИЕ ДАВЛЕНИЕМ ${barVal.toFixed(1)} БАР • ЭКСПОЗИЦИЯ 24 ЧАСА • ПРОВЕРКА ПОД СТЯЖКУ ПОЛА</p>
+        <p>ПАРАМЕТР: ${normText.toUpperCase()} • ФАКТИЧЕСКОЕ ДАВЛЕНИЕ ${barVal.toFixed(1)} БАР • ФАКТИЧЕСКИЙ ИНТЕРВАЛ ${durationLabel.toUpperCase()}</p>
       </div>
 
       <!-- Стороны и объект -->
@@ -1622,15 +1584,15 @@ class LigaPdfEngine {
         <tbody>
           <tr>
             <td><strong>Давление нагнетания гидропрессом</strong></td>
-            <td>${isSwissGrade ? 'Не менее 16.0 бар (DIN 1988)' : normText}</td>
+            <td>${normText}</td>
             <td class="val-highlight"><strong>${barVal.toFixed(1)} бар</strong></td>
-            <td>✓ Соответствует</td>
+            <td>Зафиксировано мастером</td>
           </tr>
           <tr>
-            <td><strong>Запас прочности (к сети Ташкента ~3.5 бар)</strong></td>
-            <td>Рабочее давление водопровода 2.5–4.5 бар</td>
+            <td><strong>Расчетное отношение к ориентиру 3.5 бар</strong></td>
+            <td>Справочное сравнение, не измерение объекта</td>
             <td class="val-highlight"><strong>${safetyFactor}x запас</strong></td>
-            <td>✓ Защита от гидроудара</td>
+            <td>Информационно</td>
           </tr>
           <tr>
             <td><strong>Время постановки под давление</strong></td>
@@ -1640,33 +1602,31 @@ class LigaPdfEngine {
           </tr>
           <tr>
             <td><strong>Время окончания испытания</strong></td>
-            <td>Выдержка не менее 24 часов</td>
+            <td>Фактическая дата и время</td>
             <td>${pt.endDate} в ${pt.endTime}</td>
-            <td>✓ 24 часа выдержано</td>
+            <td>${durationLabel}</td>
           </tr>
           <tr>
-            <td><strong>Конечное контрольное давление</strong></td>
-            <td>Не ниже исходного (падение 0.0)</td>
-            <td class="val-highlight"><strong>${barVal.toFixed(1)} бар</strong></td>
-            <td>✓ Падение: 0.0 бар</td>
+            <td><strong>Изменение показаний / конечное давление</strong></td>
+            <td>Указать в заключении по фактическому наблюдению</td>
+            <td colspan="2">${pt.notes}</td>
           </tr>
           <tr>
             <td><strong>Визуальный контроль узлов и трасс</strong></td>
-            <td>Отсутствие свищей, капель и течи</td>
-            <td>Коллекторы FAR, трубы Rehau</td>
-            <td>✓ 100% герметичность</td>
+            <td>Заключение мастера по факту осмотра</td>
+            <td colspan="2">${pt.notes}</td>
           </tr>
         </tbody>
       </table>
 
       <div style="font-size:9.5px; margin-bottom:5px; padding:4px 6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px;">
-        <strong>Заключение инженера по соединениям:</strong> ${pt.notes || `Система отопления и водоснабжения выдержала опрессовку ${barVal.toFixed(1)} бар. Соединения монолитны.`}
+        <strong>Заключение инженера по соединениям:</strong> ${pt.notes}
       </div>
 
       <!-- Фотофиксация манометра и узла -->
       <div class="section-title">3. Фотофиксация опломбированного манометра и узла ввода под давлением</div>
       <div class="act-photo-grid">
-        ${renderPhotoBox(photoPressure, isSwissGrade ? 'Контрольный манометр 16 BAR' : `Контрольный манометр ${barVal.toFixed(1)} BAR`, `Показания поверенного манометра (${barVal.toFixed(1)} бар • выдержка 24 часа)`)}
+        ${renderPhotoBox(photoPressure, `Контрольный манометр ${barVal.toFixed(1)} BAR`, `Фото показаний манометра при испытании (${barVal.toFixed(1)} бар)`)}
         ${renderPhotoBox(photoManifold, 'Распределительный узел FAR', 'Коллекторный узел ввода ГВС/ХВС и отопления под испытательным давлением')}
       </div>
 
@@ -1674,8 +1634,8 @@ class LigaPdfEngine {
       <div class="resolution-box">
         <div class="resolution-title">🛡️ Официальная инженерная резолюция:</div>
         <div class="resolution-text">
-          Система отопления и водоснабжения выдержала гидравлическое испытание давлением <strong>${barVal.toFixed(1)} бар</strong> в течение 24 часов без падения давления. Все фитинги и соединения монолитны.
-          <strong>РАЗРЕШАЕТСЯ ПРОИЗВОДСТВО РАБОТ ПО ЗАЛИВКЕ ЦЕМЕНТНО-ПЕСЧАНОЙ СТЯЖКИ ПОЛА И ОБШИВКЕ СТЕН ГИПСОКАРТОНОМ.</strong>
+          В протокол внесено испытательное давление <strong>${barVal.toFixed(1)} бар</strong> за интервал <strong>${durationLabel}</strong>. Результат и замечания приведены в заключении мастера выше.
+          <strong>Допуск к закрытию скрытых работ оформляется отдельно по проекту, осмотру объекта и комплекту исполнительных материалов.</strong>
         </div>
       </div>
 
@@ -1718,7 +1678,7 @@ class LigaPdfEngine {
       <span>Официальный Акт № ${actNumber} • Строго 1 страница А4 • Объект: ${site.name}</span>
       <div style="display:flex; align-items:center; gap:8px;">
         ${qrBadge}
-        <span>${isSwissGrade ? 'DIN 1988 Part 2' : normText} • Ташкент</span>
+        <span>${normText} • Ташкент</span>
       </div>
     </div>
   </div>

@@ -91,7 +91,10 @@ def test_voice_continuous_experience_and_smart_parser(local_server):
 
         # Тест 6.4: Опрессовка 16 бар
         parsed_press = page.evaluate("window.app.parseVoiceCommand('Гидравлическое испытание опрессовка 16 бар завершена')")
-        assert parsed_press['type'] == 'press_test'
+        # Voice intent opens the factual protocol form; it must not mark a
+        # pressure test as passed merely because the phrase says "завершена".
+        assert parsed_press['type'] == 'direct_func'
+        assert parsed_press['target'] == 'openPressureTestModal'
 
         # 7. Проверка очистки поля ввода
         page.click("button[onclick*='clearVoiceText']")

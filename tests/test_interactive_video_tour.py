@@ -57,21 +57,10 @@ def test_video_tour_header_button_and_modal_open(http_server):
         modal_tour = page.locator("#modal-video-tour")
         assert "open" in (modal_tour.get_attribute("class") or "")
 
-        # Заголовок и 5 глав мастера
-        title_el = page.locator("#video-tour-main-title")
-        assert len(title_el.inner_text()) > 5
-
-        chips = page.locator(".video-chapter-chip")
-        assert chips.count() == 5
-
-        # Переключаем на следующую главу
-        next_btn = page.locator("#btn-video-next")
-        assert next_btn.is_visible()
-        next_btn.click()
-        page.wait_for_timeout(200)
-
-        badge_el = page.locator("#video-chapter-num-badge")
-        assert "2/5" in badge_el.inner_text()
+        # Текущая версия гида показывает готовую видеозапись MP4.
+        player = page.locator("#liga-real-mp4-player")
+        assert player.is_visible()
+        assert page.locator("#modal-video-tour").inner_text().find("Видеогид по системе LIGA OS") >= 0
 
         # Закрываем видеогид
         close_btn = page.locator("#btn-close-video-tour")
@@ -84,7 +73,7 @@ def test_video_tour_header_button_and_modal_open(http_server):
         browser.close()
 
 def test_video_tour_vip_client_mode_switch(http_server):
-    """Проверка переключения в режим VIP-презентации для заказчика"""
+    """Проверка актуального перехода от гида к режиму показа клиенту"""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 1280, "height": 800})
@@ -101,26 +90,12 @@ def test_video_tour_vip_client_mode_switch(http_server):
             guide_video_btn.click()
             page.wait_for_timeout(300)
 
-        # Переключаем на режим «👑 Для заказчика (VIP)»
-        client_mode_tab = page.locator("#tab-video-mode-client")
-        assert client_mode_tab.is_visible()
-        client_mode_tab.click()
-        page.wait_for_timeout(200)
-
-        # Заголовок должен измениться на VIP Презентацию
-        title_el = page.locator("#video-tour-main-title")
-        assert "VIP" in title_el.inner_text()
-
-        # В клиентском режиме 4 главы стандартов
-        chips = page.locator(".video-chapter-chip")
-        assert chips.count() == 4
-
-        # Проверяем субтитры первого урока клиента
-        sub_text = page.locator("#video-subtitles-text")
-        assert "16.0" in sub_text.inner_text()
-
-        # Закрываем
+        # VIP-вкладка видеоплеера больше не используется. Проверяем действующий
+        # независимый режим показа клиенту в шапке приложения.
         page.locator("#btn-close-video-tour").click()
+        page.locator("#btn-client-mode-toggle").click()
+        assert page.locator("html").get_attribute("data-client-mode") == "true"
+        assert page.locator("#client-mode-banner").is_visible()
         browser.close()
 
 def test_spotlight_live_tour_flow(http_server):
@@ -143,7 +118,7 @@ def test_spotlight_live_tour_flow(http_server):
 
         # Шаг 1: Световой маяк безопасности
         badge_step = page.locator("#spotlight-badge-step")
-        assert "1" in badge_step.inner_text()
+        assert "ШАГ 1 ИЗ" in badge_step.inner_text()
 
         title_text = page.locator("#spotlight-title-text")
         assert len(title_text.inner_text()) > 3
@@ -165,9 +140,9 @@ def test_spotlight_live_tour_flow(http_server):
         assert "1" in badge_step.inner_text()
 
         # Закрываем тур крестиком
-        btn_close = page.locator(".btn-spotlight-close")
+        btn_close = page.locator("#btn-spotlight-finish")
         btn_close.click(force=True)
-        page.wait_for_timeout(300)
+        page.wait_for_function("() => document.getElementById('spotlight-tour-overlay').style.display === 'none'")
         assert not overlay.is_visible()
 
         browser.close()

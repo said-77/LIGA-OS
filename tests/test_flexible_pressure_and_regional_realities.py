@@ -81,7 +81,7 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         assert pressure_val == "4.0", f"Ожидалось 4.0 бар, получено: {pressure_val}"
 
         analysis_html = page.locator("#pt-safety-analysis").inner_text()
-        assert "Ташкент" in analysis_html or "сети" in analysis_html
+        assert "условия" in analysis_html or "значение" in analysis_html
         assert "1.1" in analysis_html
 
         # 4. Проверяем автошаблон заметок
@@ -92,7 +92,8 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
 
         notes_val = page.input_value("#pt-notes")
         assert "4.0 бар" in notes_val
-        assert "Ташкент" in notes_val or "сети" in notes_val
+        assert "заполнить по факту" in notes_val
+        assert "выдержано" not in notes_val.lower()
 
         # 5. Тестируем ввод произвольного давления (7.5 бар)
         page.fill("#pt-pressure-bar", "7.5")
@@ -103,6 +104,11 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         # 6. Возвращаем пресет 4.0 бар и сохраняем протокол
         btn_preset_4.click()
         btn_template.click()
+        page.fill("#pt-start-date", "2026-09-30")
+        page.fill("#pt-start-time", "08:00")
+        page.fill("#pt-end-date", "2026-09-30")
+        page.fill("#pt-end-time", "12:00")
+        page.fill("#pt-notes", "Начальное показание 4.0 бар, конечное показание 4.0 бар. При осмотре соединений следов влаги не выявлено.")
         page.locator("#form-pressure-test .btn-submit-modal").click()
         page.wait_for_timeout(400)
 
@@ -122,13 +128,12 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         act_html = act_page.content()
 
         # Проверки Акта 4.0 бар:
-        assert "АКТ-ОПР-" in act_html, "Номер акта при 4 бар должен быть АКТ-ОПР-*"
+        assert "АКТ-ИСП-" in act_html, "Номер акта должен быть общим для выбранного испытательного давления"
         assert "4.0 БАР" in act_html or "4.0 бар" in act_html
-        assert "4.0 БАР / 24Ч ПОДТВЕРЖДЕНО" in act_html or "4.0 БАР" in act_html
-        assert "Запас прочности" in act_html
-        assert "выдержала гидравлическое испытание давлением <strong>4.0 бар</strong>" in act_html
-        assert "РАЗРЕШАЕТСЯ ПРОИЗВОДСТВО РАБОТ ПО ЗАЛИВКЕ ЦЕМЕНТНО-ПЕСЧАНОЙ СТЯЖКИ ПОЛА" in act_html
-        assert "ЛИГА" in act_html and "16 BAR" in act_html, "Факсимиле мастера Лиги должно присутствовать"
+        assert "ИСПЫТАНИЕ ЗАФИКСИРОВАНО" in act_html
+        assert "4 ч 0 мин" in act_html
+        assert "допуск к закрытию скрытых работ оформляется отдельно" in act_html.lower()
+        assert "ЛИГА" in act_html and "ПРОТОКОЛ" in act_html
         act_page.close()
 
         # 9. Проверяем генерацию Инженерного Паспорта на 4.0 бара
@@ -141,9 +146,9 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         pass_html = pass_page.content()
 
         # Проверки Паспорта 4.0 бар:
-        assert "4.0 БАР ПРОЙДЕНО (ПОДТВЕРЖДЕНО)" in pass_html, "Штамп паспорта должен фиксировать 4.0 бар"
-        assert "4.0 АТМОСФЕР (BAR) • ТЕСТ x1.1" in pass_html, "Таблица протокола должна указывать 4.0 бар и коэффициент"
-        assert "гидравлического испытания 4.0 бар" in pass_html, "Монтажная гарантия должна указывать 4.0 бар"
+        assert "ИСПЫТАНИЕ ЗАФИКСИРОВАНО • 4.0 БАР" in pass_html, "Штамп паспорта должен показывать внесенное давление"
+        assert "4.0 бар" in pass_html and "4 ч 0 мин" in pass_html
+        assert "онлайн-проверка не предусмотрена" in pass_html
         pass_page.close()
 
         # 10. Переключаем на 16.0 бар (Швейцарский эталон)
@@ -151,12 +156,13 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         page.wait_for_selector("#modal-pressure-test.open")
         btn_preset_16.click()
         btn_template.click()
+        page.fill("#pt-notes", "Начальное показание 16.0 бар, конечное показание 16.0 бар. При осмотре соединений следов влаги не выявлено.")
         page.locator("#form-pressure-test .btn-submit-modal").click()
         page.wait_for_timeout(400)
 
         # Проверяем возврат к эталону 16 бар
         indicator_text_16 = indicator.inner_text().strip()
-        assert "Паспорт готов к сдаче (16 бар подтверждено)" in indicator_text_16
+        assert "Паспорт готов к сдаче (16.0 бар подтверждено)" in indicator_text_16
 
         with context.expect_page() as act_page_info_16:
             btn_act.click()
@@ -164,8 +170,8 @@ def test_flexible_pressure_and_regional_realities(http_server, sample_image_path
         act_page_16.wait_for_load_state("domcontentloaded")
         act_html_16 = act_page_16.content()
 
-        assert "АКТ-16Б-" in act_html_16
-        assert "16 БАР / 24Ч ПОДТВЕРЖДЕНО" in act_html_16
+        assert "АКТ-ИСП-" in act_html_16
+        assert "ИСПЫТАНИЕ ЗАФИКСИРОВАНО • 16.0 БАР" in act_html_16
         assert "16.0 бар" in act_html_16
         act_page_16.close()
 

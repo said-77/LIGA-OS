@@ -119,7 +119,8 @@ def test_digital_stage_acceptance_telegram_workflow(http_server):
         modal_text = verify_modal.inner_text().upper()
         assert "ЛИГА ОПЫТНЫХ МАСТЕРОВ" in modal_text
         assert "ХАКИМОВ УЛУГБЕК" in modal_text
-        assert "16.0 БАР" in modal_text or "16" in modal_text
+        assert "ДАВЛЕНИЕ НЕ УКАЗАНО" in modal_text
+        assert "24 ЧАСА (ПРОЙДЕНО)" not in modal_text
         assert "1 ММ" in modal_text
 
         # Проверяем наличие кнопки подтверждения

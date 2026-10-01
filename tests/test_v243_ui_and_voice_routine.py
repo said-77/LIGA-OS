@@ -85,8 +85,7 @@ def test_v243_live_payment_button(http_server):
 
         # Проверяем новые классы объема и доступности
         btn_class = btn_payment.get_attribute("class") or ""
-        assert "btn-action-trigger" in btn_class, "Кнопка должна использовать класс объемного действия .btn-action-trigger"
-        assert "btn-action-emerald" in btn_class, "Кнопка должна быть оформлена в изумрудном градиенте .btn-action-emerald"
+        assert "btn-luxury-payment-pulse" in btn_class, "Кнопка должна использовать актуальное оформление платежа"
 
         # Кликаем по кнопке — должно открыться окно платежа
         btn_payment.click()

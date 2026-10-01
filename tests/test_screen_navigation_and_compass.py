@@ -85,7 +85,7 @@ def test_screen_navigation_and_header_ribbon(http_server):
         assert ribbon_name.inner_text() == "КОНТРОЛЬ"
         hero_chk = page.locator("#screen-checklist .screen-hero-title")
         assert hero_chk.is_visible()
-        assert "ТЕХНАДЗОР И 16 БАР" in hero_chk.inner_text()
+        assert "ТЕХНАДЗОР И ИСПЫТАНИЯ" in hero_chk.inner_text()
 
         # 5. Переход в раздел «Смета»
         page.locator('.bottom-nav button[data-screen="estimate"]').click()

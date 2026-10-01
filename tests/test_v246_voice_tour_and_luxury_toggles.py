@@ -133,17 +133,15 @@ def test_v246_mobile_video_tour_dimensions():
         # Проверяем кнопку ГИД в шапке
         guide_btn = page.locator("#btn-video-tour-open")
         assert guide_btn.is_visible()
-        assert "ГИД" in guide_btn.inner_text()
+        assert guide_btn.get_attribute("aria-label") == "Инженерный гид и подсказки мастера"
 
         # Открываем модалку видеотура
         page.evaluate("window.app.openVideoTour()")
         assert page.locator("#modal-video-tour").is_visible()
 
-        # Проверяем высоту сцены на мобильном (должна быть <= 185px)
-        stage_height = page.evaluate("() => document.getElementById('video-cinema-stage').getBoundingClientRect().height")
-        assert stage_height <= 185, f"Stage height {stage_height} exceeds mobile budget!"
-
-        page.screenshot(path="screenshot_v246_mobile_video_compact.png")
+        # Проверяем, что видеоплеер адаптируется по ширине мобильного окна.
+        player_width = page.locator("#liga-real-mp4-player").evaluate("el => el.getBoundingClientRect().width")
+        assert 0 < player_width <= 393
         page.evaluate("window.app.closeVideoTour()")
         assert not page.locator("#modal-video-tour").is_visible()
         browser.close()

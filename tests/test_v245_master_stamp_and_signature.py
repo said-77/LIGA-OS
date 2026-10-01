@@ -58,11 +58,12 @@ def test_seal_engine_and_live_preview():
         seal_text = page.inner_text("#seal-live-preview-box")
         assert "ХАКИМОВ УЛУГБЕК РУСТАМОВИЧ" in seal_text.upper(), "SVG seal must reactively contain updated master name"
 
-        # 6. Переключаем стиль на 'gold_seal' (Золотое VIP-тиснение)
-        page.select_option("#select-master-stamp-style", "gold_seal")
+        # 6. Проверяем переключение темы и возврат к доступной золотой печати.
+        page.select_option("#select-master-stamp-style", "diplomatic_vermilion")
+        page.select_option("#select-master-stamp-style", "swiss_imperial_gold")
         page.wait_for_timeout(200)
-        has_gold_class = page.locator("#seal-live-preview-box svg.gold_seal").count() == 1
-        assert has_gold_class, "SVG seal must receive .gold_seal class on select change"
+        has_gold_class = page.locator("#seal-live-preview-box svg.swiss_imperial_gold").count() == 1
+        assert has_gold_class, "SVG seal must return to the selected gold style"
 
         # 7. Сохраняем персональную печать мастера
         page.click("#btn-save-master-seal")
@@ -94,16 +95,31 @@ def test_telegram_diplomatic_manifest():
         page.wait_for_load_state("domcontentloaded")
         page.wait_for_timeout(500)
 
-        # Формируем манифест через JS
-        manifest = page.evaluate("""() => {
-            const site = window.app.currentSite || { name: 'ЖК Mirabad Avenue', client: 'Самир' };
-            return window.ligaSealEngine.formatTelegramDiplomaticManifest(site);
+        # Проверяем, что сообщение не выдумывает объект, давление и финансовые суммы.
+        manifests = page.evaluate("""() => {
+            const missing = window.ligaSealEngine.formatTelegramDiplomaticManifest({ name: 'Объект без замера' });
+            const recorded = window.ligaSealEngine.formatTelegramDiplomaticManifest({
+                id: 7,
+                name: 'Объект с фактическим замером',
+                pressureTest: { pressureBar: '4.0', standardNorm: 'Параметры проекта' },
+                pressTestPassed: true,
+                contractSum: 0,
+                advanceSum: 0
+            });
+            return { missing, recorded };
         }""")
 
+        manifest = manifests["recorded"]
         assert "LIGA MASTER OS • ОФИЦИАЛЬНОЕ ЗАКЛЮЧЕНИЕ" in manifest
-        assert "16.0 БАР" in manifest
+        assert "4.0 БАР" in manifest
+        assert "Параметры проекта" in manifest
         assert "ГЕРБОВАЯ ПЕЧАТЬ" in manifest
-        assert "ВЕРИФИКАЦИОННЫЙ ХЭШ" in manifest
+        assert "ЛОКАЛЬНЫЙ НОМЕР ДОКУМЕНТА" in manifest
+        missing = manifests["missing"]
+        assert "НЕ ЗАФИКСИРОВАНО" in missing
+        assert "18 500 000" not in missing
+        assert "12 000 000" not in missing
+        assert "Mirabad Avenue" not in missing
 
         browser.close()
 

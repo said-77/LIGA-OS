@@ -72,9 +72,10 @@ def test_engineering_audit_honesty(http_server):
         assert "Инженерный экспресс-аудит" in modal_title
         assert "ИИ" not in modal_title
 
-        # Проверяем описание с инженерными нормами (DIN 1988, СП 30.13330)
+        # Проверяем честно описанные локальные правила и границу сетевого AI.
         sheet_text = page.locator("#modal-ai-audit .modal-sheet").inner_text()
-        assert "DIN 1988" in sheet_text or "СП 30.13330" in sheet_text or "100% автономно" in sheet_text
+        assert "локальным правилам" in sheet_text
+        assert "требуют подключения к интернету" in sheet_text
 
         # Сохранение выводов и проверка текста подтверждения
         btn_save = page.locator('#modal-ai-audit button[onclick*="saveAiAuditNotes"]')

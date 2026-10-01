@@ -62,6 +62,12 @@ def test_a4_print_calibration_workflow(http_server, sample_image_path):
 
         page.locator("#tile-quick-press").click()
         page.wait_for_selector("#modal-pressure-test.open")
+        # Протокол требует фактического периода; для тестового документа задаём
+        # завершённый интервал вместо прежнего автозаполнения.
+        page.fill("#pt-start-date", "2026-09-28")
+        page.fill("#pt-start-time", "09:00")
+        page.fill("#pt-end-date", "2026-09-29")
+        page.fill("#pt-end-time", "09:00")
         page.fill("#pt-pressure-bar", "16.0")
         page.fill("#pt-notes", "Опрессовка 16.0 бар успешно выдержана 24 часа. Все соединения монолитны.")
         page.locator("#form-pressure-test .btn-submit-modal").click()
@@ -88,11 +94,11 @@ def test_a4_print_calibration_workflow(http_server, sample_image_path):
         btn_close = print_bar.locator(".btn-close-print")
         assert btn_close.is_visible(), "Кнопка '✕ Закрыть' должна быть в панели"
 
-        # 1.3. Проверка векторного QR-кода верификации подлинности
+        # 1.3. Код документа честно подписан как локальная нумерация
         qr_badge = act_page.locator(".qr-verify-badge")
-        assert qr_badge.count() >= 1, "Акт 16 бар обязан содержать векторный QR-код верификации"
-        assert "DIN 1988 VERIFIED" in act_page.locator(".qr-tag").inner_text()
-        assert act_page.locator(".qr-svg-graphic").count() >= 1, "QR-код должен быть векторным SVG"
+        assert qr_badge.count() >= 1, "Акт должен содержать локальный код документа"
+        assert "КОД АКТА" in act_page.locator(".qr-tag").inner_text()
+        assert "онлайн-проверка не предусмотрена" in qr_badge.inner_text()
 
         # 1.4. Проверка защиты от разрыва страниц при печати
         act_page.emulate_media(media="print")

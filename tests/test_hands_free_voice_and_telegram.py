@@ -90,11 +90,14 @@ def test_hands_free_voice_and_telegram_flow(local_server):
         floor_calc = page.evaluate("""() => {
             return window.app.parseVoiceCommand("посчитай теплый пол 60 квадратов");
         }""")
-        assert floor_calc["type"] == "calc_floor", "Тип команды должен быть calc_floor"
-        assert floor_calc["area"] == 60, "Площадь должна быть 60 кв.м"
-        assert floor_calc["meters"] == 390, "60 кв.м * 6.5 = 390 метров трубы"
-        assert floor_calc["coils"] == 2, "390 м / 200 м = 2 бухты"
-        assert floor_calc["loops"] == 6, "Контуров должно быть 6 (коллектор на 6 выходов)"
+        assert floor_calc["type"] == "direct_func"
+        assert floor_calc["target"] == "openFloorCalculator"
+        assert floor_calc["targetArg"] == 60, "Площадь из голосовой команды должна перейти в калькулятор"
+
+        page.evaluate("window.app.openFloorCalculator(60)")
+        assert page.locator("#floor-calc-area-val").inner_text() == "60"
+        assert int(page.locator("#res-floor-loops-count").inner_text().split()[0]) > 0
+        page.evaluate("window.app.closeModal('modal-floor-calculator')")
 
         # б) Конвертер валют
         currency_calc = page.evaluate("""() => {

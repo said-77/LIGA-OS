@@ -21,7 +21,7 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
 
       // 3. Автоматический сброс устаревшего кэша браузера при обновлении версии (Zero-Friction)
-      const CURRENT_BUILD = 'v2.5.6-hydraulic-control';
+      const CURRENT_BUILD = 'v2.5.7-accurate-sharing';
       if (localStorage.getItem('liga_build_ver') !== CURRENT_BUILD) {
         localStorage.setItem('liga_build_ver', CURRENT_BUILD);
         if ('caches' in window) {
@@ -41,27 +41,27 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico">
   <link rel="apple-touch-icon" href="./icons/logo.svg">
 
-  <!-- Open Graph / Telegram / WhatsApp / iMessage Preview Card (v2.5.6) -->
+  <!-- Open Graph / Telegram / WhatsApp / iMessage Preview Card (v2.5.7) -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LIGA OS">
   <meta property="og:title" content="LIGA OS — Операционная Система Инженерного Мастера">
   <meta property="og:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики и герметичности, голосовой учёт без рук.">
   <meta property="og:url" content="https://liga-master-uz.vercel.app/">
-  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.6">
-  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.6">
+  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.7">
+  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.7">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1376">
   <meta property="og:image:height" content="768">
-  <meta property="og:image:alt" content="LIGA OS — Операционная Система Инженерного Мастера">
-  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.6">
-  <meta itemprop="image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.6">
+  <meta property="og:image:alt" content="LIGA OS — система управления инженерными проектами мастера">
+  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.7">
+  <meta itemprop="image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.7">
   <meta property="og:locale" content="ru_RU">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="LIGA OS — Операционная Система Инженерного Мастера">
   <meta name="twitter:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики, голосовой учёт без рук.">
-  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.6">
+  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.7">
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики, голосовой ввод без рук.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.6 -->
@@ -83,7 +83,7 @@
           </div>
         </div>
         <div class="header-main-actions">
-          <button id="btn-video-tour-open" class="btn-video-tour-header" title="Инженерный гид и подсказки мастера" type="button" onclick="window.app.openSystemGuideModal()">
+          <button id="btn-video-tour-open" class="btn-video-tour-header" title="Инженерный гид и подсказки мастера" aria-label="Инженерный гид и подсказки мастера" type="button" onclick="window.app.openSystemGuideModal()">
             <span class="btn-video-icon">🎬</span>
             <span class="btn-video-label">ГИД</span>
           </button>
@@ -140,7 +140,7 @@
           <button class="btn-close-modal" id="btn-close-more-menu" title="Закрыть меню" style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border-subtle); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text-main); cursor:pointer;">✕</button>
         </div>
         <p style="font-size:11.5px; color:var(--text-muted); margin-bottom:14px; line-height:1.35;">
-          Единый центр управления: 5 инженерных калькуляторов, контроль опрессовки 16 бар, скрипты диалогов и настройки системы мастера.
+          Единый центр управления: 5 инженерных калькуляторов, протокол испытаний по параметрам объекта, скрипты диалогов и настройки мастера.
         </p>
 
         <!-- КНОПКА VIP-БРИФА ДЛЯ УЛУГБЕКА В МЕНЮ -->
@@ -151,7 +151,7 @@
           <div class="video-tour-content">
             <div class="video-tour-tag">ЭКСКЛЮЗИВ • УЛУГБЕК ХАКИМОВ</div>
             <div class="video-tour-heading">Паспорт тест-драйва мастера</div>
-            <div class="video-tour-subtext">5 боевых контрольных узлов: 16 бар, офлайн, печать VIP, Паспорт А4, Client View</div>
+            <div class="video-tour-subtext">Работа с объектами, фактические испытания, офлайн-база, паспорт и режим показа клиенту</div>
           </div>
           <div class="video-tour-cta-btn" style="background:var(--gold-gradient); color:#000;">Бриф →</div>
         </div>
@@ -164,7 +164,7 @@
           <div class="video-tour-content">
             <div class="video-tour-tag">LIGA MASTER CLASS • 4K ИНТЕРАКТИВ</div>
             <div class="video-tour-heading">Интерактивный Видеогид & VIP-Шоурум</div>
-            <div class="video-tour-subtext">5 живых видеоуроков: Световой маяк, Смета за 15 сек, Базар Джами, 16 бар + VIP-презентация для заказчика</div>
+            <div class="video-tour-subtext">Практический обзор: навигация, смета, снабжение, протокол испытания и показ клиенту</div>
           </div>
           <div class="video-tour-cta-btn">Смотреть</div>
         </div>
@@ -378,7 +378,7 @@
       </div>
 
       <!-- ====================================================================
-           СИТУАЦИЯ 1: НА ОБЪЕКТЕ (ГЛАВНЫЙ ФОКУС: ФАКТ И 16 БАР)
+           СИТУАЦИЯ 1: НА ОБЪЕКТЕ (ГЛАВНЫЙ ФОКУС: ФАКТИЧЕСКИЕ ДАННЫЕ)
            ==================================================================== -->
       <div id="situation-view-on-site" class="situation-view">
 
@@ -428,7 +428,7 @@
             <div class="vip-badge-tag">👑 ЭКСКЛЮЗИВНЫЙ ИНЖЕНЕРНЫЙ ТЕСТ-ДРАЙВ</div>
             <div id="vip-badge-priority" class="vip-badge-first-priority" style="display:none;">⚡ ИЗУЧИТЕ В ПЕРВУЮ ОЧЕРЕДЬ!</div>
           </div>
-          <span class="vip-shield-icon">🛡️ 16 BAR</span>
+          <span class="vip-shield-icon">🛡️ ИНЖЕНЕРНЫЙ ПРОТОКОЛ</span>
         </div>
         <div class="vip-content-row">
           <div class="vip-text-block">
@@ -463,8 +463,8 @@
           <section class="glass-card" id="dashboard-site-card">
             <div class="card-header-flex">
               <div class="card-label">🏢 Текущий объект</div>
-              <div id="site-status-badge" class="site-badge-status clickable-drilldown" onclick="window.app.drillDownToPressure()" title="Нажмите, чтобы открыть Акт и таймер опрессовки 16 бар">
-                3. Опрессовка 16 бар ›
+              <div id="site-status-badge" class="site-badge-status clickable-drilldown" onclick="window.app.drillDownToPressure()" title="Нажмите, чтобы открыть протокол испытаний объекта">
+                3. Испытание давлением ›
               </div>
             </div>
 
@@ -497,7 +497,7 @@
           </div>
           <div class="phase-step active" data-phase="3">
             <div class="phase-dot">3</div>
-            <div class="phase-name">16 бар</div>
+            <div class="phase-name">Испытание</div>
           </div>
           <div class="phase-step" data-phase="4">
             <div class="phase-dot">4</div>
@@ -646,7 +646,7 @@
 
         <!-- Представительский блок доверия для заказчика -->
         <div class="client-view-placeholder client-view-trust-badge">
-          🛡️ Премиальный инженерный монтаж • Двойная опрессовка 16 бар • Официальный договор
+          🛡️ Премиальный инженерный монтаж • Испытания по параметрам объекта • Официальный договор
         </div>
       </section>
 
@@ -662,7 +662,7 @@
         <div id="tile-quick-press" class="btn-action-tile">
           <div class="tile-icon-box" style="color:var(--neon-cyan);">🛡️</div>
           <div class="tile-content">
-            <div class="tile-title">Акт 16 бар</div>
+        <div class="tile-title">Протокол испытания</div>
             <div class="tile-subtitle">Опрессовка узла</div>
           </div>
         </div>
@@ -687,7 +687,7 @@
         <span>🖨️</span> Печать / Экспорт в PDF (Паспорт объекта)
       </button>
       <button id="btn-generate-act" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);">
-        <span>📜</span> Официальный Акт испытания 16 бар / 24ч
+        <span>📜</span> Протокол испытания и фактических замеров
       </button>
       <button id="btn-share-telegram" class="btn-flagship-gold" style="margin-top:8px; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border:none; color:#ffffff; box-shadow:0 4px 14px rgba(2,132,199,0.35);">
         <span>✈️</span> Отправить отчет заказчику в Telegram
@@ -762,7 +762,7 @@
           <div class="ahead-status-box">
             <div class="ahead-status-row">
               <span>Текущий статус объекта:</span>
-              <strong style="color:var(--neon-cyan);">Этап 3 (Опрессовка 16 бар)</strong>
+          <strong style="color:var(--neon-cyan);">Этап 3 (Испытание давлением)</strong>
             </div>
             <div class="ahead-status-row">
               <span>Относится к этапу:</span>
@@ -775,7 +775,7 @@
           </div>
 
           <p style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-bottom:14px;">
-            Никаких предупреждений об ошибке. Объект продолжает стоять на опрессовке 16 бар, а факт уже сохранён в истории.
+            Статус отображается по фактической записи испытания объекта и сохранённым материалам.
           </p>
 
           <button type="button" class="btn-big-action-emerald" onclick="window.app.openQuickFactModal()">
@@ -1064,7 +1064,7 @@
           <div class="screen-hero-icon-box">🛡️</div>
           <div class="screen-hero-text">
             <span class="screen-hero-eyebrow">РАЗДЕЛ СИСТЕМЫ</span>
-            <h1 class="screen-hero-title">ТЕХНАДЗОР И 16 БАР</h1>
+      <h1 class="screen-hero-title">ТЕХНАДЗОР И ИСПЫТАНИЯ</h1>
           </div>
         </div>
         <button type="button" onclick="window.app.switchScreen('dashboard')" class="btn-screen-back btn-screen-close btn-screen-back-hero" title="Вернуться к объектам">
@@ -1102,7 +1102,7 @@
           <span>🛡️</span> Отправить Акт готовности к стяжке в Telegram
         </button>
         <button id="btn-act-screed-print" onclick="window.app.generatePressureAct()" class="btn-flagship-gold" style="height:52px; font-size:13px; margin-top:10px; margin-bottom:0; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary);">
-          <span>📜</span> Официальный Акт опрессовки 16 бар (Печать / PDF)
+        <span>📜</span> Протокол испытаний (Печать / PDF)
         </button>
       </div>
     </section>
@@ -1552,7 +1552,7 @@
     </div>
 
     <!-- ====================================================================
-         МОДАЛЬНОЕ ОКНО 2.5: СТРУКТУРИРОВАННЫЙ ПРОТОКОЛ ОПРЕССОВКИ 16 БАР (P0-2)
+         МОДАЛЬНОЕ ОКНО 2.5: ПРОТОКОЛ ИСПЫТАНИЙ ДАВЛЕНИЕМ (P0-2)
          ==================================================================== -->
     <div id="modal-pressure-test" class="modal-overlay">
       <div class="modal-sheet" style="max-height:88vh; overflow-y:auto;">
@@ -1564,26 +1564,26 @@
           <button onclick="window.app.closeModal('modal-pressure-test')" class="btn-close-modal">&times;</button>
         </div>
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
-          Выберите инженерный стандарт под задачу и бюджет объекта или укажите свои фактические параметры. Система рассчитает коэффициент запаса надежности для условий Ташкента и сформирует официальный Акт.
+          Внесите параметры испытания, согласованные для данного объекта. Акт отразит введенные фактические значения.
         </p>
 
         <!-- 1. Быстрые пресеты уровня опрессовки -->
         <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-md); padding:10px; margin-bottom:12px;">
           <label style="font-size:10.5px; font-weight:800; color:var(--gold-primary); text-transform:uppercase; display:block; margin-bottom:6px;">
-            Инженерные стандарты опрессовки (Ташкент / Мировые нормы):
+            Быстрый выбор давления — проверьте применимость по проекту:
           </label>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
-            <button type="button" id="btn-pt-preset-16" class="btn-preset-est btn-preset-bar" data-bar="16" onclick="window.app.applyPressurePreset(16.0, 24, 'Швейцарский эталон (DIN 1988)')" style="padding:6px 8px; font-size:10.5px; text-align:left; border-color:var(--gold-primary);">
-              ⭐ <b>16.0 бар</b> (Эталон LIGA OS • 4.6x)
+            <button type="button" id="btn-pt-preset-16" class="btn-preset-est btn-preset-bar" data-bar="16" onclick="window.app.applyPressurePreset(16.0, 24, 'Значение мастера для данного объекта')" style="padding:6px 8px; font-size:10.5px; text-align:left; border-color:var(--gold-primary);">
+              ⭐ <b>16.0 бар</b> (вариант ввода)
             </button>
-            <button type="button" id="btn-pt-preset-10" class="btn-preset-est btn-preset-bar" data-bar="10" onclick="window.app.applyPressurePreset(10.0, 24, 'Стандарт Rehau (DIN 1988-2)')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
-              🛡️ <b>10.0 бар</b> (Стандарт Rehau • 2.9x)
+            <button type="button" id="btn-pt-preset-10" class="btn-preset-est btn-preset-bar" data-bar="10" onclick="window.app.applyPressurePreset(10.0, 24, 'Значение мастера для данного объекта')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
+              🛡️ <b>10.0 бар</b> (вариант ввода)
             </button>
-            <button type="button" id="btn-pt-preset-6" class="btn-preset-est btn-preset-bar" data-bar="6" onclick="window.app.applyPressurePreset(6.0, 24, 'Стандарт СНиП 3.05.01-85')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
-              📐 <b>6.0 бар</b> (СНиП 3.05.01 • 1.7x)
+            <button type="button" id="btn-pt-preset-6" class="btn-preset-est btn-preset-bar" data-bar="6" onclick="window.app.applyPressurePreset(6.0, 24, 'Значение мастера для данного объекта')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
+              📐 <b>6.0 бар</b> (вариант ввода)
             </button>
-            <button type="button" id="btn-pt-preset-4" class="btn-preset-est btn-preset-bar" data-bar="4" onclick="window.app.applyPressurePreset(4.0, 4, 'Рабочее давление сети Ташкента')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
-              💧 <b>4.0 бара</b> (Сеть Ташкента • 1.15x)
+            <button type="button" id="btn-pt-preset-4" class="btn-preset-est btn-preset-bar" data-bar="4" onclick="window.app.applyPressurePreset(4.0, 4, 'Значение мастера для данного объекта')" style="padding:6px 8px; font-size:10.5px; text-align:left;">
+              💧 <b>4.0 бара</b> (вариант ввода)
             </button>
           </div>
         </div>
@@ -1621,7 +1621,7 @@
               <span id="pt-custom-hint" style="font-size:10px; color:var(--neon-emerald); font-weight:700;">Свои мерки мастера</span>
             </div>
             <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
-              <input id="pt-pressure-bar" type="number" step="0.1" min="1.5" max="40" class="form-input" placeholder="16.0" value="16.0" required
+              <input id="pt-pressure-bar" type="number" step="0.1" min="1.5" max="40" class="form-input" placeholder="Фактическое значение" required
                 oninput="window.app.onPressureBarInput(this.value)">
               <span style="font-size:13px; font-weight:800; color:var(--text-muted);">бар</span>
             </div>
@@ -1631,14 +1631,14 @@
           <div id="pt-safety-analysis" style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:10px; margin-bottom:12px; font-size:11px; line-height:1.4;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <span style="font-size:10px; font-weight:800; color:var(--gold-primary); text-transform:uppercase;">Анализ надежности для условий Ташкента:</span>
-              <span id="pt-badge-factor" style="font-size:11px; font-weight:900; color:var(--neon-emerald); background:rgba(16,185,129,0.12); padding:2px 6px; border-radius:4px;">Запас 4.6x (460%)</span>
+              <span id="pt-badge-factor" style="font-size:11px; font-weight:900; color:var(--neon-emerald); background:rgba(16,185,129,0.12); padding:2px 6px; border-radius:4px;">Введите измерение</span>
             </div>
             <div id="pt-badge-desc" style="color:var(--text-main); font-weight:600; margin-bottom:4px;">
-              Швейцарский эталон: 4-кратный запас прочности. Абсолютная защита от любых аварий и гидроударов до 16 бар.
+              Выберите параметры, которые мастер фактически применил на этом объекте.
             </div>
             <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.06); padding-top:4px; font-size:10px; color:var(--text-muted); flex-wrap:wrap; gap:4px;">
-              <span>Оборудование: <b id="pt-badge-equip" style="color:var(--text-main);">Гидропресс Rothenberger (до 60 бар)</b></span>
-              <span>Гарантия: <b id="pt-badge-warranty" style="color:var(--gold-primary);">10 лет</b></span>
+              <span>Оборудование: <b id="pt-badge-equip" style="color:var(--text-main);">Не выбрано</b></span>
+              <span>Гарантия: <b id="pt-badge-warranty" style="color:var(--gold-primary);">Не рассчитывается</b></span>
             </div>
           </div>
 
@@ -1660,7 +1660,7 @@
                 ⚡ Автошаблон
               </button>
             </div>
-            <textarea id="pt-notes" class="form-input" rows="3" placeholder="Напр: Давление выдержано без падения. Соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки." required style="resize:vertical; min-height:60px; font-family:inherit;"></textarea>
+            <textarea id="pt-notes" class="form-input" rows="3" placeholder="Заполните фактический результат, изменение показаний, замечания и заключение мастера." required style="resize:vertical; min-height:60px; font-family:inherit;"></textarea>
           </div>
 
           <div style="display:flex; gap:10px; margin-top:16px;">
@@ -1699,10 +1699,10 @@
           </label>
         </div>
 
-        <!-- Слот 2: Манометр 16 BAR -->
+        <!-- Слот 2: Фото манометра -->
         <div class="item-row" style="padding:10px;">
           <div class="item-left">
-            <div class="item-name">2. Манометр 16 BAR</div>
+            <div class="item-name">2. Фото манометра</div>
             <div class="item-desc" id="status-photo-pressure">Не загружено</div>
           </div>
           <label class="btn-contact" style="height:34px; padding:2px 10px; cursor:pointer; color:var(--neon-cyan); border-color:var(--neon-cyan-border);">
@@ -1739,7 +1739,7 @@
           📄 Сформировать готовый PDF-паспорт
         </button>
         <button onclick="window.app.generatePressureAct()" class="btn-act-modal" style="width:100%; height:46px; border-radius:12px; font-weight:800; font-size:13px; cursor:pointer; margin-top:8px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border:1.5px solid var(--gold-primary); color:var(--gold-primary); display:flex; align-items:center; justify-content:center; gap:8px;">
-          <span>📜</span> Сформировать Официальный Акт 16 бар (А4)
+          <span>📜</span> Сформировать официальный акт испытаний (А4)
         </button>
       </div>
     </div>
@@ -1876,6 +1876,9 @@
           <div style="font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.4; padding:6px 10px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.18); border-radius:8px;">
             🌐 <b>Авто-режим на торпеде:</b> телефон на держателе держит экран включенным (WakeLock). Скажите: <i>«Прочитай смету»</i> или <i>«Сколько в кассе»</i> — система озвучит цифры прямо в динамик авто или Bluetooth-наушник.
           </div>
+          <div style="font-size:11px; line-height:1.4; margin-top:7px; padding:7px 10px; border-radius:8px; color:var(--text-muted); background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.22);">
+            ℹ️ Распознавание речи зависит от браузера и подключения к интернету. Без сети можно ввести текст вручную или воспользоваться офлайн-шаблонами ниже.
+          </div>
         </div>
 
         <!-- БЫСТРЫЕ ШАБЛОНЫ ДЛЯ ПОДВАЛА / ШУМА (100% ОФФЛАЙН В 1 ТАП) -->
@@ -1893,8 +1896,8 @@
               <div class="tmpl-title" style="color:var(--neon-emerald);">👥 Аванс помощнику</div>
               <div class="tmpl-desc">Алишеру: 400 тыс сум</div>
             </button>
-            <button type="button" id="btn-tmpl-press" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Опрессовка 16 бар 24 часа завершена')">
-              <div class="tmpl-title" style="color:var(--neon-cyan);">🛡️ Опрессовка 16 бар</div>
+            <button type="button" id="btn-tmpl-press" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Испытание давлением завершено')">
+              <div class="tmpl-title" style="color:var(--neon-cyan);">🛡️ Испытание давлением</div>
               <div class="tmpl-desc">Протокол испытания</div>
             </button>
             <button type="button" id="btn-tmpl-advance" class="btn-voice-template" onclick="window.app.applyVoiceTemplate('Получил аванс от заказчика 5000000 сум')">
@@ -2077,7 +2080,7 @@
         <div class="form-group" style="margin-bottom:12px;">
           <label style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Принимаемый этап монтажа:</label>
           <select id="stage-select-preset" class="form-control" onchange="window.app.updateStageLinkPreview()" style="margin-top:4px;">
-            <option value="1">Этап 1: Черновой монтаж трасс под стяжку + опрессовка 16 бар</option>
+            <option value="1">Этап 1: Черновой монтаж трасс под стяжку</option>
             <option value="2">Этап 2: Монтаж коллекторных узлов FAR и котельного оборудования</option>
             <option value="3">Этап 3: Чистовая установка санфаянса, инсталляций и смесителей</option>
           </select>
@@ -2094,7 +2097,7 @@
           </div>
           <div style="display:flex; justify-content:space-between;">
             <span style="font-size:11px; color:var(--text-muted); font-weight:700;">Статус опрессовки:</span>
-            <span id="stage-link-pressure-status" style="font-size:12px; font-weight:800; color:var(--neon-emerald);">16.0 бар (24ч выдержано)</span>
+            <span id="stage-link-pressure-status" style="font-size:12px; font-weight:800; color:var(--text-muted);">Испытание не зафиксировано</span>
           </div>
         </div>
 
@@ -2140,14 +2143,14 @@
           <div id="verify-stage-client-name" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Заказчик: Самир</div>
           <div style="padding:8px 10px; background:rgba(0,168,107,0.08); border:1px solid rgba(0,168,107,0.3); border-radius:6px; margin-bottom:8px;">
             <div style="font-size:10px; font-weight:800; color:var(--neon-emerald); text-transform:uppercase;">Принимаемый этап:</div>
-            <div id="verify-stage-title" style="font-size:13px; font-weight:900; color:var(--text-main); margin-top:2px;">Черновой монтаж трасс под стяжку + опрессовка 16 бар</div>
+            <div id="verify-stage-title" style="font-size:13px; font-weight:900; color:var(--text-main); margin-top:2px;">Черновой монтаж трасс под стяжку</div>
           </div>
 
           <!-- Инженерный стандарт 16 бар -->
           <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border-subtle); padding-bottom:4px;">
               <span style="color:var(--text-muted);">🛡️ Гидравлические испытания:</span>
-              <span id="verify-stage-pressure-status" style="font-weight:900; color:var(--neon-emerald);">16.0 БАР / 24 ЧАСА (Пройдено)</span>
+              <span id="verify-stage-pressure-status" style="font-weight:900; color:var(--text-muted);">Испытание не зафиксировано</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--glass-border-subtle); padding-bottom:4px;">
               <span style="color:var(--text-muted);">📐 Точность водорозеток:</span>
@@ -3555,7 +3558,7 @@
         </div>
 
         <div style="font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.4;">
-          Экспресс-анализ финансовых показателей и инженерных рисков объекта по правилам Лиги Мастеров (DIN 1988, СП 30.13330, гидроиспытания 16 бар). Работает 100% автономно офлайн.
+          Экспресс-анализ финансовых показателей и инженерных рисков по локальным правилам. Сетевые функции AI-консьержа требуют подключения к интернету.
         </div>
 
         <div id="ai-audit-loading" style="display:none; text-align:center; padding:24px 0;">
@@ -3572,7 +3575,7 @@
 
           <div style="background:var(--box-bg); border:1px solid var(--glass-border-subtle); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px;">
             <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">2. Инженерные риски в Ташкенте:</div>
-            <div id="ai-risks-val" style="font-size:13px; font-weight:700; color:var(--text-main); margin:4px 0;">✓ Опрессовка 16 бар пройдена, гидроудар исключен.</div>
+            <div id="ai-risks-val" style="font-size:13px; font-weight:700; color:var(--text-main); margin:4px 0;">Результат испытания не зафиксирован. Проверьте фактические параметры объекта.</div>
             <div id="ai-risks-desc" style="font-size:11px; color:var(--gold-primary); font-weight:600;">Рекомендация: проверить сухой затвор в душевом трапе перед заливкой стяжки.</div>
           </div>
 
@@ -3682,7 +3685,7 @@
             <select id="event-type" class="form-input">
               <option value="audit">📐 Инженерный аудит / Проект</option>
               <option value="rough">🔧 Черновой монтаж (Rehau / FAR)</option>
-              <option value="pressure">🛡️ Опрессовка 16 бар (Гидротест)</option>
+              <option value="pressure">🛡️ Испытание давлением</option>
               <option value="screed">🏗️ Стяжка / Допуск под отделку</option>
               <option value="trim">✨ Чистовая сантехника</option>
               <option value="service">🛠️ Сервисный выезд / Перепланировка</option>
@@ -3787,7 +3790,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Особенности монтажа / примечания:</label>
-            <input id="eq-notes" type="text" class="form-input" placeholder="Напр: Опрессован на 16 бар, гарантийный талон у заказчика">
+            <input id="eq-notes" type="text" class="form-input" placeholder="Например: испытание по параметрам объекта, гарантийный талон у заказчика">
           </div>
           <button type="submit" class="btn-submit-modal" style="background:var(--neon-emerald); color:#000;">Сохранить паспорт узла</button>
         </form>
@@ -3926,7 +3929,7 @@
             <button type="button" class="quick-fact-tag-btn" data-work="Монтаж узла ввода и коллектора">Узел ввода</button>
             <button type="button" class="quick-fact-tag-btn" data-work="Установка инсталляции сантехники">Инсталляция</button>
             <button type="button" class="quick-fact-tag-btn" data-work="Монтаж смесителя скрытого монтажа">Смеситель</button>
-            <button type="button" class="quick-fact-tag-btn" data-work="Испытание давлением 16 бар">16 бар манометр</button>
+            <button type="button" class="quick-fact-tag-btn" data-work="Испытание давлением">Испытание давлением</button>
           </div>
           <input type="text" id="input-quick-fact-title" class="form-input" value="Трасса труб до заливки стяжки" style="height:32px; font-size:12px;" placeholder="Описание работы">
         </div>
@@ -3937,7 +3940,7 @@
             <input type="checkbox" id="check-quick-fact-early" style="width:16px; height:16px; accent-color:var(--gold-primary);">
             <div>
               <span style="font-weight:700; color:var(--text-main);">Выполнено заранее (чистовой монтаж)</span>
-              <div style="font-size:10px; color:var(--text-dim);">Зачесть работу в Этап 4 без нарушения и прерывания опрессовки 16 бар</div>
+              <div style="font-size:10px; color:var(--text-dim);">Зачесть работу в этапе 4 без нарушения зафиксированного протокола испытаний</div>
             </div>
           </label>
         </div>
@@ -4107,7 +4110,7 @@
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
                 <div class="settings-toggle-label">⚡ Быстрые действия (4 плитки)</div>
-                <div class="settings-toggle-desc">Чек с базара, Акт 16 бар, Фото, Стяжка</div>
+                <div class="settings-toggle-desc">Чек с базара, акт испытаний, фото, стяжка</div>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="toggle-block-quickactions" checked>
@@ -4212,11 +4215,11 @@
           <!-- Секция: Гербовая печать и цифровая подпись мастера (v2.4.5) -->
           <div class="settings-section" id="settings-section-seal">
             <div class="settings-section-title" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>🏛️ Гербовая печать и цифровая подпись (ЭЦП)</span>
-              <span class="seal-standard-badge" style="font-size:10px; font-weight:800; background:rgba(212,175,55,0.15); color:var(--gold-primary); border:1px solid rgba(212,175,55,0.35); padding:2px 8px; border-radius:6px;">16 BAR CERTIFIED</span>
+              <span>🏛️ Гербовая печать и подпись мастера</span>
+        <span class="seal-standard-badge" style="font-size:10px; font-weight:800; background:rgba(212,175,55,0.15); color:var(--gold-primary); border:1px solid rgba(212,175,55,0.35); padding:2px 8px; border-radius:6px;">LIGA OS • ИНЖЕНЕРНЫЙ ПРОТОКОЛ</span>
             </div>
             <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px; line-height:1.4;">
-              Персональный швейцарский гербовый оттиск и каллиграфическая подпись для автоматического заверения Актов опрессовки 16 бар, Инженерных Паспортов и отчетов в Telegram.
+              Персональный гербовый оттиск и подпись мастера для оформления актов, инженерных паспортов и отчетов в Telegram.
             </div>
 
             <div class="seal-form-group" style="display:flex; flex-direction:column; gap:10px;">
@@ -4344,7 +4347,7 @@
               <div class="ai-msg-avatar">🛡️</div>
               <div class="ai-msg-bubble">
                 Здравствуйте! Я <b>LIGA AI</b> — ваш инженерный консьерж.<br><br>
-                Помогу с нормами СНиП, формулами опрессовки 16 бар, материалами Rehau/FAR и диалогами с дизайнерами.<br><br>
+                Помогу с инженерными расчетами, протоколами по данным объекта, материалами Rehau/FAR и диалогами с дизайнерами.<br><br>
                 Задавайте вопрос голосом или текстом!
               </div>
             </div>
@@ -4423,7 +4426,7 @@
 
         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
           <!-- Вариант 1: Полноценное MP4 видео с диктором и показом интерфейса -->
-          <div class="clickable-drilldown" id="btn-guide-choice-mp4-video" onclick="window.app.closeModal('modal-system-guide'); window.app.openVideoTour();" style="background:rgba(212,175,55,0.15); border:1.8px solid var(--gold-primary); border-radius:12px; padding:12px; box-shadow:0 4px 18px rgba(212,175,55,0.25);">
+          <div class="clickable-drilldown" id="btn-guide-choice-video" role="button" tabindex="0" aria-label="Смотреть видеогид LIGA OS" onclick="window.app.closeModal('modal-system-guide'); window.app.openVideoTour();" style="background:rgba(212,175,55,0.15); border:1.8px solid var(--gold-primary); border-radius:12px; padding:12px; box-shadow:0 4px 18px rgba(212,175,55,0.25);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
               <div style="font-weight:900; font-size:13.5px; color:var(--gold-primary); display:flex; align-items:center; gap:6px;">
                 <span>▶️</span> 1. Смотреть полноценный видеогид (MP4, 1.5 мин)
@@ -4431,7 +4434,7 @@
               <span class="badge badge-gold" style="font-size:9px;">Новое • Видео</span>
             </div>
             <div style="font-size:11.5px; color:#f1f5f9; line-height:1.4;">
-              Настоящая видеозапись интерфейса со студийной русской озвучкой диктором: дашборд, опрессовка 16 бар, печать и подпись.
+              Видеозапись интерфейса: дашборд, внесение результатов испытаний, печать и подпись.
             </div>
           </div>
 
@@ -4559,7 +4562,7 @@
         <div class="vip-letter-card">
           <div class="vip-letter-greeting">Уважаемый Улугбек!</div>
           <p class="vip-letter-text">
-            Эта операционная система спроектирована специально под Ваши бескомпромиссные стандарты сантехники и отопления в Ташкенте. Никаких «записок на коленке» и споров с отделочниками — только чистая инженерная прозрачность, железный стандарт 16 бар и полная юридическая защита Вашего авторитета.
+            Эта операционная система спроектирована для профессионального контроля сантехнических и отопительных систем в Ташкенте. Она помогает вести фактические протоколы по каждому объекту, сохранять фотофиксацию и готовить понятные документы.
           </p>
           <div class="vip-letter-quote">
             «Система создана, чтобы защитить Ваш доход, подчеркнуть статус ведущего мастера и дать заказчику уровень сервиса швейцарского банка.»
@@ -4588,17 +4591,17 @@
             </div>
           </div>
 
-          <!-- Шаг 2: Гидравлика 16 бар -->
+          <!-- Шаг 2: Фактические гидравлические испытания -->
           <div class="vip-step-card">
             <div class="vip-step-num">02</div>
             <div class="vip-step-content">
-              <div class="vip-step-title">Гидравлические испытания 16 БАР / 24ч</div>
+              <div class="vip-step-title">Гидравлические испытания по параметрам объекта</div>
               <div class="vip-step-desc">
-                В 4 раза строже строительных СНиП. Автоматический таймер суточной выдержки и строгий контроль допуска падения давления (не более 0.2 бар). Гарантия абсолютного спокойствия до заливки чистовой стяжки.
+                Укажите согласованные давление и длительность, внесите фактические замеры и приложите фото манометра. Система подготовит протокол по данным этого объекта.
               </div>
               <div class="vip-step-action-row">
                 <button type="button" class="btn-step-test btn-gold-step" onclick="window.app.testDriveStep2_Pressure()">
-                  <span>⏱️</span> Открыть испытание 16 БАР →
+                  <span>⏱️</span> Открыть протокол испытаний →
                 </button>
               </div>
             </div>
@@ -4671,9 +4674,9 @@
   <!-- Скрипты LIGA OS (Версия 2.5.3: Silent Swiss Intelligence, Direct Site Switching) -->
   <script src="./js/image_processor.js?v=2.5.3"></script>
   <script src="./js/db.js?v=2.5.3"></script>
-  <script src="./js/seal_engine.js?v=2.5.3"></script>
-  <script src="./js/pdf_engine.js?v=2.5.3"></script>
-  <script src="./js/ai_concierge.js?v=2.5.3"></script>
-  <script src="./js/app.js?v=2.5.3"></script>
+  <script src="./js/seal_engine.js?v=2.5.7"></script>
+  <script src="./js/pdf_engine.js?v=2.5.7"></script>
+  <script src="./js/ai_concierge.js?v=2.5.7"></script>
+  <script src="./js/app.js?v=2.5.7"></script>
 </body>
 </html>

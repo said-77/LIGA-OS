@@ -122,8 +122,8 @@ def test_master_real_lifecycle_simulation_full(http_server):
         assert gate_modal.is_visible(), "Карта допуска Quality Gate обязана заблокировать преждевременный перевод"
 
         # Кликаем на кнопку перехода к заполнению протокола 16 бар
-        btn_action_pt = page.locator(".btn-gate-action:has-text('16 бар')")
-        assert btn_action_pt.is_visible(), "Кнопка перехода к протоколу 16 бар должна быть доступна"
+        btn_action_pt = page.locator(".btn-gate-action:has-text('Заполнить протокол')")
+        assert btn_action_pt.is_visible(), "Кнопка перехода к заполнению фактического протокола испытаний должна быть доступна"
         btn_action_pt.click()
         page.wait_for_timeout(500)
 
@@ -136,15 +136,20 @@ def test_master_real_lifecycle_simulation_full(http_server):
             window.app.currentPhotos = window.app.currentPhotos || {};
             window.app.currentPhotos.pressure = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
             document.getElementById('pt-pressure-bar').value = '16.0';
-            document.getElementById('pt-notes').value = 'Давление 16.0 бар выдержано 24 часа без падения. Соединения Rehau и коллектор FAR герметичны.';
+            document.getElementById('pt-start-date').value = '2026-09-30';
+            document.getElementById('pt-start-time').value = '08:00';
+            document.getElementById('pt-end-date').value = '2026-09-30';
+            document.getElementById('pt-end-time').value = '16:00';
+            document.getElementById('pt-notes').value = 'Начальное показание 16.0 бар, конечное показание 16.0 бар. При осмотре соединений следов влаги не выявлено.';
+            window.app.onPressureBarInput('16.0');
         """)
 
         # Сохраняем протокол опрессовки
         page.locator("#form-pressure-test button[type='submit']").click()
         page.wait_for_timeout(600)
 
-        # Проверяем, что статус стал «3. Опрессовка 16 бар»
-        assert "16 бар" in page.locator("#site-status-badge").inner_text()
+        # Статус этапа описывает испытание давлением без универсального значения.
+        assert "испытание давлением" in page.locator("#site-status-badge").inner_text().lower()
 
         # 8. Проверка следующего шага: теперь система советует закрыть чек-лист перед стяжкой!
         next_step_text = page.locator("#next-action-title").inner_text()

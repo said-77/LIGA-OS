@@ -1390,7 +1390,7 @@ class LigaApp {
             }
             this.updatePhotoBadges();
             this.render();
-            this.showToast('✓ Фото манометра 16 бар прикреплено!');
+            this.showToast('✓ Фото манометра прикреплено к испытанию!');
           } catch (err) {
             console.error('Ошибка сжатия фото манометра:', err);
             alert('Не удалось обработать фото: ' + err.message);
@@ -1460,7 +1460,7 @@ class LigaApp {
       { title: 'Уклоны канализации выверены по лазеру (2 см на метр)', done: false },
       { title: 'Выводы заглушены металлическими опрессовочными пробками', done: false },
       { title: 'Шумоизоляция стояка выполнена (Comfort Mat / K-Fonik)', done: false },
-      { title: 'Опрессовка 16 бар выдержана 24 часа без падения давления', done: false },
+      { title: 'Испытание выполнено по параметрам объекта, результат зафиксирован', done: false },
       { title: 'Скрытые смесители (iBox) выставлены по уровню и глубине плитки', done: false },
       { title: 'Трап с сухим затвором зафиксирован по проектной отметке пола', done: false },
       { title: 'Защита от протечек (Gidrolock/Нептун) подключена и протестирована', done: false },
@@ -1559,7 +1559,7 @@ class LigaApp {
       dashboard: { icon: '🏢', name: 'ОБЪЕКТЫ', title: 'Объекты мастера' },
       finances: { icon: '💰', name: 'ФИНАНСЫ', title: 'Финансы и касса' },
       materials: { icon: '📦', name: 'СКЛАД', title: 'Склад и снабжение' },
-      checklist: { icon: '🛡️', name: 'КОНТРОЛЬ', title: 'Технадзор 16 бар' },
+      checklist: { icon: '🛡️', name: 'КОНТРОЛЬ', title: 'Технадзор и испытания' },
       estimate: { icon: '⚡', name: 'СМЕТА', title: 'Экспресс-смета' },
       history: { icon: '📜', name: 'ИСТОРИЯ', title: 'История объекта' }
     };
@@ -1632,7 +1632,7 @@ class LigaApp {
     const statusNames = [
       '1. Аудит проекта',
       '2. Черновой монтаж',
-      '3. Опрессовка 16 бар',
+      '3. Испытание давлением',
       '4. Чистовая сантехника',
       '5. Объект сдан'
     ];
@@ -1683,11 +1683,11 @@ class LigaApp {
         : Boolean(s.pressTestPassed && this.currentPhotos && this.currentPhotos.pressure);
 
       if (isVerified) {
-        const barVal = s.pressureTest ? parseFloat(s.pressureTest.pressureBar) || 16.0 : 16.0;
-        const barText = barVal >= 15.0 ? '16 бар' : `${barVal.toFixed(1)} бар`;
+        const barVal = Number(s.pressureTest && s.pressureTest.pressureBar);
+        const barText = Number.isFinite(barVal) && barVal > 0 ? `${barVal.toFixed(1)} бар` : 'давление не указано';
         passportStatusEl.innerHTML = `<span style="color:var(--neon-emerald);">🟢 Паспорт готов к сдаче (${barText} подтверждено)</span>`;
       } else {
-        passportStatusEl.innerHTML = '<span style="color:#d97706;">⚠️ Паспорт в режиме черновика (испытания 16 бар не подтверждены фотофиксацией)</span>';
+        passportStatusEl.innerHTML = '<span style="color:#d97706;">⚠️ Паспорт в режиме черновика: протокол испытаний или фото манометра не подтверждены</span>';
       }
     }
 
@@ -1720,7 +1720,8 @@ class LigaApp {
 
     const totalChecklist = checklists.length || 10;
     const doneChecklist = checklists.filter(i => i.done).length;
-    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && parseFloat(s.pressureTest.pressureBar) >= 16.0);
+    const recordedBar = Number(s.pressureTest && s.pressureTest.pressureBar);
+    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && Number.isFinite(recordedBar) && recordedBar > 0);
     const hasPressurePhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
     const hasManifoldPhoto = Boolean(this.currentPhotos && this.currentPhotos.manifold);
     const hasPipePhoto = Boolean(this.currentPhotos && (this.currentPhotos.wall || this.currentPhotos.floor));
@@ -1733,7 +1734,7 @@ class LigaApp {
     // Черновой монтаж и снабжение (до 25%)
     if (s.status >= 2) progressScore += 15;
     if (materials.length > 0) progressScore += 10;
-    // Гидравлические испытания 16 бар (до 30%)
+    // Гидравлические испытания по параметрам объекта (до 30%)
     if (hasPressureTest) progressScore += 15;
     if (hasPressurePhoto) progressScore += 15;
     // Скрытые трассы и чек-лист стяжки (до 20%)
@@ -1803,7 +1804,7 @@ class LigaApp {
       const phaseMap = {
         1: 'Объект в фазе аудита. Требуется согласование точек и сметы.',
         2: 'Черновой монтаж: штробление, разводка Rehau, монтаж FAR.',
-        3: 'Гидроиспытания: 24-часовая выдержка под давлением 16.0 бар.',
+        3: `Гидроиспытания: ${Number.isFinite(recordedBar) && recordedBar > 0 ? `${recordedBar.toFixed(1)} бар зафиксировано` : 'параметры объекта не зафиксированы'}.`,
         4: 'Чистовой этап: заливка стяжки разрешена, монтаж приборов.',
         5: 'Объект официально сдан. Активирована 10-летняя гарантия Лиги.'
       };
@@ -1840,9 +1841,9 @@ class LigaApp {
     } else if (!hasPressureTest || !hasPressurePhoto) {
       nextAction = {
         icon: '🛡️',
-        title: 'Провести гидроиспытания 16.0 бар (24 часа)',
-        desc: 'Зафиксируйте протокол опрессовки с фото манометра. Без этого заливка стяжки строго запрещена.',
-        btnText: 'Акт 16 бар →',
+        title: 'Зафиксировать гидравлические испытания',
+        desc: 'Внесите фактическое давление и приложите фото манометра. Следуйте параметрам, согласованным для этого объекта.',
+        btnText: 'Протокол испытаний →',
         action: () => this.openPressureTestModal()
       };
     } else if (doneChecklist < totalChecklist) {
@@ -1928,7 +1929,7 @@ class LigaApp {
     const typeBadges = {
       audit: { label: '📐 Аудит', color: 'var(--gold-primary)' },
       rough: { label: '🔧 Черновой', color: 'var(--neon-cyan)' },
-      pressure: { label: '🛡️ 16 бар', color: 'var(--neon-emerald)' },
+      pressure: { label: '🛡️ Испытание', color: 'var(--neon-emerald)' },
       screed: { label: '🏗️ Стяжка', color: '#f59e0b' },
       trim: { label: '✨ Чистовая', color: '#a855f7' },
       service: { label: '🛠️ Сервис', color: 'var(--text-muted)' },
@@ -1970,7 +1971,7 @@ class LigaApp {
       const statusNames = {
         1: '1. Аудит проекта',
         2: '2. Черновой монтаж',
-        3: '3. Опрессовка 16 бар',
+        3: '3. Испытание давлением',
         4: '4. Чистовая сантехника',
         5: '5. Объект сдан'
       };
@@ -2010,7 +2011,7 @@ class LigaApp {
     const stageNames = {
       1: '1. Аудит проекта',
       2: '2. Черновой монтаж',
-      3: '3. Опрессовка 16 бар',
+      3: '3. Испытание давлением',
       4: '4. Чистовая сантехника',
       5: '5. Объект сдан'
     };
@@ -2028,7 +2029,8 @@ class LigaApp {
     const totalChecklist = checklists.length || 10;
     const doneChecklist = checklists.filter(item => item.done).length;
 
-    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && (parseFloat(s.pressureTest.pressureBar) >= 16.0));
+    const recordedBar = Number(s.pressureTest && s.pressureTest.pressureBar);
+    const hasPressureTest = Boolean(s.pressureTest && s.pressureTest.passed && Number.isFinite(recordedBar) && recordedBar > 0);
     const hasPressurePhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
     const hasManifoldPhoto = Boolean(this.currentPhotos && this.currentPhotos.manifold);
     const hasPipePhoto = Boolean(this.currentPhotos && (this.currentPhotos.wall || this.currentPhotos.floor));
@@ -2065,23 +2067,23 @@ class LigaApp {
         action: () => this.switchScreen('estimate')
       });
     } else if (targetStage === 3) {
-      // Этап 3: Опрессовка 16 бар (Критический рубеж Лиги)
+      // Этап 3: гидроиспытания по параметрам конкретного объекта.
       criteria.push({
         id: 'pressure_protocol',
-        title: 'Протокол гидроиспытаний 16.0 бар (24 часа)',
+        title: 'Протокол гидравлических испытаний',
         desc: hasPressureTest
-          ? `Испытание проведено: ${s.pressureTest.pressureBar} бар (${s.pressureTest.startDate})`
-          : 'Требуется фиксация 24-часовой выдержки под давлением 16.0 бар',
+          ? `Испытание ${recordedBar.toFixed(1)} бар зафиксировано (${s.pressureTest.startDate || 'дата не указана'})`
+          : 'Зафиксируйте фактическое давление и результат испытания по параметрам объекта',
         passed: hasPressureTest,
-        actionText: 'Заполнить протокол 16 бар',
+        actionText: 'Заполнить протокол',
         action: () => this.openPressureTestModal()
       });
       criteria.push({
         id: 'pressure_gauge_photo',
-        title: 'Фотофиксация манометра под давлением 16 бар',
+        title: 'Фотофиксация показаний манометра',
         desc: hasPressurePhoto
           ? 'Фото манометра прикреплено к акту опрессовки'
-          : 'Обязательное фото шкалы манометра с отметкой 16 бар',
+          : 'Приложите фото шкалы фактического испытательного давления',
         passed: hasPressurePhoto,
         actionText: 'Прикрепить фото манометра',
         action: () => this.openPressureTestModal()
@@ -2098,12 +2100,12 @@ class LigaApp {
       // Этап 4: Чистовая сантехника (Допуск перед заливкой стяжки)
       criteria.push({
         id: 'pressure_verified',
-        title: 'Опрессовка 16.0 бар успешно сдана',
+        title: 'Гидравлические испытания подтверждены',
         desc: (hasPressureTest && hasPressurePhoto)
-          ? 'Гидроиспытания 16.0 бар подтверждены протоколом и фото'
-          : 'Опрессовка 16 бар не завершена или отсутствует фото манометра',
+          ? `Испытание ${recordedBar.toFixed(1)} бар подтверждено протоколом и фото`
+          : 'Протокол испытаний или фото манометра отсутствуют',
         passed: hasPressureTest && hasPressurePhoto,
-        actionText: 'Открыть протокол 16 бар',
+        actionText: 'Открыть протокол испытаний',
         action: () => this.openPressureTestModal()
       });
       criteria.push({
@@ -2130,10 +2132,10 @@ class LigaApp {
       // Этап 5: Объект сдан (10-летняя гарантия Лиги)
       criteria.push({
         id: 'full_pressure_proof',
-        title: 'Официальный протокол 16 бар с фото манометра',
-        desc: (hasPressureTest && hasPressurePhoto) ? 'Подтверждено' : 'Не подтверждено',
+        title: 'Официальный протокол испытания с фото манометра',
+        desc: (hasPressureTest && hasPressurePhoto) ? `Подтверждено: ${recordedBar.toFixed(1)} бар` : 'Не подтверждено',
         passed: hasPressureTest && hasPressurePhoto,
-        actionText: 'Протокол 16 бар',
+        actionText: 'Открыть протокол испытаний',
         action: () => this.openPressureTestModal()
       });
       criteria.push({
@@ -2160,7 +2162,7 @@ class LigaApp {
       criteria.push({
         id: 'passport_ready',
         title: 'Исполнительный Инженерный Паспорт готов',
-        desc: 'Сформирован документ с гарантией 10 лет и фото скрытых узлов',
+        desc: 'Паспорт по данным объекта; гарантийные условия указываются в договоре',
         passed: Boolean(hasPressureTest && hasPressurePhoto),
         actionText: 'Печать паспорта',
         action: () => this.printPassport()
@@ -2276,7 +2278,7 @@ class LigaApp {
     const statusNames = {
       1: '1. Аудит проекта',
       2: '2. Черновой монтаж',
-      3: '3. Опрессовка 16 бар',
+      3: '3. Испытание давлением',
       4: '4. Чистовая сантехника',
       5: '5. Объект сдан'
     };
@@ -2326,7 +2328,7 @@ class LigaApp {
     // 4. Интеллектуальные подсказки мастера
     if (status === 3 && (!this.currentSite.pressureTest || !this.currentSite.pressureTest.passed)) {
       setTimeout(() => {
-        if (confirm('🛡️ Этап «16 бар» активирован!\n\nЖелаете прямо сейчас заполнить официальный Протокол гидроиспытаний 16 бар с фиксацией манометра?')) {
+        if (confirm('🛡️ Этап испытаний активирован!\n\nЖелаете заполнить протокол с фактическими параметрами и фиксацией манометра?')) {
           this.openPressureTestModal();
         }
       }, 350);
@@ -2343,8 +2345,7 @@ class LigaApp {
   openPressureTestModal() {
     if (!this.currentSite) return;
     const pt = this.currentSite.pressureTest || {};
-    const today = new Date().toISOString().slice(0, 10);
-    const tomorrowDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    this.currentPressureMeta = null;
 
     const startDateEl = document.getElementById('pt-start-date');
     const startTimeEl = document.getElementById('pt-start-time');
@@ -2360,19 +2361,30 @@ class LigaApp {
       errEl.innerText = '';
     }
 
-    const currentBar = pt.pressureBar ? parseFloat(pt.pressureBar) : 16.0;
-    if (startDateEl) startDateEl.value = pt.startDate || today;
-    if (startTimeEl) startTimeEl.value = pt.startTime || '09:00';
-    if (endDateEl) endDateEl.value = pt.endDate || tomorrowDate;
-    if (endTimeEl) endTimeEl.value = pt.endTime || '09:00';
-    if (barEl) barEl.value = currentBar.toFixed(1);
+    const currentBar = Number(pt.pressureBar) > 0 ? Number(pt.pressureBar) : null;
+    if (startDateEl) startDateEl.value = pt.startDate || '';
+    if (startTimeEl) startTimeEl.value = pt.startTime || '';
+    if (endDateEl) endDateEl.value = pt.endDate || '';
+    if (endTimeEl) endTimeEl.value = pt.endTime || '';
+    if (barEl) barEl.value = currentBar ? currentBar.toFixed(1) : '';
 
-    this.onPressureBarInput(currentBar);
+    if (currentBar) {
+      this.onPressureBarInput(currentBar);
+    } else {
+      const factorEl = document.getElementById('pt-badge-factor');
+      const descEl = document.getElementById('pt-badge-desc');
+      const equipEl = document.getElementById('pt-badge-equip');
+      const warrantyEl = document.getElementById('pt-badge-warranty');
+      if (factorEl) factorEl.innerText = 'Введите измерение';
+      if (descEl) descEl.innerText = 'Выберите параметры, которые мастер фактически применил на этом объекте.';
+      if (equipEl) equipEl.innerText = 'Не выбрано';
+      if (warrantyEl) warrantyEl.innerText = 'Не рассчитывается';
+    }
 
     if (notesEl) {
-      notesEl.value = pt.notes || (currentBar >= 15.0
-        ? 'Давление 16.0 бар выдержано 24 часа без падения (0.0 бар). Все соединения Rehau и коллектор FAR герметичны. Разрешено к заливке стяжки.'
-        : `Контрольная опрессовка ${currentBar.toFixed(1)} бар проведена успешно без падения давления. Соединения герметичны.`);
+      // A blank protocol must never open with prewritten claims that the test passed.
+      notesEl.value = pt.notes || '';
+      notesEl.placeholder = 'Заполните только после фактического испытания: результат, замечания и вывод мастера.';
     }
 
     const hasPhoto = Boolean(this.currentPhotos && this.currentPhotos.pressure);
@@ -2393,30 +2405,25 @@ class LigaApp {
     if (barEl) {
       barEl.value = Number(bar).toFixed(1);
     }
-    const today = new Date().toISOString().slice(0, 10);
-    const startDateEl = document.getElementById('pt-start-date');
-    const startTimeEl = document.getElementById('pt-start-time');
-    const endDateEl = document.getElementById('pt-end-date');
-    const endTimeEl = document.getElementById('pt-end-time');
-
-    if (startDateEl && !startDateEl.value) startDateEl.value = today;
-    if (startTimeEl && !startTimeEl.value) startTimeEl.value = '10:00';
-
-    if (endDateEl) {
-      const expDate = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString().slice(0, 10);
-      endDateEl.value = expDate;
-    }
-    if (endTimeEl) {
-      endTimeEl.value = '10:00';
-    }
-
     this.onPressureBarInput(bar, hours, normTitle);
-    this.fillPressureNotesTemplate();
   }
 
   // Расчет коэффициента запаса надежности и анализ рисков для Ташкента (v2.3.5)
   onPressureBarInput(barVal, expHours = null, customNorm = null) {
-    const bar = Math.max(1.5, Math.min(40.0, parseFloat(barVal) || 16.0));
+    const enteredBar = Number.parseFloat(barVal);
+    if (!Number.isFinite(enteredBar) || enteredBar <= 0) {
+      this.currentPressureMeta = null;
+      const factorEl = document.getElementById('pt-badge-factor');
+      const descEl = document.getElementById('pt-badge-desc');
+      const equipEl = document.getElementById('pt-badge-equip');
+      const warrantyEl = document.getElementById('pt-badge-warranty');
+      if (factorEl) factorEl.innerText = 'Введите измерение';
+      if (descEl) descEl.innerText = 'Выберите параметры, которые мастер фактически применил на этом объекте.';
+      if (equipEl) equipEl.innerText = 'Не выбрано';
+      if (warrantyEl) warrantyEl.innerText = 'Не рассчитывается';
+      return null;
+    }
+    const bar = Math.max(1.5, Math.min(40.0, enteredBar));
     const pWork = 3.5; // Среднее фактическое давление городской сети Ташкента
     const factor = Math.round((bar / pWork) * 100) / 100;
 
@@ -2425,35 +2432,35 @@ class LigaApp {
     let equip = '';
     let warranty = '';
     let factorColor = 'var(--neon-emerald)';
-    let norm = customNorm || '';
+    let norm = customNorm || 'Параметры испытания определены мастером для объекта';
 
     if (bar >= 15.0) {
       norm = norm || 'Швейцарский эталон LIGA OS (DIN 1988)';
       title = `Швейцарский эталон (${bar.toFixed(1)} бар • ${factor}x запас)`;
-      desc = 'Абсолютная 4-кратная прочность. Рекомендуется для скрытых трасс под монолитом и мрамором в элитных ЖК (Mirabad Avenue, Tashkent City, Nest One).';
+      desc = 'Повышенное испытательное давление. До применения сверьте пределы оборудования и проектные требования объекта.';
       equip = 'Гидропресс Rothenberger (до 60 бар) + заглушки Rehau';
-      warranty = '10 лет (максимум)';
+      warranty = 'Не определяется давлением';
       factorColor = 'var(--gold-primary)';
     } else if (bar >= 9.0) {
       norm = norm || 'Стандарт Rehau (DIN 1988-2 / EN 806-4)';
       title = `Стандарт Rehau (${bar.toFixed(1)} бар • ${factor}x запас)`;
-      desc = 'Усиленный 3-кратный запас прочности. Надежная защита от гидроударов городской сети и повысительных насосных станций.';
+      desc = 'Усиленный уровень испытания. Применимость сверяется с проектом и паспортами подключенного оборудования.';
       equip = 'Ручной опрессовочный насос Rehau / RIDGID (манометр до 25 бар)';
-      warranty = '5 лет';
+      warranty = 'Не определяется давлением';
       factorColor = 'var(--neon-cyan)';
     } else if (bar >= 5.0) {
       norm = norm || 'Стандарт СНиП 3.05.01-85 / СП 73.13330';
       title = `Стандарт СНиП (${bar.toFixed(1)} бар • ${factor}x запас)`;
-      desc = 'Нормативное 1.5-кратное рабочее давление. Стандартные квартиры, контуры радиаторов с подключенными приборами.';
+      desc = 'Выбранное испытательное значение. Условия и длительность задаются проектом и мастером для объекта.';
       equip = 'Стандартный ручной опрессовщик (манометр 0-10 бар)';
-      warranty = '3 года';
+      warranty = 'Не определяется давлением';
       factorColor = 'var(--neon-emerald)';
     } else {
       norm = norm || 'Рабочее давление сети Ташкента (СП 73.13330)';
       title = `Давление сети Ташкента (${bar.toFixed(1)} бар • ${factor}x запас)`;
-      desc = 'Герметичность под фактическим рабочим напором городского водопровода Ташкента (2.5–4.5 бар). Оптимально при ограниченном бюджете или отсутствии гидропресса.';
+      desc = 'Значение близко к рабочему давлению. Зафиксируйте фактические условия и сверьте их с требованиями системы.';
       equip = 'Манометр на вводе городского водопровода / портативный компрессор';
-      warranty = '1-2 года (штатный режим)';
+      warranty = 'Не определяется давлением';
       factorColor = '#38bdf8';
     }
 
@@ -2464,7 +2471,7 @@ class LigaApp {
       desc,
       equip,
       warranty,
-      expHours: expHours || 24
+      expHours: expHours || null
     };
 
     const factorEl = document.getElementById('pt-badge-factor');
@@ -2483,20 +2490,16 @@ class LigaApp {
 
   // Подстановка официального заключения инженера под выбранную цифру (v2.3.5)
   fillPressureNotesTemplate() {
-    const meta = this.currentPressureMeta || { bar: 16.0, factor: 4.6 };
-    const bar = meta.bar || 16.0;
+    const meta = this.currentPressureMeta;
+    if (!meta || !Number.isFinite(meta.bar) || meta.bar <= 0) {
+      this.showToast('Сначала укажите фактическое давление для этого объекта.');
+      return;
+    }
+    const bar = meta.bar;
     const notesEl = document.getElementById('pt-notes');
     if (!notesEl) return;
 
-    if (bar >= 15.0) {
-      notesEl.value = `Давление 16.0 бар выдержано 24 часа без падения (0.0 бар). Все узлы ввода FAR и трубы Rehau герметичны. Разрешена заливка стяжки.`;
-    } else if (bar >= 9.0) {
-      notesEl.value = `Опрессовка ${bar.toFixed(1)} бар по стандарту Rehau выдержана без падения давления. Узлы герметичны, система готова к эксплуатации.`;
-    } else if (bar >= 5.0) {
-      notesEl.value = `Гидравлическое испытание ${bar.toFixed(1)} бар по СНиП 3.05.01-85 проведено успешно. Падение давления 0.0 бар. Соединения герметичны.`;
-    } else {
-      notesEl.value = `Контрольная опрессовка ${bar.toFixed(1)} бар под штатным давлением городской сети Ташкента проведена. Протечек и падения давления не обнаружено. Соединения герметичны.`;
-    }
+    notesEl.value = `Зафиксированное давление: ${bar.toFixed(1)} бар.\nФактический результат после выдержки: [заполнить].\nИзменение показаний манометра: [заполнить по факту].\nОсмотр соединений и замечания: [заполнить по факту].\nЗаключение мастера: [заполнить после проверки].`;
   }
 
   // Фиксация структурированного протокола опрессовки (v2.3.5)
@@ -2528,6 +2531,16 @@ class LigaApp {
       showError('Укажите дату и время окончания испытания.');
       return;
     }
+    const startAt = new Date(`${startDate}T${startTime}`).getTime();
+    const endAt = new Date(`${endDate}T${endTime}`).getTime();
+    if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || endAt <= startAt) {
+      showError('Время окончания должно идти после времени начала испытания.');
+      return;
+    }
+    if (endAt > Date.now() + 60_000) {
+      showError('Испытание нельзя отметить завершённым до указанного времени окончания.');
+      return;
+    }
     if (isNaN(barVal) || barVal < 1.5) {
       showError('Укажите корректное испытательное давление (не менее 1.5 бар).');
       return;
@@ -2538,6 +2551,10 @@ class LigaApp {
     }
     if (!notes) {
       showError('Укажите заключение / комментарий инженера по результатам испытания.');
+      return;
+    }
+    if (/\[(?:заполнить|внести|указать)[^\]]*\]/i.test(notes)) {
+      showError('Замените подсказки в шаблоне фактическими результатами испытания.');
       return;
     }
 
@@ -2582,7 +2599,7 @@ class LigaApp {
     this.currentSite.pressureTest = null;
     await window.ligaDB.put('sites', this.currentSite);
     this.closeModal('modal-pressure-test');
-    this.showToast('Тест 16 бар сброшен. Паспорт переведен в статус Черновика.');
+    this.showToast('Протокол испытания сброшен. Паспорт переведен в статус Черновика.');
     this.render();
   }
 
@@ -2625,9 +2642,9 @@ class LigaApp {
     const statusLabel = document.getElementById('screed-status-label');
     if (statusLabel) {
       if (doneCount === totalCount && this.currentSite && this.currentSite.pressTestPassed) {
-        statusLabel.innerHTML = '<span style="color:var(--neon-emerald);">✓ Заливка стяжки РАЗРЕШЕНА (100% + Опрессовка 16 бар)</span>';
+      statusLabel.innerHTML = '<span style="color:var(--neon-emerald);">✓ Заливка стяжки РАЗРЕШЕНА (чек-лист и протокол испытания подтверждены)</span>';
       } else if (doneCount === totalCount) {
-        statusLabel.innerHTML = '<span style="color:var(--gold-primary);">⚠️ Все 10 пунктов готовы, требуется опрессовка 16 бар!</span>';
+      statusLabel.innerHTML = '<span style="color:var(--gold-primary);">⚠️ Все пункты готовы, требуется внести протокол испытания!</span>';
       } else {
         statusLabel.innerHTML = `<span style="color:var(--neon-ruby);">⚠️ Заливать запрещено (замечаний: ${totalCount - doneCount})</span>`;
       }
@@ -2672,9 +2689,15 @@ class LigaApp {
       return `${idx + 1}. [${mark}] ${item.title}`;
     }).join('\n');
 
-    const barVal = (s.pressureTest && s.pressureTest.pressureBar) ? Number(s.pressureTest.pressureBar).toFixed(1) : '16.0';
-    const normName = (s.pressureTest && s.pressureTest.standardNorm) || (parseFloat(barVal) >= 15.0 ? 'Швейцарский эталон 16 бар' : 'Стандарт испытания');
-    const pressStatus = s.pressTestPassed ? `✓ ${barVal} БАР ВЫДЕРЖАНО (${normName})` : '❌ ОПРЕССОВКА НЕ ПРОВЕДЕНА';
+    const pressureBar = Number(s.pressureTest && s.pressureTest.pressureBar);
+    const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+    const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
+    const normName = (s.pressureTest && s.pressureTest.standardNorm) || 'параметры объекта';
+    const pressStatus = s.pressTestPassed && hasPressureReading
+      ? `✓ ${barVal} БАР ОТМЕЧЕНО КАК ВЫДЕРЖАННОЕ (${normName})`
+      : hasPressureReading
+        ? `⏳ ${barVal} БАР УКАЗАНО, ОЖИДАЕТ ПОДТВЕРЖДЕНИЯ (${normName})`
+        : '⏳ ДАННЫЕ ИСПЫТАНИЯ НЕ ЗАПОЛНЕНЫ';
 
     const message = `🏛️ ОФИЦИАЛЬНЫЙ АКТ ГОТОВНОСТИ САНТЕХНИКИ К ЗАЛИВКЕ СТЯЖКИ
 «Лига Опытных Мастеров» • Ведущий инженер Улугбек Хакимов
@@ -3392,7 +3415,7 @@ ${itemsText}
 В стоимость включено:
 ✓ Коллекторная лучевая разводка FAR
 ✓ Трубы Rehau Rautitan / Stout
-✓ Опрессовка 16 бар (двойной гидротест) с Актом испытаний
+✓ Испытание давлением по параметрам, согласованным для объекта
 ✓ Исполнительный фотопаспорт скрытых трасс с лазерными привязками
 ✓ Официальный договор и гарантия
 
@@ -3715,8 +3738,15 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
   // ТЕПЛОТЕХНИЧЕСКИЙ КАЛЬКУЛЯТОР ТЕПЛОГО ПОЛА И НСУ (v2.2.7)
   // Швейцарский стандарт гидравлической увязки контуров (петли <= 75–80 м)
   // ==========================================================================
-  openFloorCalculator() {
+  openFloorCalculator(areaSqM = null) {
     this.closeModal('modal-more-menu');
+    const requestedArea = Number(areaSqM);
+    if (Number.isFinite(requestedArea) && requestedArea > 0) {
+      this.floorCalc = {
+        ...(this.floorCalc || { step: '150', hasEdgeZones: true, isTiles: true }),
+        area: Math.max(5, Math.min(300, requestedArea))
+      };
+    }
     if (!this.floorCalc) {
       this.floorCalc = {
         area: 50,
@@ -5255,7 +5285,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     });
 
     const report = `⚖️ ГИДРАВЛИЧЕСКАЯ НАСТРОЙКА РОТАМЕТРОВ КОЛЛЕКТОРА
-«Лига Опытных Мастеров» • Стандарт 16 бар (Ташкент)
+«Лига Опытных Мастеров» • Гидравлическая настройка объекта
 Ведущий инженер: Улугбек Хакимов
 📍 Объект: ${siteName}
 📅 Дата: ${new Date().toLocaleDateString('ru-RU')}
@@ -5350,7 +5380,7 @@ ${loopsText}
               Лига Опытных Мастеров
             </div>
             <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
-              Инженерная группа Улугбека Хакимова • Стандарт 16 бар
+              Инженерная группа Улугбека Хакимова
             </div>
           </div>
           <div style="text-align:right;">
@@ -5407,7 +5437,7 @@ ${loopsText}
 
         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1.5px solid #e2e8f0; padding-top:10px; font-size:10px; color:#64748b;">
           <div>
-            🔒 Гарантия 10 лет • Опрессовано поверенным манометром 16 бар
+            🔒 Гарантийные условия — по договору • Параметры испытаний — в протоколе объекта
           </div>
           <div style="font-weight:700; color:#0f172a;">
             Лига Опытных Мастеров • Ташкент
@@ -6719,7 +6749,10 @@ ${loopsText}
 
     let brief = '';
     if (checkedCount >= totalCount) {
-      brief = `Чек-лист перед заливкой стяжки по объекту ${siteTitle}. Все десять пунктов выполнены! Опрессовка 16 бар подтверждена, фотофиксация завершена. Допуск к стяжке разрешен.`;
+      const pressureTest = site.pressureTest || {};
+      const pressureValue = Number(pressureTest.pressureBar) > 0 ? `${Number(pressureTest.pressureBar).toFixed(1)} бар` : 'не зафиксировано';
+      const pressureStatus = pressureTest.passed === true ? 'результат отмечен мастером' : 'результат не подтвержден';
+      brief = `Чек-лист перед заливкой стяжки по объекту ${siteTitle}. Все десять пунктов выполнены. Испытание давлением: ${pressureValue}, ${pressureStatus}. Допуск к стяжке определяется проектом и проверкой объекта.`;
     } else {
       const remaining = totalCount - checkedCount;
       brief = `Чек-лист перед стяжкой объекта ${siteTitle}. Выполнено ${checkedCount} из десяти пунктов. Осталось проверить ${remaining} узлов перед заливкой пола.`;
@@ -6779,7 +6812,7 @@ ${loopsText}
     this.openModal('modal-pressure-test');
 
     if (!site) {
-      const msg = 'Открываю таймер и протокол опрессовки 16 бар.';
+      const msg = 'Открываю протокол испытаний. Укажите фактические параметры объекта.';
       this.showToast(msg);
       this.speakVoice(msg, true);
       return;
@@ -6787,13 +6820,19 @@ ${loopsText}
 
     const siteTitle = site.name || 'Объект';
     const isPassed = site.pressTestPassed;
-    const bar = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
+    const pressureBar = Number(site.pressureTest && site.pressureTest.pressureBar);
+    const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+    const bar = hasPressureReading ? `${pressureBar.toFixed(1)} бар` : '';
 
     let brief = '';
     if (isPassed) {
-      brief = `Опрессовка объекта ${siteTitle} успешно выдержана. Контрольное давление ${bar} бар стояло 24 часа без падения стрелки манометра. Сформирован юридический акт допуска.`;
+      brief = hasPressureReading
+        ? `По объекту ${siteTitle} испытание с давлением ${bar} отмечено как пройденное мастером. Сверьте результат с сохраненным протоколом.`
+        : `По объекту ${siteTitle} испытание отмечено как пройденное, но значение давления не заполнено. Сверьте протокол мастера.`;
     } else {
-      brief = `Объект ${siteTitle}. Испытание давлением ${bar} бар в процессе или ожидает фиксации. Стандарт LIGA OS требует выдержки 24 часа перед заливкой стяжки.`;
+      brief = hasPressureReading
+        ? `Объект ${siteTitle}. Испытательное давление ${bar} внесено, но результат еще не подтвержден мастером.`
+        : `Объект ${siteTitle}. Параметры гидравлического испытания еще не внесены.`;
     }
 
     this.showToast(`🛡️ Опрессовка: ${siteTitle}`);
@@ -6854,11 +6893,18 @@ ${loopsText}
     const title = document.getElementById('voice-conf-title');
     const amountEl = document.getElementById('voice-conf-amount');
     const siteNameEl = document.getElementById('voice-conf-site-name');
+    const preview = document.getElementById('voice-parse-preview');
+    const previewType = document.getElementById('voice-parse-type');
+    const previewDetails = document.getElementById('voice-parse-details');
+
+    if (previewType) previewType.innerText = `Тип: Закупка • ${action.category || 'Материалы'}`;
+    if (previewDetails) previewDetails.innerText = `${action.title} • ${this.formatSum(action.amount)}`;
+    if (preview) preview.style.display = 'block';
 
     if (overlay && title && amountEl && siteNameEl) {
       if (badge) badge.innerText = `🛒 ${action.category || 'Базар Джами'}`;
       title.innerText = `Записать покупку: ${action.title}?`;
-      amountEl.innerText = this.formatSum(action.amount);
+      amountEl.innerText = action.amount > 0 ? this.formatSum(action.amount) : 'Сумма не указана';
       const siteName = this.currentSite ? this.currentSite.name : 'Активный объект';
       siteNameEl.innerText = siteName;
       overlay.style.display = 'flex';
@@ -6871,6 +6917,10 @@ ${loopsText}
   async confirmVoiceFastAction() {
     if (!this.pendingFastVoiceAction) return;
     const action = this.pendingFastVoiceAction;
+    if (!(action.amount > 0)) {
+      this.showToast('Укажите фактическую сумму перед записью покупки.');
+      return;
+    }
     const overlay = document.getElementById('voice-confirmation-overlay');
     if (overlay) overlay.style.display = 'none';
 
@@ -7161,6 +7211,11 @@ ${loopsText}
 
     // 2. Если это быстрое добавление материала на Джами с известной суммой
     if (parsed.type === 'material') {
+      if (!(parsed.amount > 0)) {
+        this.showToast('Сумма покупки не распознана. Внесите её в закупку вручную, чтобы не сохранить выдуманное значение.');
+        this.switchScreen('materials');
+        return;
+      }
       this.openVoiceFastActionConfirmation(parsed);
       return;
     }
@@ -7206,6 +7261,55 @@ ${loopsText}
     }
     if (wavesEl) {
       wavesEl.style.display = isActive ? 'flex' : 'none';
+    }
+  }
+
+  handleVoiceInputText(text) {
+    const preview = document.getElementById('voice-parse-preview');
+    const typeEl = document.getElementById('voice-parse-type');
+    const detailsEl = document.getElementById('voice-parse-details');
+    const confirmBtn = document.getElementById('btn-voice-confirm');
+    const value = (text || '').trim();
+
+    if (!value) {
+      this.parsedVoiceAction = null;
+      if (preview) preview.style.display = 'none';
+      if (confirmBtn) confirmBtn.style.display = 'none';
+      return;
+    }
+
+    const action = this.parseVoiceCommand(value);
+    this.parsedVoiceAction = action;
+    if (preview) preview.style.display = 'block';
+
+    const typeLabels = {
+      material: `Закупка • ${action.category || 'Материалы'}`,
+      brigade_pay: 'Выплата помощнику',
+      client_advance: 'Аванс заказчика',
+      currency_conv: 'Пересчёт валюты',
+      direct_func: 'Действие в программе',
+      nav_action: 'Переход к разделу',
+      modal_action: 'Открытие помощника',
+      press_test: 'Протокол испытания',
+      concierge_disambiguation: 'Нужно уточнить действие'
+    };
+    if (typeEl) typeEl.innerText = `Тип: ${typeLabels[action.type] || 'Команда'}`;
+
+    let details = action.title || action.question || 'Команда распознана';
+    if (action.type === 'material') {
+      details += action.amount > 0 ? ` • ${this.formatSum(action.amount)}` : ' • сумма не указана';
+    } else if (action.type === 'brigade_pay' || action.type === 'client_advance') {
+      details += action.amount > 0 ? ` • ${this.formatSum(action.amount)}` : ' • сумму нужно указать';
+    } else if (action.type === 'currency_conv') {
+      details = `${action.usd} USD ≈ ${this.formatSum(action.som)}`;
+    }
+    if (detailsEl) detailsEl.innerText = details;
+
+    const needsAmount = ['material', 'brigade_pay', 'client_advance'].includes(action.type) && !(action.amount > 0);
+    if (confirmBtn) {
+      confirmBtn.style.display = action.type === 'concierge_disambiguation' ? 'none' : 'inline-flex';
+      confirmBtn.disabled = needsAmount;
+      confirmBtn.title = needsAmount ? 'Сначала укажите фактическую сумму в соответствующей форме' : '';
     }
   }
 
@@ -7416,8 +7520,8 @@ ${loopsText}
         target: 'readPressureBrief',
         targetArg: siteToSwitch,
         siteToSwitch: siteToSwitch,
-        title: siteName ? `📢 Опрессовка: ${siteName}` : '📢 Озвучить статус опрессовки 16 бар',
-        desc: 'Зачитываю суточный протокол гидравлики 16 бар...'
+        title: siteName ? `📢 Испытание: ${siteName}` : '📢 Озвучить статус испытания',
+        desc: 'Зачитываю фактические параметры испытаний объекта...'
       };
     }
 
@@ -7429,6 +7533,84 @@ ${loopsText}
         title: '👑 Бриф: Персональный тест-драйв Улугбека',
         voiceResponse: 'Открываю персональный бриф тест-драйва для Улугбека Хакимова',
         desc: 'Открываю программу приёмки LIGA OS и 5 контрольных узлов...'
+      };
+    }
+
+    // Explicit calculation requests must be routed before parsing numbers as
+    // purchase amounts (e.g. "посчитай тёплый пол 60 квадратов").
+    const hasCalculationIntent = ['посчитай', 'рассчитай', 'расчет', 'расчёт', 'подбери', 'вычисли']
+      .some((phrase) => lower.includes(phrase));
+    const isMaterialPurchase = lower.includes('купил') || lower.includes('купили') || lower.includes('взял') || /(^|\s)чек($|\s)/.test(lower);
+    // Узкие инженерные команды проверяем до разбора сумм и закупок: слова
+    // «расходомер», «бак» или «протечки» сами по себе не означают покупку.
+    if (!isMaterialPurchase && (lower.includes('защит') || lower.includes('протеч') || lower.includes('нептун') || lower.includes('гидролок')) && (hasCalculationIntent || lower.includes('калькулятор'))) {
+      return { type: 'direct_func', target: 'openLeakCalculator', title: '🛡️ Расчёт защиты от протечек', voiceResponse: 'Открываю подбор системы защиты от протечек' };
+    }
+    if (hasCalculationIntent && !isMaterialPurchase) {
+      if ((lower.includes('тепл') && lower.includes('пол')) || lower.includes('водяной пол')) {
+        const areaMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:кв\.?\s*м|квадрат\w*|м(?:2|²)|метр\w*)/);
+        const area = areaMatch ? Number.parseFloat(areaMatch[1].replace(',', '.')) : undefined;
+        return {
+          type: 'direct_func',
+          target: 'openFloorCalculator',
+          targetArg: area,
+          title: '♨️ Калькулятор тёплого пола',
+          voiceResponse: area ? `Открываю расчёт тёплого пола на ${area} квадратных метров` : 'Открываю калькулятор тёплого пола',
+          desc: 'Площадь будет внесена в инженерный калькулятор.'
+        };
+      }
+      if (lower.includes('насос') || lower.includes('циркуляц') || lower.includes('магистра')) {
+        return { type: 'direct_func', target: 'openPumpCalculator', title: '🌀 Расчёт циркуляционного насоса', voiceResponse: 'Открываю расчёт циркуляционного насоса' };
+      }
+      if ((lower.includes('бойлер') || lower.includes('гвс')) && (lower.includes('расширительн') || lower.includes('рефлекс') || lower.includes('reflex'))) {
+        return { type: 'direct_func', target: 'openBoilerCalculator', title: '⚡ Расчёт бойлера и бака', voiceResponse: 'Открываю расчёт бойлера и расширительного бака' };
+      }
+      if (lower.includes('расширительн') || lower.includes('расширительный бак') || lower.includes('рефлекс') || lower.includes('reflex')) {
+        return { type: 'direct_func', target: 'openExpansionTankCalculator', title: '⚙️ Расчёт расширительного бака', voiceResponse: 'Открываю расчёт расширительного бака' };
+      }
+      if (lower.includes('бойлер') || lower.includes('расширительн') || lower.includes('бак') || lower.includes('гвс')) {
+        return { type: 'direct_func', target: 'openBoilerCalculator', title: '⚡ Расчёт бойлера и бака', voiceResponse: 'Открываю расчёт бойлера и расширительного бака' };
+      }
+      if (lower.includes('радиатор') || lower.includes('батаре') || lower.includes('секц')) {
+        return { type: 'direct_func', target: 'openRadiatorCalculator', title: '🔥 Расчёт радиаторов', voiceResponse: 'Открываю расчёт радиаторов' };
+      }
+      if (lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер')) {
+        return { type: 'direct_func', target: 'openBalancingCalculator', title: '⚖️ Расчёт балансировки', voiceResponse: 'Открываю расчёт балансировки расходомеров' };
+      }
+      if (lower.includes('гидрострел') || lower.includes('гидравлический разделител') || lower.includes('первичное кольцо')) {
+        return { type: 'direct_func', target: 'openSeparatorCalculator', title: '🔀 Расчёт гидрострелки', voiceResponse: 'Открываю расчёт гидравлического разделителя' };
+      }
+      if (lower.includes('труб') || lower.includes('диаметр') || lower.includes('коллектор') || lower.includes('гребенк') || lower.includes('far')) {
+        return { type: 'direct_func', target: 'openPipeCalculator', title: '📐 Расчёт труб и коллекторов', voiceResponse: 'Открываю расчёт труб и коллекторов' };
+      }
+    }
+
+    // Уточнённые системы отопления должны попадать в свои калькуляторы даже
+    // без слова «рассчитай» и раньше общего распознавания закупки.
+    if (!isMaterialPurchase && (lower.includes('расширительн') || lower.includes('рефлекс') || lower.includes('reflex'))) {
+      return { type: 'direct_func', target: 'openExpansionTankCalculator', title: '⚙️ Калькулятор расширительного бака', voiceResponse: 'Открываю расчёт расширительного бака' };
+    }
+    if (!isMaterialPurchase && (lower.includes('гидрострел') || lower.includes('гидравлический разделител') || lower.includes('первичное кольцо'))) {
+      return { type: 'direct_func', target: 'openSeparatorCalculator', title: '🔀 Калькулятор гидрострелки', voiceResponse: 'Открываю расчёт гидравлического разделителя' };
+    }
+    if (!isMaterialPurchase && (lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер'))) {
+      return { type: 'direct_func', target: 'openBalancingCalculator', title: '⚖️ Балансировка расходомеров', voiceResponse: 'Открываю калькулятор балансировки расходомеров' };
+    }
+    if (!isMaterialPurchase && (lower.includes('насос') || lower.includes('циркуляц') || lower.includes('магистраль отопления'))) {
+      return { type: 'direct_func', target: 'openPumpCalculator', title: '🌀 Калькулятор циркуляционного насоса', voiceResponse: 'Открываю расчёт циркуляционного насоса' };
+    }
+
+    const currencyQuestion = lower.includes('сколько') || lower.includes('курс') || lower.includes('в сумах');
+    const currencyAmountMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(доллар\w*|бакс\w*|\$)/);
+    if (currencyQuestion && currencyAmountMatch && !isMaterialPurchase) {
+      const usd = Number.parseFloat(currencyAmountMatch[1].replace(',', '.'));
+      const usdRate = Number(this.tariffSettings && this.tariffSettings.usdRate) || 12900;
+      return {
+        type: 'currency_conv',
+        usd,
+        som: Math.round(usd * usdRate),
+        title: `Конвертация ${usd} USD`,
+        voiceResponse: `${usd} долларов — примерно ${this.formatSum(Math.round(usd * usdRate))}`
       };
     }
 
@@ -7503,8 +7685,8 @@ ${loopsText}
     const isPhotoRequest = lower.includes('фото') || lower.includes('фотк') || lower.includes('снимок') || lower.includes('галере') || lower.includes('трасс') || lower.includes('скрыт') || lower.includes('аксонометр');
     if (isPhotoRequest) {
       return {
-        type: 'direct_func',
-        target: 'openPassportPhotosModal',
+        type: 'modal_action',
+        target: 'modal-passport-photos',
         siteToSwitch: siteToSwitch,
         title: siteName ? `📸 Фото скрытых узлов: ${siteName}` : '📸 Фотоархив скрытых узлов',
         voiceResponse: siteName ? `Открываю фотоархив скрытых узлов объекта ${siteName}` : 'Открываю фотоархив скрытых трасс и узлов',
@@ -7532,14 +7714,14 @@ ${loopsText}
         type: 'direct_func',
         target: 'exportScreedAct',
         siteToSwitch: siteToSwitch,
-        title: siteName ? `🛡️ Акт 16 бар: ${siteName}` : '🛡️ Официальный Акт опрессовки 16 бар',
-        voiceResponse: siteName ? `Формирую официальный акт опрессовки объекта ${siteName}` : 'Формирую официальный акт опрессовки 16 бар по стандарту DIN 1988',
-        desc: 'Экспортирую юридический акт гидравлических испытаний 16 бар...'
+        title: siteName ? `🛡️ Акт испытаний: ${siteName}` : '🛡️ Официальный акт испытаний',
+        voiceResponse: siteName ? `Формирую официальный акт испытаний объекта ${siteName}` : 'Формирую акт по фактически внесенным параметрам объекта',
+        desc: 'Экспортирую акт с фактическими параметрами испытания...'
       };
     }
 
     // 10. Чек-лист перед заливкой стяжки (10 пунктов)
-    const isChecklistRequest = lower.includes('чеклист') || lower.includes('чек-лист') || lower.includes('10 пунктов') || lower.includes('проверка до стяжки') || lower.includes('проверь стяжку') || (lower.includes('провер') && lower.includes('стяжк'));
+    const isChecklistRequest = lower.includes('чеклист') || lower.includes('чек-лист') || lower.includes('10 пунктов') || lower.includes('проверка до стяжки') || lower.includes('проверь стяжку') || lower.includes('перед стяжкой') || (lower.includes('провер') && lower.includes('стяжк'));
     if (isChecklistRequest) {
       return {
         type: 'nav_action',
@@ -7551,16 +7733,16 @@ ${loopsText}
       };
     }
 
-    // 11. Опрессовка 16 бар на 24 часа (Таймер испытаний)
-    const isPressureRequest = lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('манометр') || (lower.includes('давлен') && !lower.includes('смета')) || lower.includes('гидравлик') || lower.includes('протечк');
+    // 11. Испытание давлением: открываем форму для внесения фактических данных.
+    const isPressureRequest = lower.includes('опрессовк') || lower.includes('16 бар') || lower.includes('манометр') || (lower.includes('давлен') && !lower.includes('смета')) || lower.includes('гидравлик');
     if (isPressureRequest && !lower.includes('купил')) {
       return {
         type: 'direct_func',
-        target: 'testDriveStep2_Pressure',
+        target: 'openPressureTestModal',
         siteToSwitch: siteToSwitch,
-        title: siteName ? `🛡️ Опрессовка 16 бар: ${siteName}` : '🛡️ Опрессовка 16 бар на 24 часа',
-        voiceResponse: siteName ? `Открываю суточный таймер опрессовки 16 бар объекта ${siteName}` : 'Открываю протокол гидравлических испытаний 16 бар',
-        desc: 'Запускаю протокол суточной опрессовки 16 бар по стандарту DIN 1988...'
+        title: siteName ? `🛡️ Протокол испытания: ${siteName}` : '🛡️ Протокол испытания давлением',
+        voiceResponse: siteName ? `Открываю протокол испытания давлением объекта ${siteName}` : 'Открываю протокол испытания давлением для внесения фактических данных',
+        desc: 'Давление и время выдержки вносятся по условиям конкретного объекта.'
       };
     }
 
@@ -7684,7 +7866,7 @@ ${loopsText}
     }
 
     // 16. Склад и материалы (Рынок Джами / Урикзар)
-    const hasPurchaseWords = lower.includes('купил') || lower.includes('взял') || lower.includes('базар') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('рынок') || lower.includes('чек') || lower.includes('расход');
+    const hasPurchaseWords = lower.includes('купил') || lower.includes('взял') || lower.includes('приобрел') || lower.includes('оплатил') || /(^|\s)чек($|\s)/.test(lower) || lower.includes('расход');
     if (amount > 0 || (hasPurchaseWords && !lower.includes('склад'))) {
       let category = 'Трубы и фитинги';
       if (lower.includes('коллектор') || lower.includes('far') || lower.includes('гребенк') || lower.includes('расходомер')) {
@@ -7711,14 +7893,16 @@ ${loopsText}
         type: 'material',
         siteToSwitch: siteToSwitch,
         title: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-        amount: amount || 450000,
+        amount,
         category: category,
         qty: '1 компл',
-        voiceResponse: `Записываю чек: ${cleanName} на сумму ${this.formatSum(amount || 450000)}`
+        voiceResponse: amount > 0
+          ? `Записываю чек: ${cleanName} на сумму ${this.formatSum(amount)}`
+          : `Открываю закупки для внесения фактической суммы: ${cleanName}`
       };
     }
 
-    const isMaterialsList = lower.includes('склад') || lower.includes('материал') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('закупк') || lower.includes('список покупок') || lower.includes('фитинг') || lower.includes('что купить') || lower.includes('остатки');
+    const isMaterialsList = lower.includes('склад') || lower.includes('материал') || lower.includes('базар') || lower.includes('джами') || lower.includes('урикзар') || lower.includes('закупк') || lower.includes('список покупок') || lower.includes('фитинг') || lower.includes('что купить') || lower.includes('остатки');
     if (isMaterialsList) {
       return {
         type: 'nav_action',
@@ -7754,6 +7938,16 @@ ${loopsText}
       };
     }
 
+    if (lower.includes('дизайнер') && (lower.includes('сказать') || lower.includes('ответ') || lower.includes('диалог'))) {
+      return {
+        type: 'modal_action',
+        target: 'modal-master-guide',
+        title: '📖 Памятка для разговора с дизайнером',
+        voiceResponse: 'Открываю памятку диалогов с дизайнером',
+        desc: 'Подготовленные формулировки для корректного обсуждения проекта.'
+      };
+    }
+
     // 19. Список всех объектов мастера
     if ((lower.includes('объект') || lower.includes('квартир') || lower.includes('все объекты') || lower.includes('список')) && !siteMatch) {
       return {
@@ -7766,6 +7960,15 @@ ${loopsText}
     }
 
     // 20. Инженерные калькуляторы
+    if (lower.includes('расширительн') || lower.includes('рефлекс') || lower.includes('reflex')) {
+      return { type: 'direct_func', target: 'openExpansionTankCalculator', title: '⚙️ Калькулятор расширительного бака', voiceResponse: 'Открываю расчёт расширительного бака' };
+    }
+    if (lower.includes('гидрострел') || lower.includes('гидравлический разделител') || lower.includes('первичное кольцо')) {
+      return { type: 'direct_func', target: 'openSeparatorCalculator', title: '🔀 Калькулятор гидрострелки', voiceResponse: 'Открываю расчёт гидравлического разделителя' };
+    }
+    if (lower.includes('балансировк') || lower.includes('ротаметр') || lower.includes('расходомер')) {
+      return { type: 'direct_func', target: 'openBalancingCalculator', title: '⚖️ Балансировка расходомеров', voiceResponse: 'Открываю калькулятор балансировки расходомеров' };
+    }
     if ((lower.includes('тепл') && lower.includes('пол')) || lower.includes('водяной пол') || lower.includes('петли') || lower.includes('бухт')) {
       return {
         type: 'direct_func',
@@ -7900,7 +8103,11 @@ ${loopsText}
       await this.selectSite(action.siteToSwitch);
     }
 
-    if (action.type === 'material') {
+    if (action.type === 'currency_conv') {
+      const result = `${action.usd} USD ≈ ${this.formatSum(action.som)} по текущему курсу в настройках.`;
+      this.showToast(result);
+      this.speakVoice(result, true);
+    } else if (action.type === 'material') {
       await window.ligaDB.add('materials', {
         siteId: this.currentSiteId,
         category: action.category,
@@ -8065,8 +8272,9 @@ ${loopsText}
     if (stageCode) {
       const siteName = params.get('site') || 'Премиальный жилой фонд, Ташкент';
       const clientName = params.get('client') || 'Уважаемый Заказчик';
-      const stageTitle = params.get('stage') || 'Черновой монтаж трасс под стяжку + опрессовка 16 бар';
-      const barVal = params.get('bar') || '16.0';
+      const stageTitle = params.get('stage') || 'Черновой монтаж инженерных систем';
+      const rawBarVal = Number(params.get('bar'));
+      const barVal = Number.isFinite(rawBarVal) && rawBarVal > 0 ? rawBarVal.toFixed(1) : '';
 
       this.currentStageToVerify = { stageCode, siteName, clientName, stageTitle, barVal };
 
@@ -8078,7 +8286,9 @@ ${loopsText}
       if (elSite) elSite.innerText = siteName;
       if (elClient) elClient.innerText = `Заказчик: ${clientName}`;
       if (elTitle) elTitle.innerText = stageTitle;
-      if (elBar) elBar.innerText = `${barVal} БАР / 24 ЧАСА (Пройдено)`;
+      if (elBar) elBar.innerText = barVal
+        ? `В ссылке указано ${barVal} бар. Фактический результат сверяйте с протоколом мастера.`
+        : 'Давление не указано. Фактический результат сверяйте с протоколом мастера.';
 
       setTimeout(() => this.openModal('modal-verify-stage'), 400);
     }
@@ -8086,7 +8296,11 @@ ${loopsText}
 
   // Генератор ссылки приёмки этапа мастером
   openStageLinkGenerator() {
-    const site = this.currentSite || { name: 'ЖК Mirabad Avenue', client: 'Самир', pressTestPassed: true, pressureTest: { pressureBar: '16.0' } };
+    const site = this.currentSite;
+    if (!site) {
+      this.showToast('Сначала выберите реальный объект, чтобы подготовить ссылку приёмки.');
+      return;
+    }
     
     const elSite = document.getElementById('stage-link-site-name');
     const elClient = document.getElementById('stage-link-client-name');
@@ -8096,8 +8310,13 @@ ${loopsText}
     if (elClient) elClient.innerText = site.client || 'Уважаемый заказчик';
     if (elPress) {
       const isPassed = site.pressTestPassed;
-      const bar = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
-      elPress.innerText = isPassed ? `${bar} бар (24ч выдержано)` : 'Ожидает опрессовки (черновик)';
+      const pressureBar = Number(site.pressureTest && site.pressureTest.pressureBar);
+      const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+      elPress.innerText = isPassed && hasPressureReading
+        ? `${pressureBar.toFixed(1)} бар (отмечено мастером)`
+        : hasPressureReading
+          ? `${pressureBar.toFixed(1)} бар (ожидает подтверждения)`
+          : 'Давление не указано';
       elPress.style.color = isPassed ? 'var(--neon-emerald)' : 'var(--neon-gold)';
     }
 
@@ -8106,28 +8325,35 @@ ${loopsText}
   }
 
   updateStageLinkPreview() {
-    const site = this.currentSite || { id: 1, name: 'ЖК Mirabad Avenue', client: 'Самир', pressTestPassed: true, pressureTest: { pressureBar: '16.0' } };
+    const site = this.currentSite;
+    if (!site) {
+      this.currentGeneratedStageText = '';
+      this.currentGeneratedStageUrl = '';
+      return;
+    }
     const sel = document.getElementById('stage-select-preset');
     const stageId = sel ? sel.value : '1';
     
     const stageTitles = {
-      '1': 'Черновой монтаж трасс под стяжку + опрессовка 16 бар',
+      '1': 'Черновой монтаж трасс под стяжку + гидравлические испытания',
       '2': 'Монтаж коллекторных узлов FAR и котельного оборудования',
       '3': 'Чистовая установка санфаянса, инсталляций и смесителей'
     };
     const stageTitle = stageTitles[stageId] || 'Черновой монтаж инженерных систем';
-    const barVal = (site.pressureTest && site.pressureTest.pressureBar) ? site.pressureTest.pressureBar : '16.0';
-    const stageCode = `STG-${site.id || '01'}-16B`;
+    const pressureBar = Number(site.pressureTest && site.pressureTest.pressureBar);
+    const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+    const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
+    const stageCode = `STG-${site.id || '01'}-${hasPressureReading ? `${barVal.replace('.', '')}B` : 'NO-PRESSURE'}`;
 
     const origin = 'https://liga-master-uz.vercel.app/';
-    const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}&bar=${barVal}`;
+    const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}${hasPressureReading ? `&bar=${encodeURIComponent(barVal)}` : ''}`;
 
     const clientGreeting = site.client ? `Здравствуйте, ${site.client}!` : 'Здравствуйте!';
     const message = `${clientGreeting}
 Инженерный этап монтажа по объекту «${site.name || 'Объект'}» успешно завершён.
 
 📋 Этап: ${stageTitle}
-🛡️ Опрессовка: ${barVal} бар выдержана 24 часа без падения давления (DIN 1988).
+🛡️ Испытательное давление: ${hasPressureReading ? `${barVal} бар (по карточке объекта; результат подтверждает мастер)` : 'не указано в карточке объекта'}.
 📐 Точность водорозеток: по лазеру до 1 мм.
 
 Пожалуйста, ознакомьтесь с параметрами и подтвердите приёмку этапа в 1 клик по официальной ссылке LIGA OS:
@@ -8172,11 +8398,11 @@ ${shareUrl}
 
   // Подтверждение приёмки заказчиком
   async signStageConfirmation() {
-    const st = this.currentStageToVerify || {
-      siteName: 'ЖК Mirabad Avenue',
-      clientName: 'Самир',
-      stageTitle: 'Черновой монтаж трасс под стяжку + опрессовка 16 бар'
-    };
+    const st = this.currentStageToVerify;
+    if (!st || !st.stageCode || !st.siteName || !st.stageTitle) {
+      this.showToast('Не удалось подтвердить этап: откройте полную ссылку от мастера.');
+      return;
+    }
     const dateStr = new Date().toLocaleString('ru-RU');
 
     const btn = document.getElementById('btn-confirm-stage-action');
@@ -8221,12 +8447,12 @@ ${shareUrl}
 
   // Уведомление мастера в Telegram об успешной приёмке
   notifyMasterStageAccepted() {
-    const st = this.currentStageToVerify || {
-      siteName: 'ЖК Mirabad Avenue',
-      clientName: 'Самир',
-      stageTitle: 'Черновой монтаж'
-    };
-    const text = `Улугбек, здравствуйте! Я подтвердил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Давление 16 бар подтверждаю. Разрешаю заливку стяжки пола и дальнейшие работы!`;
+    const st = this.currentStageToVerify;
+    if (!st || !st.stageCode || !st.siteName || !st.stageTitle) {
+      this.showToast('Не удалось подготовить уведомление: откройте полную ссылку от мастера.');
+      return;
+    }
+    const text = `Улугбек, здравствуйте! Заказчик отметил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Параметры гидравлических испытаний и допуск к следующим работам прошу сверить с протоколом мастера.`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/')}&text=${encodeURIComponent(text)}`;
     try {
       window.open(shareUrl, '_blank');
@@ -8281,7 +8507,7 @@ ${shareUrl}
             <span>🤝 Скрипт первого контакта в Telegram</span>
           </div>
           <div class="guide-script-text">
-            «Здравствуйте! Меня зовут Улугбек, ведущий инженер сантехники «Лиги Опытных Мастеров» в Ташкенте. Очень нравятся ваши интерьеры! Мы специализируемся на сложной инженерке под элитную плитку: выставляем оси смесителей по лазеру до 1 мм, делаем двойную опрессовку 16 бар и фотопаспорт скрытых трасс, чтобы мебельщики не пробили трубы. Буду рад провести бесплатный инженерный аудит чертежей сантехники вашего текущего объекта!»
+            «Здравствуйте! Меня зовут Улугбек, ведущий инженер сантехники «Лиги Опытных Мастеров» в Ташкенте. Мы специализируемся на сложных инженерных системах: согласуем привязки по проекту, фиксируем скрытые трассы и оформляем протокол испытаний по параметрам конкретного объекта. Буду рад обсудить инженерные решения для вашего проекта.»
           </div>
           <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
             <span>📋 Скопировать для отправки в Telegram</span>
@@ -8304,10 +8530,10 @@ ${shareUrl}
       container.innerHTML = `
         <div class="guide-card">
           <div class="guide-card-title">
-            <span>🛡️ Зачем нужна опрессовка 16 бар (24 часа)</span>
+            <span>🛡️ Как мы подтверждаем качество испытаний</span>
           </div>
           <div class="guide-script-text">
-            «В Ташкенте рабочее давление в домах 3–4 бара. Но при ночных гидроударах оно может подскочить до 8–10 бар. Мы проводим испытания давлением 16 бар (четырехкратный запас) в течение 24 часов под пломбой. Только после этого мы подписываем официальный Акт и разрешаем заливать стяжку.»
+            «Для каждого объекта согласуем параметры испытания с учетом проекта и оборудования. В протокол заносим фактические показания, время, замечания и фото манометра. Решение о дальнейших работах принимается по проекту и результатам осмотра.»
           </div>
           <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
             <span>📋 Скопировать аргумент для клиента</span>
@@ -8361,7 +8587,7 @@ ${shareUrl}
           <div style="font-size:12px; line-height:1.6; color:var(--text-main);">
             1. <b>Чертеж дизайнера — закон</b>. Привязка осей и высот строго по лазеру до 1 мм под раскладку плитки.<br>
             2. <b>Защита авторитета автора</b>. Никогда не критиковать чертежи при клиенте. Нестыковку решать лично с дизайнером, предложив 2 решения.<br>
-            3. <b>Опрессовка 16 бар</b> на 24 часа с составлением официального Акта перед стяжкой.<br>
+            3. <b>Испытание по параметрам объекта</b> с фиксацией фактических данных и оформлением протокола.<br>
             4. <b>Исполнительный фотопаспорт</b> каждого скрытого стыка с лазерной рулеткой.<br>
             5. <b>Чистота и порядок</b>: строительный пылесос, герметичные заглушки, уважение к чужому труду.
           </div>
@@ -8415,9 +8641,12 @@ ${shareUrl}
 
       const risksValEl = document.getElementById('ai-risks-val');
       if (risksValEl) {
-        risksValEl.innerText = s && s.pressTestPassed 
-          ? '✓ Опрессовка 16 бар выдержана. Риск разрыва стяжки исключен.'
-          : '⚠️ Внимание: опрессовка 16 бар еще не зафиксирована!';
+        const pressureTest = s && s.pressureTest ? s.pressureTest : {};
+        const pressureBar = Number(pressureTest.pressureBar);
+        const hasRecordedPressure = Number.isFinite(pressureBar) && pressureBar > 0;
+        risksValEl.innerText = pressureTest.passed === true && hasRecordedPressure
+          ? `✓ Испытание ${pressureBar.toFixed(1)} бар отмечено мастером. Допуск оценивается по критериям объекта.`
+          : '⚠️ Результат испытания не подтвержден. Проверьте фактические данные и требования объекта.';
       }
     }, 600);
   }
@@ -8501,7 +8730,7 @@ ${shareUrl}
     const typeBadges = {
       audit: { label: '📐 Аудит', class: 'badge-event-audit' },
       rough: { label: '🔧 Черновой', class: 'badge-event-rough' },
-      pressure: { label: '🛡️ 16 бар', class: 'badge-event-pressure' },
+      pressure: { label: '🛡️ Испытание давлением', class: 'badge-event-pressure' },
       screed: { label: '🏗️ Стяжка', class: 'badge-event-screed' },
       trim: { label: '✨ Чистовая', class: 'badge-event-trim' },
       service: { label: '🛠️ Сервис', class: 'badge-event-service' },
@@ -8987,6 +9216,7 @@ ${shareUrl}
     }
     if (modalId === 'modal-settings') {
       this.loadMasterSealSettings();
+      requestAnimationFrame(() => this.resizeSignaturePad());
     }
     if (modalId === 'modal-more-menu') {
       document.body.classList.add('more-menu-open');
@@ -9732,14 +9962,19 @@ ${shareUrl}
     const stageNames = {
       1: 'Этап 1: Черновой монтаж (Узел ввода и стояки)',
       2: 'Этап 2: Разводка трасс водоснабжения и отопления',
-      3: 'Этап 3: Опрессовка 16 бар (Гидроиспытания)',
+      3: 'Этап 3: Гидравлические испытания',
       4: 'Этап 4: Допуск под заливку стяжки',
       5: 'Этап 5: Чистовая установка санфаянса'
     };
     const stageText = stageNames[site.status] || `Этап ${site.status}`;
-    const pressStatus = site.pressTestPassed
-      ? '✅ Двойной гидротест 16.0 бар ВЫДЕРЖАН (24 часа без падения давления)'
-      : '⏳ Готовится к гидравлическим испытаниям 16 бар';
+    const pressureBar = Number(site.pressureTest && site.pressureTest.pressureBar);
+    const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
+    const pressureText = hasPressureReading ? `${pressureBar.toFixed(1)} бар` : 'давление не указано';
+    const pressStatus = site.pressTestPassed && hasPressureReading
+      ? `✅ Испытание ${pressureText} отмечено как пройденное мастером`
+      : hasPressureReading
+        ? `⏳ Испытание ${pressureText} ожидает подтверждения мастера`
+        : '⏳ Данные гидравлического испытания в карточке объекта не заполнены';
 
     const debt = Math.max(0, (site.contractSum || 0) - (site.advanceSum || 0));
 
@@ -9753,7 +9988,7 @@ ${shareUrl}
 👤 Заказчик: ${site.client || 'Уважаемый клиент'}
 🛡️ Текущий статус: ${stageText}
 📊 Опрессовка: ${pressStatus}
-📋 Стандарт: 16 бар / DIN 1988 (в 4 раза строже СНиП)
+📋 Норматив испытания: ${(site.pressureTest && site.pressureTest.standardNorm) || 'задаётся по параметрам конкретного объекта'}
 💰 Финансовый статус: оплачено ${this.formatSum(site.advanceSum || 0)} из ${this.formatSum(site.contractSum || 0)}${debt > 0 ? ' (остаток: ' + this.formatSum(debt) + ')' : ' (полный расчет)'}
 
 Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
@@ -9796,7 +10031,7 @@ ${shareUrl}
         shortTitle: 'Маяк и приватность',
         duration: '0:45',
         speaker: 'ИНЖЕНЕРНЫЙ ИНСТРУКТОР:',
-        subtitle: 'Световой маяк вверху экрана — ваш щит безопасности. Коснитесь его — и все служебные цены, прибыль и касса скроются. Заказчик увидит только надежность и статус 16 бар.',
+        subtitle: 'Световой маяк вверху экрана — переключатель режима показа клиенту. Он скрывает служебные цены, прибыль и кассу мастера.',
         render: () => `
           <div class="scene-interactive-card">
             <div class="scene-hero-header">
@@ -9888,11 +10123,11 @@ ${shareUrl}
       },
       {
         id: 'pressure',
-        title: 'Опрессовка 16 бар на 24 часа',
-        shortTitle: 'Опрессовка 16 бар',
+        title: 'Испытание давлением по параметрам объекта',
+        shortTitle: 'Протокол испытаний',
         duration: '0:45',
         speaker: 'СТАНДАРТ БЕЗОПАСНОСТИ:',
-        subtitle: 'Стандарт Улугбека — гидроиспытания 16.0 бар в течение 24 часов (в 4 раза строже СНиП). Фото манометра на старте и финише гарантируют, что стяжку никогда не придется долбить.',
+        subtitle: 'Зафиксируйте согласованные для объекта давление и длительность, фактические показания и фотографии манометра. Решение о дальнейших работах принимается по проекту и осмотру.',
         render: () => `
           <div class="scene-interactive-card">
             <div class="scene-hero-header">
@@ -9901,18 +10136,18 @@ ${shareUrl}
             </div>
             <div class="scene-visual-canvas">
               <div class="scene-feature-box highlighted">
-                <div class="scene-feature-num" style="color:var(--gold-primary);">16.0 БАР</div>
-                <div class="scene-feature-label">Давление опрессовки</div>
-                <div class="scene-feature-desc">В 4 раза выше рабочего давления водопровода. Проверка соединений на разрыв.</div>
+                <div class="scene-feature-num" style="color:var(--gold-primary);">ПО ПРОЕКТУ</div>
+                <div class="scene-feature-label">Давление испытания</div>
+                <div class="scene-feature-desc">Укажите согласованное значение и внесите показания манометра.</div>
               </div>
               <div class="scene-feature-box">
-                <div class="scene-feature-num" style="color:#ef4444;">24 ЧАСА</div>
-                <div class="scene-feature-label">Таймер с фотофиксацией</div>
-                <div class="scene-feature-desc">Фото манометра при накачке и через сутки. Автоматическое составление Акта.</div>
+                <div class="scene-feature-num" style="color:#ef4444;">ПО ПРОТОКОЛУ</div>
+                <div class="scene-feature-label">Период испытания</div>
+                <div class="scene-feature-desc">Задайте длительность согласно требованиям объекта и зафиксируйте результат.</div>
               </div>
             </div>
             <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
-              🔒 <b>Железная защита мастера:</b> Заказчик и плиточники подписывают акт опрессовки ДО заливки чистового пола.
+              📋 <b>Прозрачный контроль:</b> Протокол фиксирует фактические результаты перед следующим этапом работ.
             </div>
           </div>
         `,
@@ -9954,28 +10189,28 @@ ${shareUrl}
 
     this.videoChaptersClient = [
       {
-        id: 'client-16bar',
-        title: 'Стандарт 16 БАР: Надежность на 50 лет',
-        shortTitle: 'Стандарт 16 БАР',
+        id: 'client-pressure-test',
+        title: 'Испытание по параметрам объекта',
+        shortTitle: 'Протокол испытаний',
         duration: '0:45',
         speaker: 'СТАНДАРТ КАЧЕСТВА LIGA:',
-        subtitle: 'Обычные монтажники проверяют трубы давлением 4–6 бар. Мы опрессовываем систему на 16.0 бар в течение 24 часов. Это гарантирует отсутствие протечек в стяжке на весь срок службы дома.',
+        subtitle: 'Параметры, длительность и критерии испытания определяются проектом и спецификацией оборудования. В акт вносятся только фактические значения и замечания.',
         render: () => `
           <div class="scene-interactive-card">
             <div class="scene-hero-header">
-              <div class="scene-hero-title"><span>🛡️</span> ПОЧЕМУ 16 БАР — ЭТО БЕЗОПАСНОСТЬ</div>
-              <div class="scene-hero-status">СТАНДАРТ ТАШКЕНТА №1</div>
+              <div class="scene-hero-title"><span>🛡️</span> КАК ЧИТАТЬ ПРОТОКОЛ ИСПЫТАНИЙ</div>
+              <div class="scene-hero-status">ДАННЫЕ КОНКРЕТНОГО ОБЪЕКТА</div>
             </div>
             <div class="scene-visual-canvas">
               <div class="scene-feature-box">
-                <div class="scene-feature-num" style="color:#94a3b8;">4–6 БАР</div>
-                <div class="scene-feature-label">Обычный СНиП</div>
-                <div class="scene-feature-desc">Скрытый микробрак не виден и может дать течь через 1–2 года прямо в стяжке.</div>
+                <div class="scene-feature-num" style="color:#94a3b8;">ПРОЕКТ</div>
+                <div class="scene-feature-label">Согласованные условия</div>
+                <div class="scene-feature-desc">До начала испытаний уточните применимые требования и состояние системы.</div>
               </div>
               <div class="scene-feature-box highlighted">
-                <div class="scene-feature-num" style="color:var(--gold-primary);">16.0 БАР</div>
-                <div class="scene-feature-label">Стандарт Улугбека Хакимова</div>
-                <div class="scene-feature-desc">Выдерживает даже экстремальные гидроудары городского водоканала. Полное спокойствие.</div>
+                <div class="scene-feature-num" style="color:var(--gold-primary);">ФАКТ</div>
+                <div class="scene-feature-label">Заполненный протокол</div>
+                <div class="scene-feature-desc">В документе показываются внесенные замеры, сроки, фото и заключение мастера.</div>
               </div>
             </div>
             <div style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border-left:3px solid var(--gold-primary);">
@@ -10405,7 +10640,7 @@ ${shareUrl}
 
   drillDownToPressure() {
     this.openModal('modal-pressure-test');
-    this.showToast('Открыт протокол гидравлических испытаний 16 бар');
+    this.showToast('Открыт протокол гидравлических испытаний объекта');
   }
 
   // ==========================================================================
@@ -10544,12 +10779,12 @@ ${shareUrl}
         },
         {
           selector: '#site-status-badge',
-          title: '🛡️ 4. Опрессовка 16 бар перед заливкой стяжки',
-          body: 'Швейцарский эталон надежности Лиги (в 4 раза строже СНиП). Нажимаем — и открывается официальный протокол испытаний!',
-          narrator: 'Шаг четвёртый. Опрессовка шестнадцать бар. Открываем официальный протокол испытаний перед заливкой стяжки!',
+          title: '🛡️ 4. Протокол испытаний объекта',
+          body: 'Внесите согласованные параметры, фактические замеры, замечания и фото манометра. Откроем протокол для текущего объекта.',
+          narrator: 'Шаг четвёртый. Открываем протокол и фиксируем результаты испытания по параметрам этого объекта.',
           action: () => {
             this.switchScreen('dashboard');
-            // Реальное открытие протокола гидроиспытаний 16 бар!
+            // Открываем протокол фактических гидравлических испытаний.
             setTimeout(() => {
               this.openModal('modal-pressure-test');
             }, 300);
@@ -10575,8 +10810,8 @@ ${shareUrl}
         {
           selector: '#settings-section-seal',
           title: '🏛️ 6. Гербовая печать и цифровая подпись мастера',
-          body: 'В Настройках задайте ваше имя, бренд и квалификацию. Все сметы, Акты 16 бар и паспорта заверяются именной швейцарской печатью!',
-          narrator: 'Шаг шестой. Именная гербовая печать и цифровая подпись мастера. Все ваши сметы и акты заверяются знаком высшей надежности!',
+          body: 'В настройках укажите имя, организацию и квалификацию. Персональный оттиск и подпись оформляют документы мастера.',
+          narrator: 'Шаг шестой. Настраиваем персональный оттиск и подпись мастера для оформления документов.',
           action: () => {
             // Реальное открытие Настроек с плавной прокруткой к секции печати!
             this.openModal('modal-settings');
@@ -10902,10 +11137,13 @@ ${shareUrl}
     // Масштаб Canvas для HiDPI экранов
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    canvas.style.width = rect.width + 'px';
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
     canvas.style.height = rect.height + 'px';
 
     // Загружаем сохранённую подпись, если есть
@@ -11011,6 +11249,34 @@ ${shareUrl}
 
     this._signaturePadCanvas = canvas;
     this._signaturePadCtx = ctx;
+  }
+
+  resizeSignaturePad() {
+    const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+    if (canvas.width === width && canvas.height === height) return;
+
+    const savedSignature = window.ligaSealEngine && window.ligaSealEngine.settings.handwrittenSignature;
+    const previousDrawing = !savedSignature && canvas.width > 0 && canvas.height > 0 ? canvas.toDataURL('image/png') : null;
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const imageData = savedSignature || previousDrawing;
+    if (imageData) {
+      const image = new Image();
+      image.onload = () => ctx.drawImage(image, 0, 0, rect.width, rect.height);
+      image.src = imageData;
+    }
   }
 
   clearSignaturePad() {
@@ -11134,7 +11400,7 @@ ${shareUrl}
 
   saveSignaturePadToEngine() {
     const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
-    if (!canvas || !window.ligaSealEngine) return;
+    if (!canvas || !window.ligaSealEngine || canvas.width <= 0 || canvas.height <= 0) return;
 
     // Проверяем, есть ли что-то нарисованное на холсте
     const ctx = canvas.getContext('2d');
@@ -11159,7 +11425,7 @@ ${shareUrl}
   }
 
   // ==========================================================================
-  // АВТО-ОНБОРДИНГ И ПРИВЛЕЧЕНИЕ ВНИМАНИЯ К ТЕСТ-ДРАЙВУ УЛУГБЕКА (v2.5.0)
+  // НЕНАВЯЗЧИВЫЙ ОНБОРДИНГ ТЕСТ-ДРАЙВА УЛУГБЕКА (v2.5.7)
   // ==========================================================================
   initUlugbekBriefOnboarding() {
     const card = document.getElementById('card-ulugbek-brief');
@@ -11169,42 +11435,10 @@ ${shareUrl}
     const isAcknowledged = localStorage.getItem('liga_ulugbek_testdrive_ack') === 'true';
 
     if (!isAcknowledged) {
-      // Первое открытие: привлекаем внимание мастера пульсацией и бейджем первого приоритета
+      // Показываем приоритет на карточке, но не перехватываем первое нажатие
+      // и не открываем полноэкранный бриф без прямого запроса пользователя.
       card.classList.add('vip-attention-pulse');
       if (badgePriority) badgePriority.style.display = 'inline-flex';
-
-      // v2.5.0: Отказ от слепого таймера 1400мс. В мобильных браузерах звук блокируется до первого касания экрана (Autoplay Policy).
-      // Настраиваем мгновенный разблокировщик: при первом же касании экрана (тап / клик) аудиосистема активируется,
-      // распахивается VIP-бриф и звучит бархатный рояльный аккорд Ре-мажор представительского класса со 100% гарантией!
-      let touchTriggered = false;
-      const firstTouchHandler = (e) => {
-        if (touchTriggered) return;
-        if (localStorage.getItem('liga_ulugbek_testdrive_ack') === 'true') return;
-
-        // Если открыт микрофон или модалка видеотура — не перебиваем
-        const modalVoice = document.getElementById('modal-voice');
-        if (modalVoice && modalVoice.classList.contains('open')) return;
-
-        touchTriggered = true;
-        // Разблокируем аудиоконтекст
-        if (this.audioCtx && this.audioCtx.state === 'suspended') {
-          this.audioCtx.resume().catch(() => {});
-        }
-
-        // Если пользователь не нажал напрямую на кнопку или карточку брифа (они сами вызовут метод):
-        const isClickOnBriefCard = e.target && (e.target.closest('#card-ulugbek-brief') || e.target.closest('#modal-ulugbek-vip-brief'));
-        if (!isClickOnBriefCard) {
-          setTimeout(() => {
-            const briefModal = document.getElementById('modal-ulugbek-vip-brief');
-            if (briefModal && !briefModal.classList.contains('open')) {
-              this.openUlugbekVipBrief();
-            }
-          }, 120);
-        }
-      };
-
-      window.addEventListener('pointerdown', firstTouchHandler, { passive: true });
-      window.addEventListener('touchstart', firstTouchHandler, { passive: true });
     } else {
       card.classList.remove('vip-attention-pulse');
       if (badgePriority) badgePriority.style.display = 'none';
@@ -11248,7 +11482,7 @@ ${shareUrl}
     this.closeModal('modal-ulugbek-vip-brief');
     setTimeout(() => {
       this.openModal('modal-pressure-test');
-      this.showToast('⏱️ Открыт таймер и протокол гидравлики 16 бар / 24ч');
+      this.showToast('⏱️ Открыт протокол гидравлического испытания');
     }, 150);
   }
 
