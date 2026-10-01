@@ -87,8 +87,8 @@ def test_swiss_master_menu_toggle_and_close(http_server):
         page.wait_for_selector("#modal-more-menu.open")
         assert modal.is_visible(), "Меню должно открыться"
 
-        # 2. Закрытие повторным кликом по кнопке «⋯ Меню» (Toggle)
-        btn_more.click()
+        # 2. Шапка находится под затемнением, закрываем через кнопку в самом меню.
+        page.locator("#btn-close-more-menu").click()
         page.wait_for_timeout(300)
         assert not modal.is_visible(), "Меню должно закрыться повторным кликом по кнопке"
 

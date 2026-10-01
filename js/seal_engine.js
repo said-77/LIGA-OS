@@ -117,6 +117,12 @@ class LigaSealEngine {
       darkAccent = '#172554';
       badgeBg = 'rgba(29, 78, 216, 0.08)';
       ribbonText = '#ffffff';
+    } else if (style === 'elite_graphite_gold') {
+      primaryColor = '#b8860b';
+      secondaryColor = '#334155';
+      darkAccent = '#111827';
+      badgeBg = 'rgba(15, 23, 42, 0.08)';
+      ribbonText = '#fff8e1';
     } else {
       // swiss_imperial_gold (золотая цветовая тема)
       primaryColor = '#b45309';
@@ -197,9 +203,10 @@ class LigaSealEngine {
 
         <!-- Центральный фирменный знак: чистый монограммный щит LIGA -->
         <path d="M 91,72 L 129,72 L 126,96 C 124,105 117,111 110,115 C 103,111 96,105 94,96 Z"
-              fill="none" stroke="${primaryColor}" stroke-width="1.8" stroke-linejoin="round" />
+              fill="${style === 'elite_graphite_gold' ? darkAccent : 'none'}" stroke="${primaryColor}" stroke-width="${style === 'elite_graphite_gold' ? 2.8 : 1.8}" stroke-linejoin="round" />
+        ${style === 'elite_graphite_gold' ? '<path d="M 96,77 L 124,77 L 122,95 C 120,101 116,106 110,110 C 104,106 100,101 98,95 Z" fill="none" stroke="#e7c66a" stroke-width="0.8" />' : ''}
         <text x="110" y="101" font-family="Georgia, 'Times New Roman', serif" font-size="24"
-              font-weight="700" text-anchor="middle" fill="${primaryColor}" letter-spacing="-1">L</text>
+              font-weight="700" text-anchor="middle" fill="${style === 'elite_graphite_gold' ? '#f4d47d' : primaryColor}" letter-spacing="-1">L</text>
         <line x1="101" y1="106" x2="119" y2="106" stroke="${secondaryColor}" stroke-width="1" />
 
         <!-- Имя мастера в центре -->
@@ -267,7 +274,8 @@ class LigaSealEngine {
    */
   renderCombinedStampAndSignHTML(customOptions = {}) {
     const opt = { ...this.settings, ...customOptions };
-    const sealHtml = this.renderSealSVG({ ...customOptions, displaySize: 128 });
+    const displaySize = Math.max(112, Math.min(170, Number(customOptions.displaySize) || 128));
+    const sealHtml = this.renderSealSVG({ ...customOptions, displaySize });
     const signHtml = this.renderSignatureSVG(customOptions);
     const isDraft = customOptions.isDraft || false;
     const draftClass = isDraft ? ' draft' : '';
@@ -288,7 +296,7 @@ class LigaSealEngine {
         </div>
         ${signHtml}
       </div>
-      <div class="seal-container-inner ${stampClass}${draftClass} ${extraClass}" style="position:relative; flex:0 0 128px; width:128px; height:128px; transform:rotate(-2deg); z-index:1; pointer-events:auto;" title="Фирменная печать LIGA OS">
+      <div class="seal-container-inner ${stampClass}${draftClass} ${extraClass}" style="position:relative; flex:0 0 ${displaySize}px; width:${displaySize}px; height:${displaySize}px; transform:rotate(-2deg); z-index:1; pointer-events:auto;" title="Фирменная печать LIGA OS">
         ${sealHtml}
         <span class="facsimile-stamp-text" style="display:none;">ЛИГА МАСТЕРОВ ${isDraft ? 'ЧЕРНОВИК • ИСПЫТАНИЕ НЕ ЗАФИКСИРОВАНО' : 'ИНЖЕНЕРНЫЙ ПРОТОКОЛ'}</span>
       </div>
@@ -307,6 +315,9 @@ class LigaSealEngine {
     const company = this.settings.companyName || 'Лига Опытных Мастеров';
     const title = this.settings.title || 'Ведущий инженер сантехники и отопления';
     const cert = (this.settings.licenseNumber || '').trim();
+    const signatureStatus = this.settings.handwrittenSignature
+      ? 'рукописная подпись сохранена мастером'
+      : 'рукописная подпись мастером не добавлена';
 
     const pressureBar = Number(s.pressureTest && s.pressureTest.pressureBar);
     const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
@@ -327,7 +338,7 @@ class LigaSealEngine {
     const money = (value) => Number.isFinite(value) ? `${value.toLocaleString('ru-RU')} сум` : 'не указана';
 
     return `
-🏛️ <b>LIGA MASTER OS • ОФИЦИАЛЬНОЕ ЗАКЛЮЧЕНИЕ</b>
+🏛️ <b>LIGA OS • СВОДКА ПО ОБЪЕКТУ</b>
 ────────────────────────────
 📍 <b>ОБЪЕКТ:</b> ${siteName}${unitName}
 👤 <b>ЗАКАЗЧИК:</b> ${clientName}
@@ -346,7 +357,7 @@ class LigaSealEngine {
 
 ────────────────────────────
 🏛️ <b>ГЕРБОВАЯ ПЕЧАТЬ:</b> № ${cert}
-✍️ <b>ПОДПИСЬ МАСТЕРА:</b> ${this.settings.signatureText}
+✍️ <b>ПОДПИСЬ МАСТЕРА:</b> ${this.settings.signatureText} (${signatureStatus})
 ⏱️ <b>ФИКСАЦИЯ:</b> ${timestamp} (Ташкент, UTC+5)
 🔖 <b>ЛОКАЛЬНЫЙ НОМЕР ДОКУМЕНТА:</b> <code>${verCode}</code>
 ────────────────────────────

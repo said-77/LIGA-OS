@@ -1313,7 +1313,7 @@ body.more-menu-open .top-header {
   bottom: 0;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
-  z-index: 300;
+  z-index: 400;
   display: none;
   align-items: flex-end;
   justify-content: center;

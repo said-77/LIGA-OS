@@ -3586,8 +3586,7 @@ ${itemsText}
 ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на тропический душ/ванну)\n` : ''}6. Труба Rehau Rautitan Pink/Flex 16 мм: ${c.m16} м
 7. Защита системы: ${c.accessories}
 
-🛡️ ТЕРМОСТАБИЛЬНОСТЬ: 100% ВЫДЕРЖАНО.
-Перепад температуры в душе при смыве унитаза или включении стиральной машины исключен!
+ℹ️ Расчёт оценивает расход и состав узла по введённым точкам водоразбора. Температура в душе также зависит от давления, оборудования, настроек и одновременной работы приборов.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -3876,7 +3875,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
         badgeEl.style.background = 'rgba(0,168,107,0.12)';
         badgeEl.style.borderColor = 'rgba(0,168,107,0.3)';
         badgeEl.style.color = '#10b981';
-        badgeEl.innerHTML = `🛡️ <strong>Гидравлическая увязка соблюдена: 100%</strong><br>Длина каждой петли ~${avgLoop} м (в пределах 75–80 м). Исключено завоздушивание и «запирание» теплоносителя.`;
+        badgeEl.innerHTML = `🧮 <strong>Средняя длина контура — около ${avgLoop} м</strong><br>Это предварительная оценка. Проверьте длину каждой петли, расход и балансировку по фактической раскладке.`;
       } else {
         badgeEl.style.background = 'rgba(239,68,68,0.12)';
         badgeEl.style.borderColor = 'rgba(239,68,68,0.3)';
@@ -3906,8 +3905,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 5. Концевые евроконусы 16×3/4": ${f.euroconesCount} шт
 6. Демпферная лента 8×150 мм: ~${f.perimeterMeters} м
 
-🛡️ ГИДРАВЛИЧЕСКАЯ УВЯЗКА: 100% ВЫДЕРЖАНО.
-Все петли сбалансированы, перегрев насоса и неравномерный прогрев пола полностью исключены!
+ℹ️ Расчётная схема не подтверждает фактическую балансировку. Проверьте длину и расход каждой петли, насос и настройки после монтажа.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -4188,8 +4186,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 5. Подключение из стены: ${r.tubesRehauText}
 6. Терморегулирование: ${r.thermostatsText}
 
-🛡️ 100% ЗАЩИТА ОТ ПРОТЕЧЕК В СТЯЖКЕ:
-Лучевая разводка Rehau без единого тройника под полом. Каждая ветка неразрывна от коллектора до радиатора!
+ℹ️ Лучевая схема уменьшает число скрытых соединений под полом. Герметичность зависит от качества монтажа, испытаний и состояния узлов подключения.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -4538,7 +4535,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
     if (!b) return;
 
     const report = `⚡ ИНЖЕНЕРНЫЙ РАСЧЕТ БОЙЛЕРА И СИСТЕМЫ ГВС
-«Лига Опытных Мастеров» • Стандарт безаварийного водоснабжения (Ташкент)
+«Лига Опытных Мастеров» • Предварительный расчёт системы ГВС (Ташкент)
 Ведущий инженер: Улугбек Хакимов
 
 📍 Проживающих: ${b.residents} чел
@@ -4552,8 +4549,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 5. Насос рециркуляции ГВС: ${b.recircPumpModel}
 6. Диаметры трубной обвязки: ${b.pipeDiaText}
 
-🛡️ 100% ЗАЩИТА ЭМАЛИ БОЙЛЕРА:
-Расширительный бак ГВС Reflex Refix объемом 10% от бойлера полностью гасит тепловое расширение воды при нагреве (3.8%), предотвращая постоянный срыв клапана и микротрещины эмали!
+ℹ️ Объём бака и параметры группы безопасности необходимо проверить по рабочему давлению, температуре, паспорту оборудования и проекту. Этот расчёт — предварительная рекомендация, а не гарантия защиты бойлера.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -4710,7 +4706,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 
   // ==========================================================================
   // РАСЧЕТ СИСТЕМЫ ЗАЩИТЫ ОТ ПРОТЕЧЕК NEPTUN / GIDROLOCK (v2.3.0)
-  // 100% защита: электрокраны Bugatti 12V, радиодатчики, резерв LiFePO4
+  // Подбор защиты зависит от клапанов, датчиков, питания и условий монтажа
   // ==========================================================================
   openLeakCalculator() {
     this.closeModal('modal-more-menu');
@@ -4901,8 +4897,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 4. Резервное питание: ${l.upsText}
 5. Сервисная арматура: ${l.fittingsText}
 
-🛡️ 100% БЕЗОПАСНОСТЬ ОТ ЗАТОПЛЕНИЯ:
-Время перекрытия стояков: 18-21 сек. Металлические шестерни редуктора исключают заклинивание. Система предотвращает катастрофический ущерб ремонту и соседям снизу!
+ℹ️ Система обнаружения и перекрытия может снизить риск и масштаб ущерба, но не гарантирует отсутствие протечки. Сверьте время закрытия, питание, датчики и совместимость по паспортам выбранных устройств.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -5711,15 +5706,19 @@ ${loopsText}
   }
 
   async copyPumpClientScript() {
-    const p = this.currentCalculatedPump || { pumpModel: 'Grundfos ALPHA 25-60', velocity: 0.48 };
+    const p = this.currentCalculatedPump;
+    if (!p) {
+      this.showToast('Сначала выполните расчёт насоса и проверьте его исходные данные.');
+      return;
+    }
     const text = `Здравствуйте! Сделал расчет циркуляционного насоса и диаметров магистральных трубопроводов.
 
-🌀 Бесшумность и надежность:
-Насос и сечение труб подобраны так, чтобы теплоноситель двигался со строго выверенной скоростью (0.4–0.6 м/с). Это полностью исключает гидравлический гул и свист в радиаторах, а также защищает систему от преждевременного износа.
+🌀 Предварительная расчётная оценка:
+Подбор основан на введённых исходных данных. Шум и надёжность также зависят от характеристики насоса, арматуры, воздуха в системе, монтажа и настройки.
 
 ⚡ Энергосбережение:
 Современный энергоэффективный насос (${p.pumpModel || 'Grundfos / Wilo'}) автоматически подстраивает свою мощность под потребности дома, потребляя минимум электроэнергии.
-Долговечная безаварийная работа гарантирована!`;
+Перед закупкой и монтажом сверьте модель и рабочую точку с проектом и паспортом производителя.`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -6044,15 +6043,18 @@ ${loopsText}
   }
 
   async copyExpansionTankClientScript() {
-    const t = this.currentCalculatedTank || { tankModel: 'Reflex NG 35', p0: 1.5 };
+    const t = this.currentCalculatedTank;
+    if (!t) {
+      this.showToast('Сначала выполните расчёт расширительного бака и проверьте его исходные данные.');
+      return;
+    }
     const text = `Здравствуйте! Подготовил инженерный расчет мембранного расширительного бака Reflex.
 
 🛑 Защита от гидроударов и разрыва:
-При нагреве объем воды в системе неизбежно увеличивается. Если расширению некуда деваться, давление подскочит до критического и сорвет соединения либо разрушит теплообменник котла.
+Расширительный бак компенсирует изменение объёма теплоносителя в заданных условиях. Его тип, объём и предварительное давление нужно сверить с параметрами системы и инструкцией производителя.
 
 💎 Швейцарский стандарт:
-Устанавливается качественный мембранный бак европейского бренда Reflex с предварительной закачкой азота (P₀ = ${t.p0 || 1.5} бар) и специальным сервисным клапаном для ежегодного обслуживания. Давление в вашей котельной всегда будет стабильным.
-Система полностью защищена на десятилетия!`;
+Расчётная модель: ${t.tankModel || 'уточните модель по результатам расчёта'}; предварительное давление P₀ = ${t.p0} бар. Результат не заменяет проверку проекта, рабочего давления и паспорта оборудования.`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -8345,7 +8347,7 @@ ${loopsText}
     const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
     const stageCode = `STG-${site.id || '01'}-${hasPressureReading ? `${barVal.replace('.', '')}B` : 'NO-PRESSURE'}`;
 
-    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.8');
+    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.9');
     shareUrl.searchParams.set('verify_stage', stageCode);
     shareUrl.searchParams.set('site', site.name || 'Объект');
     shareUrl.searchParams.set('client', site.client || 'Заказчик');
@@ -8388,13 +8390,31 @@ ${shareUrl.toString()}
     }
   }
 
-  sendStageAcceptanceTelegram() {
+  async openShareSheet(text, url, title = 'LIGA OS') {
+    const shareData = { title, text, url };
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
+        return true;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return false;
+        console.info('Системная панель отправки недоступна; открываю Telegram Web.', error);
+      }
+    }
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    const opened = window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) this.showToast('Telegram Web заблокирован браузером. Разрешите всплывающее окно или скопируйте сообщение.');
+    return Boolean(opened);
+  }
+
+  async sendStageAcceptanceTelegram() {
     const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
-    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.8';
+    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.9';
     try {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-      window.open(shareUrl, '_blank');
-      this.showToast('✈️ Открывается Telegram для отправки заказчику...');
+      const shared = await this.openShareSheet(text, url, 'LIGA OS — приёмка этапа');
+      if (shared) {
+      this.showToast('Панель отправки открыта. Выберите Telegram и проверьте сообщение перед отправкой.');
+      }
     } catch (e) {
       console.warn('Telegram open error:', e);
     }
@@ -8457,12 +8477,8 @@ ${shareUrl.toString()}
       return;
     }
     const text = `Улугбек, здравствуйте! Заказчик отметил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Параметры гидравлических испытаний и допуск к следующим работам прошу сверить с протоколом мастера.`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?share=v2.5.8')}&text=${encodeURIComponent(text)}`;
-    try {
-      window.open(shareUrl, '_blank');
-    } catch (e) {
-      console.warn('Telegram notify error:', e);
-    }
+    this.openShareSheet(text, window.location.href, 'LIGA OS — подтверждение этапа')
+      .catch(e => console.warn('Telegram notify error:', e));
   }
 
   async signReceiptConfirmation() {
@@ -9956,7 +9972,7 @@ ${shareUrl.toString()}
   }
 
   // Быстрая отправка инженерного отчета заказчику в Telegram (в 1 клик)
-  shareSiteProgressTelegram() {
+  async shareSiteProgressTelegram() {
     if (!this.currentSite) {
       this.showToast('Выберите объект для формирования отчета');
       return;
@@ -9998,18 +10014,14 @@ ${shareUrl.toString()}
 Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
 Официальный портал: https://liga-master-uz.vercel.app/`;
 
+    const url = 'https://liga-master-uz.vercel.app/?share=v2.5.9';
+    const shared = await this.openShareSheet(report, url, `LIGA OS — отчёт: ${site.name || 'объект'}`);
+    if (!shared) return;
     this.copyToClipboard(report).then(() => {
-      this.showToast('✓ Официальный отчет с гербовой печатью скопирован!');
+      this.showToast('✓ Отчёт передан в панель отправки и скопирован. Проверьте текст перед отправкой.');
     }).catch(() => {
-      this.showToast('✓ Официальный отчет сформирован!');
+      this.showToast('✓ Панель отправки открыта. Проверьте текст перед отправкой.');
     });
-
-    try {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?share=v2.5.8')}&text=${encodeURIComponent(report)}`;
-      window.open(shareUrl, '_blank');
-    } catch (err) {
-      console.warn('Telegram share window error:', err);
-    }
   }
 
   // ==========================================================================
@@ -11052,7 +11064,7 @@ ${shareUrl.toString()}
       timestamp: window.ligaSealEngine.getFormattedTimestamp()
     };
 
-    box.innerHTML = window.ligaSealEngine.renderCombinedStampAndSignHTML(opt);
+    box.innerHTML = window.ligaSealEngine.renderCombinedStampAndSignHTML({ ...opt, displaySize: 158 });
 
     const clockEl = document.getElementById('seal-preview-clock');
     if (clockEl) {

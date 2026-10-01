@@ -110,7 +110,8 @@ def test_telegram_diplomatic_manifest():
         }""")
 
         manifest = manifests["recorded"]
-        assert "LIGA MASTER OS • ОФИЦИАЛЬНОЕ ЗАКЛЮЧЕНИЕ" in manifest
+        assert "LIGA OS • СВОДКА ПО ОБЪЕКТУ" in manifest
+        assert "рукописная подпись мастером не добавлена" in manifest
         assert "4.0 БАР" in manifest
         assert "Параметры проекта" in manifest
         assert "ГЕРБОВАЯ ПЕЧАТЬ" in manifest
@@ -120,6 +121,12 @@ def test_telegram_diplomatic_manifest():
         assert "18 500 000" not in missing
         assert "12 000 000" not in missing
         assert "Mirabad Avenue" not in missing
+
+        signed = page.evaluate("""() => {
+          window.ligaSealEngine.settings.handwrittenSignature = 'data:image/png;base64,AA==';
+          return window.ligaSealEngine.formatTelegramDiplomaticManifest({ name: 'Объект с подписью' });
+        }""")
+        assert "рукописная подпись сохранена мастером" in signed
 
         browser.close()
 
