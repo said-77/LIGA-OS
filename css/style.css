@@ -5848,16 +5848,34 @@ body.client-mode .btn-floating-voice {
   .official-verification-block {
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 10px;
   }
   .seal-container-inner {
     margin-left: 0 !important;
-    margin-top: -15px !important;
+    margin-top: 0 !important;
   }
   .official-seal-svg {
     width: 130px;
     height: 130px;
   }
+}
+
+.signature-canvas-wrapper .signature-pad-hint {
+  position: absolute;
+  inset: 0 0 30px;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.signature-canvas-wrapper.has-signature .signature-pad-hint {
+  opacity: 0;
 }
 
 

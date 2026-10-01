@@ -1806,7 +1806,7 @@ class LigaApp {
         2: 'Черновой монтаж: штробление, разводка Rehau, монтаж FAR.',
         3: `Гидроиспытания: ${Number.isFinite(recordedBar) && recordedBar > 0 ? `${recordedBar.toFixed(1)} бар зафиксировано` : 'параметры объекта не зафиксированы'}.`,
         4: 'Чистовой этап: заливка стяжки разрешена, монтаж приборов.',
-        5: 'Объект официально сдан. Активирована 10-летняя гарантия Лиги.'
+        5: 'Объект отмечен как сданный. Гарантийные условия — согласно договору.'
       };
       phaseDesc.innerText = phaseMap[s.status] || 'Выполняются инженерные работы.';
     }
@@ -1866,7 +1866,7 @@ class LigaApp {
       nextAction = {
         icon: '🎉',
         title: 'Финальная сдача объекта заказчику',
-        desc: 'Все 16-барные испытания и чек-листы закрыты. Сформируйте Паспорт и сдайте объект.',
+        desc: 'Проверьте согласованные испытания и чек-листы. Затем сформируйте паспорт и отметьте сдачу объекта.',
         btnText: 'Сдать объект →',
         action: () => this.handlePhaseStepClick(5)
       };
@@ -1874,7 +1874,7 @@ class LigaApp {
       nextAction = {
         icon: '📜',
         title: 'Объект сдан! Печать Инженерного Паспорта',
-        desc: '10-летняя гарантия Лиги Мастеров активна. Отправьте клиенту официальный PDF.',
+        desc: 'Проверьте комплект документов и условия договора перед передачей заказчику.',
         btnText: 'Печать PDF →',
         action: () => this.printPassport()
       };
@@ -2129,7 +2129,7 @@ class LigaApp {
         action: () => this.openPassportPhotosModal()
       });
     } else if (targetStage === 5) {
-      // Этап 5: Объект сдан (10-летняя гарантия Лиги)
+      // Этап 5: Запись о сдаче объекта
       criteria.push({
         id: 'full_pressure_proof',
         title: 'Официальный протокол испытания с фото манометра',
@@ -3654,7 +3654,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 Диаметр ввода (${c.inlet || '25 мм'}) и пропускная способность коллекторов рассчитаны строго по европейскому стандарту DIN 1988 на одновременный расход. Даже если кто-то нажмет смыв унитаза или включится стиральная машина — напор и температура воды в душе не изменятся ни на градус (никаких температурных шоков и ожогов!).
 
 В спецификации заложены гасители гидроударов FAR и редукторы давления Caleffi для абсолютной защиты сантехники.
-Срок службы такой системы — свыше 50 лет надежно, как швейцарские часы!`;
+Срок службы зависит от материалов, монтажа, эксплуатации и требований производителя. Проверьте паспорт изделия и гарантийные условия для выбранной комплектации.`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3946,7 +3946,7 @@ ${c.m20 > 0 ? `5. Труба Rehau Rautitan Stabil 20 мм: ${c.m20} м (на т
 
 🛡️ Надежность в стяжке:
 Каждый контур укладывается цельным отрезком трубы Rehau Pink без единого фитинга или муфты в бетоне. Коллекторная группа с ротаметрами позволяет индивидуально настроить комфортную температуру в каждом помещении.
-Срок службы — более 50 лет!`;
+Срок службы и гарантия зависят от производителя, условий монтажа и эксплуатации; проверьте паспорт выбранного изделия.`;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -5694,7 +5694,7 @@ ${loopsText}
 4. Запорная арматура: Разъемные сгоны-американки FAR 1" (2 шт)
 
 🛡️ ИНЖЕНЕРНЫЙ СТАНДАРТ БЕЗОПАСНОСТИ:
-Скорость теплоносителя в пределах 0.3–0.7 м/с гарантирует 100% бесшумность радиаторов, исключает кавитацию и вибрацию труб в стяжке.
+Рекомендуемый диапазон скорости для этого расчёта — 0.3–0.7 м/с. Он помогает оценить условия потока, но сам по себе не гарантирует отсутствие шума, кавитации или вибрации: это также зависит от оборудования, настройки, монтажа и конкретного объекта.
 
 Сформировано в LIGA OS • https://liga-master-uz.vercel.app/`;
 
@@ -8345,8 +8345,12 @@ ${loopsText}
     const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
     const stageCode = `STG-${site.id || '01'}-${hasPressureReading ? `${barVal.replace('.', '')}B` : 'NO-PRESSURE'}`;
 
-    const origin = 'https://liga-master-uz.vercel.app/';
-    const shareUrl = `${origin}?verify_stage=${stageCode}&site=${encodeURIComponent(site.name || 'Объект')}&client=${encodeURIComponent(site.client || 'Заказчик')}&stage=${encodeURIComponent(stageTitle)}${hasPressureReading ? `&bar=${encodeURIComponent(barVal)}` : ''}`;
+    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.8');
+    shareUrl.searchParams.set('verify_stage', stageCode);
+    shareUrl.searchParams.set('site', site.name || 'Объект');
+    shareUrl.searchParams.set('client', site.client || 'Заказчик');
+    shareUrl.searchParams.set('stage', stageTitle);
+    if (hasPressureReading) shareUrl.searchParams.set('bar', barVal);
 
     const clientGreeting = site.client ? `Здравствуйте, ${site.client}!` : 'Здравствуйте!';
     const message = `${clientGreeting}
@@ -8357,13 +8361,13 @@ ${loopsText}
 📐 Точность водорозеток: по лазеру до 1 мм.
 
 Пожалуйста, ознакомьтесь с параметрами и подтвердите приёмку этапа в 1 клик по официальной ссылке LIGA OS:
-${shareUrl}
+${shareUrl.toString()}
 
 С уважением,
 Мастер Улугбек Хакимов («Лига Опытных Мастеров», Ташкент)`;
 
     this.currentGeneratedStageText = message;
-    this.currentGeneratedStageUrl = shareUrl;
+    this.currentGeneratedStageUrl = shareUrl.toString();
 
     const previewEl = document.getElementById('stage-link-message-preview');
     if (previewEl) previewEl.value = message;
@@ -8386,7 +8390,7 @@ ${shareUrl}
 
   sendStageAcceptanceTelegram() {
     const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
-    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/';
+    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.8';
     try {
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(shareUrl, '_blank');
@@ -8453,7 +8457,7 @@ ${shareUrl}
       return;
     }
     const text = `Улугбек, здравствуйте! Заказчик отметил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Параметры гидравлических испытаний и допуск к следующим работам прошу сверить с протоколом мастера.`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/')}&text=${encodeURIComponent(text)}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?share=v2.5.8')}&text=${encodeURIComponent(text)}`;
     try {
       window.open(shareUrl, '_blank');
     } catch (e) {
@@ -8545,7 +8549,7 @@ ${shareUrl}
             <span>🏛️ Почему лучевая коллекторная разводка FAR</span>
           </div>
           <div class="guide-script-text">
-            «При тройниковой системе, когда на кухне открывают воду, в душе падает напор и обжигает кипятком. Лучевая разводка FAR дает отдельную прямую трубу к каждому крану без скрытых тройников в полу. Это бесшумно, надежно и безопасно на 50 лет.»
+            «Коллекторная схема FAR позволяет подвести отдельную линию к каждой точке и упростить перекрытие и обслуживание. Фактический расход и стабильность давления зависят от расчёта системы, диаметров труб, настройки и одновременного водоразбора.»
           </div>
           <button class="btn-copy-script" onclick="window.app.copyGuideText(this)">
             <span>📋 Скопировать аргумент для клиента</span>
@@ -9216,7 +9220,7 @@ ${shareUrl}
     }
     if (modalId === 'modal-settings') {
       this.loadMasterSealSettings();
-      requestAnimationFrame(() => this.resizeSignaturePad());
+      requestAnimationFrame(() => requestAnimationFrame(() => this.resizeSignaturePad()));
     }
     if (modalId === 'modal-more-menu') {
       document.body.classList.add('more-menu-open');
@@ -10001,7 +10005,7 @@ ${shareUrl}
     });
 
     try {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/')}&text=${encodeURIComponent(report)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://liga-master-uz.vercel.app/?share=v2.5.8')}&text=${encodeURIComponent(report)}`;
       window.open(shareUrl, '_blank');
     } catch (err) {
       console.warn('Telegram share window error:', err);
@@ -10094,19 +10098,19 @@ ${shareUrl}
         title: 'Базар Джами и чеки голосом',
         shortTitle: 'Базар Джами и чеки',
         duration: '0:45',
-        speaker: 'ОФЛАЙН-РЕЖИМ:',
-        subtitle: 'На рынке Джами или в подвале без интернета нажмите микрофон и скажите: «Купил коллектор FAR за 1.8 млн». Система моментально учтет расход и обновит остаток аванса.',
+        speaker: 'ЛОКАЛЬНАЯ БАЗА:',
+        subtitle: 'Записи хранятся в локальной базе на устройстве. Если браузер поддерживает диктовку, можно попробовать голосовой ввод; распознавание может требовать интернет. При недоступности микрофона внесите покупку вручную.',
         render: () => `
           <div class="scene-interactive-card">
             <div class="scene-hero-header">
               <div class="scene-hero-title"><span>🎙️</span> ГОЛОСОВОЙ УЧЕТ БЕЗ РУК</div>
-              <div class="scene-hero-status">100% ОФФЛАЙН</div>
+              <div class="scene-hero-status">ЛОКАЛЬНАЯ БАЗА</div>
             </div>
             <div class="scene-visual-canvas">
               <div class="scene-feature-box highlighted">
                 <div class="scene-feature-num">4 сек</div>
                 <div class="scene-feature-label">«Купил коллектор FAR 1.8 млн»</div>
-                <div class="scene-feature-desc">Распознавание речи прямо на устройстве. Никаких записей в мятых блокнотах.</div>
+                <div class="scene-feature-desc">Голосовой ввод зависит от браузера и сети. Для надёжной записи доступен ручной ввод.</div>
               </div>
               <div class="scene-feature-box">
                 <div class="scene-feature-num" style="color:#34d399;">Касса UZS</div>
@@ -11041,7 +11045,7 @@ ${shareUrl}
     const opt = {
       masterName: (inputName && inputName.value.trim()) ? inputName.value.trim() : (window.ligaSealEngine.settings.masterName || 'Улугбек Хакимов'),
       companyName: (inputCompany && inputCompany.value.trim()) ? inputCompany.value.trim() : (window.ligaSealEngine.settings.companyName || 'Лига Опытных Мастеров'),
-      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : (window.ligaSealEngine.settings.licenseNumber || 'LMO-UZ-2011/2026'),
+      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : '',
       title: (inputTitle && inputTitle.value.trim()) ? inputTitle.value.trim() : (window.ligaSealEngine.settings.title || 'Ведущий инженер сантехники и систем отопления'),
       signatureText: (inputSign && inputSign.value.trim()) ? inputSign.value.trim() : (window.ligaSealEngine.settings.signatureText || 'Хакимов У.А.'),
       stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : (window.ligaSealEngine.settings.stampStyle || 'blue_seal'),
@@ -11069,7 +11073,7 @@ ${shareUrl}
     const newSettings = {
       masterName: (inputName && inputName.value.trim()) ? inputName.value.trim() : 'Улугбек Хакимов',
       companyName: (inputCompany && inputCompany.value.trim()) ? inputCompany.value.trim() : 'Лига Опытных Мастеров',
-      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : 'LMO-UZ-2011/2026',
+      licenseNumber: (inputCert && inputCert.value.trim()) ? inputCert.value.trim() : '',
       title: (inputTitle && inputTitle.value.trim()) ? inputTitle.value.trim() : 'Ведущий инженер сантехники и систем отопления',
       signatureText: (inputSign && inputSign.value.trim()) ? inputSign.value.trim() : 'Хакимов У.А.',
       stampStyle: (selectStyle && selectStyle.value) ? selectStyle.value : 'swiss_imperial_gold'
@@ -11144,8 +11148,6 @@ ${shareUrl}
       canvas.style.width = rect.width + 'px';
       canvas.style.height = rect.height + 'px';
     }
-    canvas.style.height = rect.height + 'px';
-
     // Загружаем сохранённую подпись, если есть
     if (window.ligaSealEngine && window.ligaSealEngine.settings.handwrittenSignature) {
       const img = new Image();
@@ -11153,6 +11155,7 @@ ${shareUrl}
         ctx.drawImage(img, 0, 0, rect.width, rect.height);
       };
       img.src = window.ligaSealEngine.settings.handwrittenSignature;
+      if (wrapper) wrapper.classList.add('has-signature');
       const statusEl = document.getElementById('signature-pad-status');
       if (statusEl) statusEl.innerText = '✓ Сохранена';
       if (statusEl) statusEl.style.color = '#10b981';
@@ -11176,6 +11179,7 @@ ${shareUrl}
     const startDraw = (e) => {
       e.preventDefault();
       isDrawing = true;
+      if (wrapper) wrapper.classList.add('has-signature');
       points = [];
       const pos = getPos(e);
       points.push(pos);
@@ -11189,15 +11193,22 @@ ${shareUrl}
       const pos = getPos(e);
       points.push(pos);
 
-      // Динамическая толщина по скорости (быстро = тонко, медленно = толсто)
+      // Выбранный стиль задаёт толщину; скорость слегка сглаживает штрих.
       const dt = Math.max(1, pos.time - lastTime);
       const prev = points[points.length - 2];
       const dist = Math.sqrt((pos.x - prev.x) ** 2 + (pos.y - prev.y) ** 2);
       const speed = dist / dt;
-      const lineWidth = Math.max(1.2, Math.min(3.8, 3.8 - speed * 1.5));
+      const penStyles = {
+        classic: { width: 2.2, color: '#1e3a8a' },
+        elegant: { width: 1.6, color: '#1e3a8a' },
+        bold: { width: 3.2, color: '#172554' }
+      };
+      const pen = penStyles[this.signaturePenStyle || 'classic'];
+      const lineWidth = Math.max(pen.width * 0.55, Math.min(pen.width * 1.25, pen.width - speed * 0.9));
       lastTime = pos.time;
 
       ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = pen.color;
 
       if (points.length >= 3) {
         // Алгоритм сглаживания Безье: рисуем кривые через средние точки
@@ -11284,6 +11295,8 @@ ${shareUrl}
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const wrapper = canvas.closest('.signature-canvas-wrapper');
+    if (wrapper) wrapper.classList.remove('has-signature');
 
     // Очищаем и в движке
     if (window.ligaSealEngine) {
@@ -11303,99 +11316,37 @@ ${shareUrl}
   applySignaturePreset(presetName = 'classic') {
     const canvas = this._signaturePadCanvas || document.getElementById('signature-pad-canvas');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.width / dpr;
-    const h = canvas.height / dpr;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1a1a2e';
-
-    // Имя мастера для генерации
-    const masterName = (window.ligaSealEngine && window.ligaSealEngine.settings.masterName) || 'Хакимов Улугбек';
-
-    if (presetName === 'classic') {
-      // Классический каллиграфический росчерк
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.1, h * 0.65);
-      ctx.bezierCurveTo(w * 0.06, h * 0.35, w * 0.18, h * 0.15, w * 0.24, h * 0.25);
-      ctx.bezierCurveTo(w * 0.30, h * 0.35, w * 0.20, h * 0.72, w * 0.16, h * 0.78);
-      ctx.bezierCurveTo(w * 0.13, h * 0.82, w * 0.25, h * 0.75, w * 0.35, h * 0.60);
-      ctx.stroke();
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.33, h * 0.60);
-      ctx.quadraticCurveTo(w * 0.40, h * 0.38, w * 0.45, h * 0.55);
-      ctx.quadraticCurveTo(w * 0.50, h * 0.40, w * 0.55, h * 0.52);
-      ctx.quadraticCurveTo(w * 0.60, h * 0.42, w * 0.65, h * 0.50);
-      ctx.quadraticCurveTo(w * 0.70, h * 0.38, w * 0.78, h * 0.52);
-      ctx.stroke();
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.65, h * 0.50);
-      ctx.quadraticCurveTo(w * 0.82, h * 0.78, w * 0.95, h * 0.30);
-      ctx.quadraticCurveTo(w * 0.85, h * 0.82, w * 0.50, h * 0.82);
-      ctx.stroke();
-    } else if (presetName === 'elegant') {
-      // Элегантный дипломатический
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.08, h * 0.55);
-      ctx.bezierCurveTo(w * 0.15, h * 0.18, w * 0.30, h * 0.12, w * 0.28, h * 0.40);
-      ctx.bezierCurveTo(w * 0.26, h * 0.68, w * 0.18, h * 0.85, w * 0.35, h * 0.65);
-      ctx.stroke();
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.33, h * 0.65);
-      ctx.bezierCurveTo(w * 0.45, h * 0.30, w * 0.55, h * 0.50, w * 0.60, h * 0.42);
-      ctx.bezierCurveTo(w * 0.65, h * 0.34, w * 0.72, h * 0.55, w * 0.80, h * 0.45);
-      ctx.stroke();
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.72, h * 0.48);
-      ctx.bezierCurveTo(w * 0.85, h * 0.72, w * 0.95, h * 0.25, w * 0.90, h * 0.55);
-      ctx.bezierCurveTo(w * 0.85, h * 0.85, w * 0.40, h * 0.88, w * 0.25, h * 0.85);
-      ctx.stroke();
-      // Финальная точка
-      ctx.beginPath();
-      ctx.arc(w * 0.92, h * 0.28, 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fill();
-    } else if (presetName === 'bold') {
-      // Жирный уверенный росчерк
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.10, h * 0.50);
-      ctx.bezierCurveTo(w * 0.12, h * 0.20, w * 0.25, h * 0.15, w * 0.30, h * 0.35);
-      ctx.bezierCurveTo(w * 0.35, h * 0.55, w * 0.22, h * 0.80, w * 0.40, h * 0.60);
-      ctx.stroke();
-      ctx.lineWidth = 2.8;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.38, h * 0.60);
-      ctx.quadraticCurveTo(w * 0.50, h * 0.30, w * 0.58, h * 0.48);
-      ctx.quadraticCurveTo(w * 0.66, h * 0.28, w * 0.75, h * 0.45);
-      ctx.stroke();
-      ctx.lineWidth = 2.0;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.70, h * 0.45);
-      ctx.bezierCurveTo(w * 0.88, h * 0.70, w * 0.95, h * 0.20, w * 0.85, h * 0.65);
-      ctx.stroke();
-      // Финальная точка
-      ctx.beginPath();
-      ctx.arc(w * 0.88, h * 0.22, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fill();
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      this.showToast('Сначала откройте раздел печати и подписи.');
+      return;
     }
-
+    const validPresets = ['classic', 'elegant', 'bold'];
+    if (!validPresets.includes(presetName)) {
+      this.showToast('Неизвестный стиль подписи. Выберите один из трёх вариантов.');
+      return;
+    }
+    this.signaturePenStyle = presetName;
+    const presetButtons = {
+      classic: 'btn-sig-preset-classic',
+      elegant: 'btn-sig-preset-elegant',
+      bold: 'btn-sig-preset-bold'
+    };
+    Object.entries(presetButtons).forEach(([style, id]) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      const selected = style === presetName;
+      button.setAttribute('aria-pressed', String(selected));
+      button.style.background = selected ? 'rgba(212,175,55,0.35)' : 'rgba(212,175,55,0.12)';
+      button.style.boxShadow = selected ? '0 0 0 2px rgba(212,175,55,0.35)' : 'none';
+    });
     const statusEl = document.getElementById('signature-pad-status');
     if (statusEl) {
-      statusEl.innerText = '✍️ Шаблон (не сохранён)';
+      statusEl.innerText = 'Выбран стиль пера';
       statusEl.style.color = '#f59e0b';
     }
-    this.showToast(`✍️ Шаблон подписи «${presetName === 'classic' ? 'Классика' : presetName === 'elegant' ? 'Элегант' : 'Жирный'}» применён`);
+    const presetNameRu = { classic: 'Классика', elegant: 'Элегант', bold: 'Жирный' }[presetName];
+    this.showToast(`✍️ Стиль «${presetNameRu}» выбран. Теперь нарисуйте личную подпись рукой.`);
   }
 
   saveSignaturePadToEngine() {
@@ -11471,11 +11422,17 @@ ${shareUrl}
   }
 
   testDriveStep1_Offline() {
-    const isOnline = navigator.onLine;
-    const msg = isOnline
-      ? '⚡ База данных IndexedDB активна в памяти устройства. Включите авиарежим: данные продолжат сохраняться!'
-      : '🟢 РЕЖИМ ОФЛАЙН АКТИВЕН: все хранилища LIGA OS работают полностью автономно!';
-    this.showToast(msg);
+    const db = window.ligaDB && window.ligaDB.db;
+    const requiredStores = ['sites', 'materials', 'checklists', 'finances', 'passports'];
+    const availableStores = db ? Array.from(db.objectStoreNames) : [];
+    const missing = requiredStores.filter(name => !availableStores.includes(name));
+    if (missing.length) {
+      this.showToast(`⚠️ Локальная база не готова: отсутствуют разделы ${missing.join(', ')}.`);
+      return;
+    }
+    this.showToast(navigator.onLine
+      ? '✅ Локальная база открыта. Она хранит записи на этом устройстве; доступ без сети нужно проверять отдельно.'
+      : '✅ Сеть недоступна, локальная база открыта. Данные остаются на этом устройстве.');
   }
 
   testDriveStep2_Pressure() {
@@ -11501,22 +11458,20 @@ ${shareUrl}
   testDriveStep4_Passport() {
     this.closeModal('modal-ulugbek-vip-brief');
     setTimeout(() => {
-      if (typeof this.generatePdfPassport === 'function') {
-        this.generatePdfPassport();
-      } else if (typeof this.openPassportPreviewModal === 'function') {
-        this.openPassportPreviewModal();
-      } else {
-        this.openModal('modal-passport-preview');
-      }
-      this.showToast('📄 Сформирован Исполнительный Инженерный Паспорт А4');
+      this.switchScreen('dashboard');
+      this.pulseElement('btn-generate-pdf');
+      this.showToast('📄 Проверьте статус паспорта на главном экране. Печать откроется только по вашему нажатию.');
     }, 150);
   }
 
   testDriveStep5_ClientMode() {
     this.closeModal('modal-ulugbek-vip-brief');
     setTimeout(() => {
-      this.toggleClientMode();
-      this.showToast('👁️ Безопасный режим клиента: коммерческая тайна и цены скрыты!');
+      const nextMode = !this.isClientMode;
+      this.setClientMode(nextMode);
+      this.showToast(nextMode
+        ? '👁️ Включён режим показа. Нажмите значок глаза ещё раз, чтобы вернуться к виду мастера.'
+        : '👑 Восстановлен вид мастера. Коммерческие сведения снова доступны мастеру.');
     }, 150);
   }
 }

@@ -11,7 +11,7 @@ class LigaSealEngine {
       masterName: 'Улугбек Хакимов',
       companyName: 'Лига Опытных Мастеров',
       title: 'Ведущий инженер сантехники и систем отопления',
-      licenseNumber: 'LMO-UZ-2011/2026',
+      licenseNumber: '',
       stampStyle: 'swiss_imperial_gold', // 'swiss_imperial_gold' | 'diplomatic_vermilion' | 'black_titanium_platinum' | 'royal_geneva_azure' | 'blue_seal' | 'gold_seal' | 'titanium_seal'
       signatureText: 'Хакимов У.А.',
       handwrittenSignature: null // DataURL от холста подписи пальцем/стилусом
@@ -23,7 +23,9 @@ class LigaSealEngine {
     try {
       const data = localStorage.getItem(this.storageKey);
       if (data) {
-        return { ...this.defaultSettings, ...JSON.parse(data) };
+        const saved = { ...this.defaultSettings, ...JSON.parse(data) };
+        if (saved.licenseNumber === 'LMO-UZ-2011/2026') saved.licenseNumber = '';
+        return saved;
       }
     } catch (e) {
       console.warn('Не удалось загрузить настройки печати LIGA OS:', e);
@@ -116,7 +118,7 @@ class LigaSealEngine {
       badgeBg = 'rgba(29, 78, 216, 0.08)';
       ribbonText = '#ffffff';
     } else {
-      // swiss_imperial_gold (Королевское золото 24K)
+      // swiss_imperial_gold (золотая цветовая тема)
       primaryColor = '#b45309';
       secondaryColor = '#d97706';
       darkAccent = '#78350f';
@@ -126,10 +128,10 @@ class LigaSealEngine {
 
     const masterNameDisplay = (opt.masterName || 'УЛУГБЕК ХАКИМОВ').toUpperCase();
     const companyDisplay = (opt.companyName || 'ЛИГА ОПЫТНЫХ МАСТЕРОВ').toUpperCase();
-    const certDisplay = opt.licenseNumber || 'LMO-UZ-2011/2026';
+    const certDisplay = (opt.licenseNumber || '').trim();
 
     return `
-    <svg class="official-seal-svg ${style}" viewBox="0 0 220 220" width="165" height="165" xmlns="http://www.w3.org/2000/svg">
+    <svg class="official-seal-svg ${style}" viewBox="0 0 220 220" width="${Number(opt.displaySize) || 165}" height="${Number(opt.displaySize) || 165}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <!-- Траектория верхнего кругового текста -->
         <path id="${uid}_top_path" d="M 25,110 A 85,85 0 1,1 195,110" fill="none" />
@@ -171,7 +173,7 @@ class LigaSealEngine {
         </text>
         <text font-family="'Segoe UI', Roboto, sans-serif" font-size="4.6" font-weight="900" letter-spacing="1.1" fill="${secondaryColor}" opacity="0.85">
           <textPath href="#${uid}_micro_bottom" startOffset="50%" text-anchor="middle">
-            ★ IN PRESSURA ET ARTE VERITAS • MASTER REGISTRY UZBEKISTAN ★
+            ★ LIGA OS • ENGINEERING • TASHKENT ★
           </textPath>
         </text>
 
@@ -193,17 +195,12 @@ class LigaSealEngine {
           </textPath>
         </text>
 
-        <!-- Центральный геральдический блок -->
-        <!-- Королевская корона высшего мастерства -->
-        <path d="M 96,66 L 100,74 L 110,64 L 120,74 L 124,66 L 122,79 L 98,79 Z" fill="${primaryColor}" stroke="none" />
-        <circle cx="96" cy="64" r="1.5" fill="${primaryColor}" stroke="none" />
-        <circle cx="110" cy="62" r="1.8" fill="${primaryColor}" stroke="none" />
-        <circle cx="124" cy="64" r="1.5" fill="${primaryColor}" stroke="none" />
-
-        <!-- Геральдический швейцарский щит -->
-        <path d="M 98,80 L 122,80 C 122,80 126,98 110,108 C 94,98 98,80 98,80 Z" fill="none" stroke="${primaryColor}" stroke-width="1.6" />
-        <!-- Швейцарский крест надёжности -->
-        <path d="M 108,86 H 112 V 90 H 116 V 94 H 112 V 98 H 108 V 94 H 104 V 90 H 108 Z" fill="${primaryColor}" stroke="none" />
+        <!-- Центральный фирменный знак: чистый монограммный щит LIGA -->
+        <path d="M 91,72 L 129,72 L 126,96 C 124,105 117,111 110,115 C 103,111 96,105 94,96 Z"
+              fill="none" stroke="${primaryColor}" stroke-width="1.8" stroke-linejoin="round" />
+        <text x="110" y="101" font-family="Georgia, 'Times New Roman', serif" font-size="24"
+              font-weight="700" text-anchor="middle" fill="${primaryColor}" letter-spacing="-1">L</text>
+        <line x1="101" y1="106" x2="119" y2="106" stroke="${secondaryColor}" stroke-width="1" />
 
         <!-- Имя мастера в центре -->
         <text x="110" y="121" font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="9.8" font-weight="900" text-anchor="middle" fill="${primaryColor}" letter-spacing="0.6">
@@ -234,18 +231,9 @@ class LigaSealEngine {
     `.trim();
   }
 
-  /**
-   * Генерация подписи мастера: если есть рукописная (пальцем/стилусом), используем её,
-   * иначе — красивейший каллиграфический SVG-вензель.
-   */
+  /** Рендерит только подпись, которую мастер действительно нарисовал. */
   renderSignatureSVG(customOptions = {}) {
     const opt = { ...this.settings, ...customOptions };
-    const style = opt.stampStyle || this.settings.stampStyle || 'swiss_imperial_gold';
-    let inkColor = '#1e3a8a';
-    if (style.includes('gold')) inkColor = '#b45309';
-    else if (style.includes('vermilion')) inkColor = '#9f1239';
-    else if (style.includes('titanium')) inkColor = '#0f172a';
-
     const signText = opt.signatureText || (opt.masterName ? opt.masterName.split(' ').reverse().join(' ') : 'Хакимов У.А.');
 
     // Если мастер нарисовал подпись пальцем или стилусом:
@@ -257,41 +245,29 @@ class LigaSealEngine {
         </div>
         <div class="signature-caption-row" style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">
           <span class="sign-name-label">${signText}</span>
-          <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">ПОДПИСЬ МАСТЕРА</span>
+          <span class="sign-verify-badge" style="font-size:8px; color:#64748b; font-weight:700; margin-left:4px;">рукописная подпись</span>
         </div>
       </div>
       `.trim();
     }
 
-    // Иначе — каллиграфический векторный росчерк чернильного пера
+    // Не подменяем настоящую рукописную подпись декоративной имитацией.
     return `
-    <div class="master-signature-wrap">
-      <svg class="official-signature-svg" viewBox="0 0 160 55" width="140" height="48" xmlns="http://www.w3.org/2000/svg">
-        <g stroke="${inkColor}" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <!-- Изящная петля заглавной буквы -->
-          <path d="M 15,38 C 10,25 22,12 32,16 C 42,20 28,42 22,46 C 18,48 35,44 48,36" stroke-width="2.4" />
-          <!-- Каллиграфический росчерк фамилии -->
-          <path d="M 45,36 Q 52,24 60,34 T 74,32 T 88,35 T 102,30 T 116,34" stroke-width="2.0" />
-          <!-- Финальный дипломатический взмах пера -->
-          <path d="M 98,34 Q 120,46 148,22 Q 130,48 70,48 Q 50,48 30,50" stroke-width="1.8" stroke-opacity="0.9" />
-          <!-- Метка цифрового заверения точки -->
-          <circle cx="150" cy="22" r="1.6" fill="${inkColor}" stroke="none" />
-        </g>
-      </svg>
+    <div class="master-signature-wrap" style="min-width:140px; min-height:56px; display:flex; flex-direction:column; justify-content:flex-end;">
       <div class="signature-caption-row" style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">
         <span class="sign-name-label">${signText}</span>
-        <span class="sign-verify-badge" style="font-size:8px; color:#059669; font-weight:800; margin-left:4px;">ПОДПИСЬ МАСТЕРА</span>
+        <span class="sign-verify-badge" style="font-size:8px; color:#64748b; font-weight:700; margin-left:4px;">рукописная подпись не добавлена</span>
       </div>
     </div>
     `.trim();
   }
 
   /**
-   * Совмещенный репрезентативный блок: Подпись + Гербовая печать внахлест (-3.5 град)
+   * Совмещенный блок подписи и печати без перекрытия содержимого.
    */
   renderCombinedStampAndSignHTML(customOptions = {}) {
     const opt = { ...this.settings, ...customOptions };
-    const sealHtml = this.renderSealSVG(customOptions);
+    const sealHtml = this.renderSealSVG({ ...customOptions, displaySize: 128 });
     const signHtml = this.renderSignatureSVG(customOptions);
     const isDraft = customOptions.isDraft || false;
     const draftClass = isDraft ? ' draft' : '';
@@ -301,7 +277,7 @@ class LigaSealEngine {
     const masterFullName = opt.masterName || 'Хакимов Улугбек';
 
     return `
-    <div class="official-verification-block" style="position:relative; display:inline-flex; align-items:flex-end; gap:8px;">
+    <div class="official-verification-block" style="position:relative; display:inline-flex; align-items:center; gap:12px; max-width:100%;">
       <div class="sign-container-inner" style="z-index:1;">
         <div style="font-size:8.5px; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.5px; margin-bottom:2px;">
           Ответственный инженер:
@@ -312,7 +288,7 @@ class LigaSealEngine {
         </div>
         ${signHtml}
       </div>
-      <div class="seal-container-inner ${stampClass}${draftClass} ${extraClass}" style="position:relative; margin-left:-35px; margin-bottom:-6px; transform:rotate(-3.5deg); z-index:2; pointer-events:auto;" title="Официальный штамп технического контроля LIGA OS">
+      <div class="seal-container-inner ${stampClass}${draftClass} ${extraClass}" style="position:relative; flex:0 0 128px; width:128px; height:128px; transform:rotate(-2deg); z-index:1; pointer-events:auto;" title="Фирменная печать LIGA OS">
         ${sealHtml}
         <span class="facsimile-stamp-text" style="display:none;">ЛИГА МАСТЕРОВ ${isDraft ? 'ЧЕРНОВИК • ИСПЫТАНИЕ НЕ ЗАФИКСИРОВАНО' : 'ИНЖЕНЕРНЫЙ ПРОТОКОЛ'}</span>
       </div>
@@ -330,7 +306,7 @@ class LigaSealEngine {
     const master = this.settings.masterName || 'Улугбек Хакимов';
     const company = this.settings.companyName || 'Лига Опытных Мастеров';
     const title = this.settings.title || 'Ведущий инженер сантехники и отопления';
-    const cert = this.settings.licenseNumber || 'LMO-UZ-2011/2026';
+    const cert = (this.settings.licenseNumber || '').trim();
 
     const pressureBar = Number(s.pressureTest && s.pressureTest.pressureBar);
     const hasPressureReading = Number.isFinite(pressureBar) && pressureBar > 0;
