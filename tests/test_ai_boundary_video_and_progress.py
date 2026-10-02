@@ -64,6 +64,44 @@ def test_api_key_save_visibility_and_safe_prompt(app_url):
         browser.close()
 
 
+def test_contextual_help_uses_catalog_without_live_page_values(app_url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 393, "height": 852})
+        page.goto(f"{app_url}/index.html?profile=demo")
+        page.wait_for_function("Array.isArray(window.LIGA_HELP_CATALOG) && window.ligaAI")
+        page.evaluate("""() => {
+          window.app.currentSite = {title:'PRIVATE_SITE_1', address:'PRIVATE_ADDRESS_2', clientName:'PRIVATE_CLIENT_3', contractSum:91827364};
+          window.app.switchScreen('checklist');
+          document.querySelector('#ai-chat-input').value = 'Объясни испытание и почему бывает 16 бар';
+        }""")
+        prompt = page.evaluate("window.ligaAI._buildHelpPrompt()")
+        assert "КОНТРОЛЬ, ЭТАПЫ И ИСПЫТАНИЯ" in prompt
+        assert "16 бар — возможный усиленный стандарт" in prompt
+        for private_value in ["PRIVATE_SITE_1", "PRIVATE_ADDRESS_2", "PRIVATE_CLIENT_3", "91827364"]:
+            assert private_value not in prompt
+
+        page.evaluate("window.app.openModal('modal-ai-concierge')")
+        page.evaluate("window.app.openModal('modal-floor-calculator')")
+        page.evaluate("window.ligaAI._sendMessage = () => { window.helpQuestion = document.querySelector('#ai-chat-input').value; }")
+        page.locator("#btn-ai-explain-screen").click()
+        assert "Калькулятор тёплого пола" in page.evaluate("window.helpQuestion")
+        browser.close()
+
+
+def test_public_help_page_is_standalone_and_privacy_clear(app_url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        response = page.goto(f"{app_url}/help/")
+        assert response and response.status == 200
+        assert page.title() == "Руководство пользователя — LIGA OS"
+        text = page.locator("body").inner_text()
+        for phrase in ["ChatGPT, Gemini", "не даёт нейросети доступ", "16 бар — усиленный стандарт", "калькуляторы"]:
+            assert phrase.lower() in text.lower()
+        browser.close()
+
+
 def test_video_controls_follow_playback_across_screens(app_url):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

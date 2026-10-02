@@ -36,31 +36,11 @@ class LigaAIConcierge {
     this.chatInput = null;
 
     // ── Системный промпт LIGA OS ─────────────────────────────────────────────
-    this.SYSTEM_PROMPT = `Ты — LIGA AI, персональный инженерный консьерж премиальной системы LIGA OS (Операционная Система Инженерного Мастера).
-Ты ассистируешь ведущему инженеру элитной сантехники и отопления в Ташкенте — Улугбеку Хакимову («Лига Опытных Мастеров»).
-
-ТВОЙ СТАТУС И СТИЛЬ:
-- Ты говоришь уверенно, профессионально, уважительно и предельно лаконично (мастер в работе на объекте, цени его секунды).
-- Используй терминологию швейцарского инженерного стандарта: лучевая разводка, коллекторные группы FAR, трубы Rehau Rautitan Pink/Platinum (PEX-a с кислородным барьером EVOH), фитинги под натяжную гильзу, компенсаторы гидроударов, редукторы давления Caleffi.
-
-ИНЖЕНЕРНАЯ БАЗА ЗНАНИЙ (ТАШКЕНТ И СТРОИТЕЛЬНЫЕ НОРМЫ):
-1. ИСПЫТАНИЯ ГЕРМЕТИЧНОСТИ:
-   - Давление, длительность, последовательность и критерии приемки определяются проектом, оборудованием, материалом труб и условиями конкретного объекта.
-   - Не назначай универсальное давление или срок, не называй частное значение требованием норм и не обещай отсутствие протечек без подтвержденных замеров.
-   - Если параметры не указаны, уточни их у мастера и не додумывай численные значения.
-2. РАСЧЕТ ВОДЯНОГО ТЕПЛОГО ПОЛА:
-   - Шаг укладки: основной — 150 мм (расход трубы ~6.5–6.7 м на 1 м²); рантовые зоны у панорамных окон — 100 мм (расход ~10 м на 1 м²).
-   - Максимальная длина одного контура 16×2.0 мм: не более 80–90 метров (гидравлическое сопротивление до 20 кПа).
-   - Число выходов коллектора: 1 контур на каждые 10–12 м² площади пола.
-3. ВОДОСНАБЖЕНИЕ В НОВОСТРОЙКАХ ТАШКЕНТА (Mirabad Avenue, Infinity, Nest One, Tashkent City):
-   - Высокое давление от насосных станций (скачки до 7–9 бар). Обязательна установка редуктора давления Caleffi (настройка на 3.0–3.5 бар), фильтров тонкой очистки 100 мкм с манометрами и гасителей гидроударов.
-   - Только коллекторная лучевая схема: ни одного тройника в стяжке или под плиткой.
-4. ПЕРЕГОВОРЫ С ЗАКАЗЧИКАМИ И ДИЗАЙНЕРАМИ:
-   - На вопрос «Почему у вас дороже, чем у бригад с базара?»: опиши подтверждаемые преимущества конкретного предложения — качество монтажа, фотофиксацию, фактический протокол испытаний и паспорт объекта. Не обещай срок гарантии, сумму ущерба или параметры давления, если они не указаны в договоре/объекте.
-   - При споре с дизайнером по выводам: «Инженерные законы гидравлики и уклонов канализации (3 см на метр для 50 трубы, 2 см для 110) первичны перед визуалом мебели, иначе будет застой и запах».
-
-ГОЛОСОВЫЕ КОМАНДЫ LIGA OS:
-Мастер может сказать вслух: «Покажи деньги» (переход в финансы), «Где базар» (склад чеков), «Перед стяжкой» (чек-лист 10 пунктов), «Сделай паспорт» (PDF генератор), «Скинь в тг» (Telegram отчет). Объясняй это мастеру при вопросах о программе.`;
+    this.SYSTEM_PROMPT = `Ты — LIGA AI, помощник по интерфейсу и работе в LIGA OS. Отвечай по-русски, спокойно и простыми короткими шагами.
+Основная задача — объяснить назначение выбранного экрана или инструмента, какие данные подготовить, что нажать, какой результат ожидать и что проверить перед сохранением.
+Используй только приведённый справочник и вопрос пользователя. Если точной информации нет, скажи об этом и задай короткий уточняющий вопрос. Не выдумывай названия кнопок, формулы, нормы, гарантии и функции.
+Все инженерные значения зависят от проекта, оборудования и фактических исходных данных; не подтверждай их без проверки. 16 бар — не универсальное требование.
+Не проси присылать контакты, адреса, финансовые данные, API-ключи, фотографии или секреты. Не повторяй такие сведения, если пользователь их написал. Не утверждай, что видишь базу LIGA OS: она остаётся на устройстве.`;
 
     this._init();
   }
@@ -127,6 +107,17 @@ class LigaAIConcierge {
     // Отправка сообщения
     const btnSend = document.getElementById('btn-ai-send');
     if (btnSend) btnSend.addEventListener('click', () => this._sendMessage());
+
+    const btnExplainScreen = document.getElementById('btn-ai-explain-screen');
+    if (btnExplainScreen) btnExplainScreen.addEventListener('click', () => {
+      const entry = this._getActiveHelpEntry();
+      const input = this.chatInput;
+      if (!input) return;
+      input.value = entry
+        ? `Объясни раздел «${entry.title}»: для чего он нужен и как выполнить основное действие по шагам?`
+        : 'Объясни, как пользоваться текущим экраном. Если ты не знаешь его точное назначение, уточни у меня название раздела.';
+      this._sendMessage();
+    });
 
     // Enter для отправки (Shift+Enter — новая строка)
     if (this.chatInput) {
@@ -694,15 +685,42 @@ class LigaAIConcierge {
   }
 
   _buildHelpPrompt() {
-    const screen = document.querySelector('.app-screen.active');
-    const modal = document.querySelector('.modal-overlay.open .modal-sheet');
-    const headings = [screen, modal].filter(Boolean).flatMap(root =>
-      [...root.querySelectorAll('h1,h2,h3,.screen-hero-title,.section-title,.modal-title,button[title],label,.form-label')]
-        .filter(el => el.getClientRects().length)
-        .map(el => (el.innerText || el.getAttribute('title') || '').trim()).filter(Boolean)
-    );
-    const context = [...new Set(headings)].slice(0, 48).join(' • ') || 'экран не определён';
-    return `${this.SYSTEM_PROMPT}\n\nПОМОЩЬ ПО ИНТЕРФЕЙСУ:\n- Отвечай по-русски короткими понятными шагами: что нажать, что ввести и что произойдёт.\n- Объясняй текущий раздел по названиям и подписям ниже. Если сведений недостаточно, скажи об этом и уточни инструмент.\n- Не выдумывай исходные значения расчётов; результат зависит от проекта и введённых параметров.\n- Не добавляй в контекст данные объекта, контакты, суммы, адреса, фото и значения полей. Внешнему провайдеру отправляются вопрос и короткая история беседы после нажатия «Отправить».\nНАЗВАНИЯ И ПОДПИСИ ТЕКУЩЕГО ЭКРАНА (без введённых значений): ${context}`;
+    const active = this._getActiveHelpEntry();
+    const catalog = Array.isArray(window.LIGA_HELP_CATALOG) ? window.LIGA_HELP_CATALOG : [];
+    const matches = active ? [active] : [];
+    const question = (this.chatInput?.value || this.chatHistory.at(-1)?.parts?.[0]?.text || '').toLocaleLowerCase('ru');
+    const scored = catalog.map(entry => ({
+      entry,
+      score: (entry.keys || []).reduce((score, keyword) => score + (question.includes(keyword.toLocaleLowerCase('ru')) ? Math.min(keyword.length, 8) : 0), 0)
+    })).filter(item => item.score > 0 && !matches.some(entry => entry.id === item.entry.id))
+      .sort((left, right) => right.score - left.score);
+    for (const item of scored.slice(0, 4)) matches.push(item.entry);
+    const context = matches.length
+      ? matches.map(entry => `• ${entry.title}: ${entry.text}`).join('\n')
+      : 'Подходящая статья не найдена. Уточни название экрана или инструмента; не угадывай.';
+    return `${this.SYSTEM_PROMPT}\n\nТЕКУЩИЙ РАЗДЕЛ: ${active?.title.toLocaleUpperCase('ru') || 'НЕ ОПРЕДЕЛЁН'}\nСПРАВОЧНИК ДЛЯ ЭТОГО ВОПРОСА:\n${context}\n\nПорядок ответа: назначение → короткие шаги → ожидаемый результат → что проверить. Передавай только общее название текущего раздела и выбранные справочные статьи; не включай текст DOM, название объекта или введённые значения.`;
+  }
+
+  _getActiveHelpEntry() {
+    const catalog = Array.isArray(window.LIGA_HELP_CATALOG) ? window.LIGA_HELP_CATALOG : [];
+    const screen = window.app?.currentScreen;
+    const openModalIds = [...document.querySelectorAll('.modal-overlay.open[id]')]
+      .map(modal => modal.id).filter(id => !['modal-ai-concierge', 'modal-settings'].includes(id));
+    const modalMap = {
+      'modal-pipe-calculator': 'pipe-calc',
+      'modal-floor-calculator': 'floor-calc',
+      'modal-radiator-calculator': 'radiator-calc',
+      'modal-boiler-calculator': 'boiler-calc',
+      'modal-leak-calculator': 'leak-calc',
+      'modal-balancing-calculator': 'balancing-calc',
+      'modal-pump-calculator': 'pump-calc',
+      'modal-expansion-tank-calculator': 'tank-calc',
+      'modal-hydraulic-separator-calculator': 'separator-calc'
+    };
+    const modalEntry = openModalIds.map(id => catalog.find(entry => entry.id === modalMap[id])).find(Boolean);
+    if (modalEntry) return modalEntry;
+    const screenEntry = catalog.find(entry => entry.id === screen);
+    return screenEntry || catalog.find(entry => entry.id === 'common') || null;
   }
 
   async _callBackupProvider(provider, userText, key, history = true) {
