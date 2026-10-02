@@ -9,6 +9,21 @@ const DB_VERSION = 3;
 class LigaDatabase {
   constructor() {
     this.db = null;
+    const url = new URL(window.location.href);
+    const requestedProfile = url.searchParams.get('profile');
+    const storedProfile = localStorage.getItem('liga_os_profile_mode');
+    this.profileMode = ['work', 'demo', 'legacy'].includes(requestedProfile)
+      ? requestedProfile
+      : (['demo', 'legacy'].includes(storedProfile) ? storedProfile : 'work');
+    if (requestedProfile === 'work' || requestedProfile === 'demo' || requestedProfile === 'legacy') {
+      localStorage.setItem('liga_os_profile_mode', this.profileMode);
+      url.searchParams.delete('profile');
+      history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+    // Рабочая база новая и пустая; прежняя база и демо сохраняются раздельно.
+    this.databaseName = this.profileMode === 'demo'
+      ? `${DB_NAME}_Demo`
+      : (this.profileMode === 'legacy' ? DB_NAME : `${DB_NAME}_Work`);
   }
 
   async init() {
@@ -24,7 +39,7 @@ class LigaDatabase {
         }
       }, 2500);
 
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(this.databaseName, DB_VERSION);
 
       // Защита от блокировки открытыми вкладками браузера при обновлении схемы
       request.onblocked = (event) => {
@@ -130,6 +145,7 @@ class LigaDatabase {
 
   // Заполнение эталонными демо-данными при первом старте
   async seedInitialDataIfEmpty() {
+    if (this.profileMode !== 'demo') return;
     const sites = await this.getAll('sites');
     if (sites.length === 0) {
       console.log('Инициализация эталонных объектов LIGA OS...');
@@ -304,6 +320,7 @@ class LigaDatabase {
 
   // Гарантированное наличие эталонного объекта «ЖК Infinity, Блок C» с полной инженерной историей
   async ensureInfinityDemoSite() {
+    if (this.profileMode !== 'demo') return;
     try {
       const sites = await this.getAll('sites');
       const hasInfinity = sites.some(s => s.name && s.name.includes('Infinity'));
@@ -578,6 +595,8 @@ class LigaDatabase {
       appName: 'LIGA OS',
       schemaVersion: 1,
       dbVersion: DB_VERSION,
+      profileMode: this.profileMode,
+      profileDatabase: this.databaseName,
       exportDate: new Date().toISOString(),
       appVersion: '2.0.4',
       sites,
@@ -598,7 +617,7 @@ class LigaDatabase {
     const payload = await this.createBackupPayload();
     const jsonStr = JSON.stringify(payload, null, 2);
     const dateStr = new Date().toISOString().slice(0, 10);
-    const fileName = `liga_backup_${dateStr}.json`;
+    const fileName = `liga_backup_${this.profileMode}_${dateStr}.json`;
 
     // Проверяем возможность поделиться файлом через Web Share API (смартфон -> Telegram/WhatsApp/Диск)
     if (typeof File !== 'undefined' && navigator.share && navigator.canShare) {
@@ -607,8 +626,8 @@ class LigaDatabase {
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
-            title: 'Резервная копия LIGA OS',
-            text: `Резервная копия базы LIGA OS от ${dateStr} (${payload.sites.length} объектов)`
+            title: `Резервная копия LIGA OS — ${this.profileMode}`,
+            text: `Резервная копия профиля ${this.profileMode} от ${dateStr} (${payload.sites.length} объектов)`
           });
           return { success: true, method: 'share', fileName };
         }
@@ -708,6 +727,8 @@ class LigaDatabase {
       valid: true,
       appName: data.appName,
       schemaVersion: data.schemaVersion,
+      profileMode: ['work', 'demo', 'legacy'].includes(data.profileMode) ? data.profileMode : 'legacy',
+      profileDatabase: typeof data.profileDatabase === 'string' ? data.profileDatabase : null,
       exportDate: data.exportDate || data.date || null,
       sitesCount: data.sites.length,
       materialsCount: data.materials.length,

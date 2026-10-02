@@ -53,7 +53,7 @@ def test_a4_print_calibration_workflow(http_server, sample_image_path):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Настраиваем подтвержденный протокол опрессовки с фото

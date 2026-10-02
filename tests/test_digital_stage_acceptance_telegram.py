@@ -47,7 +47,7 @@ def test_digital_stage_acceptance_telegram_workflow(http_server):
         master_context = browser.new_context(viewport={"width": 393, "height": 852})
         master_page = master_context.new_page()
 
-        master_page.goto(f"{http_server}/index.html")
+        master_page.goto(f"{http_server}/index.html?profile=demo")
         master_page.wait_for_selector(".bottom-nav")
 
         # 1. Проверяем наличие кнопки вызова ссылки приёмки на Дашборде

@@ -24,7 +24,7 @@ def test_dashboard_customization_presets_and_desktop_grid(local_server):
         browser = p.chromium.launch(headless=True)
         # Начинаем с десктопного экрана 1280x800
         page = browser.new_page(viewport={"width": 1280, "height": 800})
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 1. Проверяем десктопную сетку: левая и правая колонки расположены рядом

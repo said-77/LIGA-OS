@@ -38,7 +38,7 @@ def test_voice_intent_balancing_calculator(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Тестируем метод parseVoiceCommand
@@ -65,7 +65,7 @@ def test_open_balancing_calculator_from_menu_and_estimate(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # 1. Открытие через кнопку Меню
@@ -104,7 +104,7 @@ def test_interactive_calculation_and_rotameters(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Открываем калькулятор
@@ -157,7 +157,7 @@ def test_copy_cheat_sheet_and_cabinet_sticker(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Открываем калькулятор

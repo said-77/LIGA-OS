@@ -21,7 +21,7 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
 
       // 3. Автоматический сброс устаревшего кэша браузера при обновлении версии (Zero-Friction)
-      const CURRENT_BUILD = 'v2.5.10-guide-seal-clarity';
+      const CURRENT_BUILD = 'v2.5.12-separated-profiles';
       if (localStorage.getItem('liga_build_ver') !== CURRENT_BUILD) {
         localStorage.setItem('liga_build_ver', CURRENT_BUILD);
         if ('caches' in window) {
@@ -46,26 +46,26 @@
   <meta property="og:site_name" content="LIGA OS">
   <meta property="og:title" content="LIGA OS — Операционная Система Инженерного Мастера">
   <meta property="og:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики и герметичности, голосовой учёт без рук.">
-  <meta property="og:url" content="https://liga-master-uz.vercel.app/?share=v2.5.10">
-  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.10">
-  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.10">
+  <meta property="og:url" content="https://liga-master-uz.vercel.app/?share=v2.5.12">
+  <meta property="og:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.12">
+  <meta property="og:image:secure_url" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.12">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1376">
   <meta property="og:image:height" content="768">
   <meta property="og:image:alt" content="LIGA OS — система управления инженерными проектами мастера">
-  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.10">
-  <meta itemprop="image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.10">
+  <link rel="image_src" href="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.12">
+  <meta itemprop="image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.12">
   <meta property="og:locale" content="ru_RU">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="LIGA OS — Операционная Система Инженерного Мастера">
   <meta name="twitter:description" content="Швейцарский стандарт сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики, голосовой учёт без рук.">
-  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.9">
+  <meta name="twitter:image" content="https://liga-master-uz.vercel.app/icons/og-preview.jpg?v=2.5.12">
   <meta name="description" content="LIGA OS — операционная система ведущего инженера сантехники и отопления в Ташкенте. Цифровой паспорт объекта, контроль гидравлики, голосовой ввод без рук.">
 
   <!-- Стили Dark Titanium & Light Ceramic Glassmorphism v2.5.6 -->
-  <link rel="stylesheet" href="./css/style.css?v=2.5.10">
+      <link rel="stylesheet" href="./css/style.css?v=2.5.12">
 </head>
 <body>
   <div class="app-container">
@@ -377,6 +377,14 @@
         </button>
       </div>
 
+      <section id="empty-workspace-state" class="empty-workspace-card" hidden>
+        <div class="empty-workspace-kicker">РАБОЧИЙ ПРОФИЛЬ</div>
+        <h1>Начните с первого объекта</h1>
+        <p>Здесь будут только ваши клиенты, контакты, материалы, расчёты и история работ. Примерные данные находятся в отдельном демо-профиле. Данные из прежних версий доступны в настройках и сохранены отдельно.</p>
+        <button type="button" class="btn-action btn-gold" onclick="window.app.openModal('modal-add-site')">＋ Создать первый объект</button>
+        <button type="button" class="empty-workspace-demo" onclick="window.app.switchDataProfile('demo')">Посмотреть демо-пример</button>
+      </section>
+
       <!-- ====================================================================
            СИТУАЦИЯ 1: НА ОБЪЕКТЕ (ГЛАВНЫЙ ФОКУС: ФАКТИЧЕСКИЕ ДАННЫЕ)
            ==================================================================== -->
@@ -442,7 +450,7 @@
       </div>
 
       <!-- Селектор переключения объектов с кнопкой добавления -->
-      <div class="form-group" style="margin-bottom: 12px;">
+      <div id="dashboard-site-selector-wrap" class="form-group" style="margin-bottom: 12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <label class="form-label" style="margin-bottom:0;">Активный объект:</label>
           <button id="btn-open-add-site" class="btn-action-trigger btn-action-gold" style="padding:4px 12px; font-size:11px; height:28px;">
@@ -519,7 +527,7 @@
               </svg>
               <div class="radar-center-content">
                 <div id="chrono-progress-val" class="radar-val">0%</div>
-                <div class="radar-label">ГОТОВНОСТЬ</div>
+                <div class="radar-label" title="Взвешенный индекс заполнения данных объекта, а не подтверждение инженерной готовности">ЗАПОЛНЕНИЕ</div>
               </div>
             </div>
 
@@ -533,6 +541,8 @@
               <div id="chrono-phase-desc" class="chrono-phase-desc">
                 Объект запущен в LIGA OS. Выполняются подготовительные работы.
               </div>
+              <button type="button" id="btn-readiness-breakdown" class="readiness-breakdown-toggle" aria-expanded="false">Как рассчитан индекс?</button>
+              <div id="readiness-breakdown" class="readiness-breakdown" hidden></div>
             </div>
           </div>
         </div>
@@ -3608,7 +3618,7 @@
         </div>
 
         <div style="font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.5;">
-          Полный снимок базы LIGA OS (объекты, сметы, чеки, фото, персональные тарифы мастера). Хранится локально на вашем смартфоне.
+          Копия только активной базы LIGA OS (объекты, сметы, чеки, фото, персональные тарифы мастера). Другие профили в этот файл не входят; копия хранится локально на вашем устройстве.
         </div>
 
         <!-- 1. Блок экспорта -->
@@ -3633,7 +3643,7 @@
             📥 Восстановление из файла
           </div>
           <div style="font-size:12px; color:var(--text-main); margin-bottom:10px; line-height:1.4;">
-            Перенесите базу на новый смартфон или восстановите архивные объекты из файла резервной копии.
+              Перенесите выбранную базу на новое устройство или восстановите архив в текущий активный профиль. Другие профили не затрагиваются.
           </div>
 
           <input type="file" id="input-backup-file" accept=".json,application/json" style="display:none;">
@@ -3650,7 +3660,7 @@
               <!-- Заполняется динамически -->
             </div>
             <div style="font-size:11px; color:var(--neon-ruby); font-weight:700; margin-bottom:10px;">
-              Внимание: Восстановление заменит текущие данные приложения данными из файла!
+                Внимание: восстановление заменит данные только активного профиля данными из файла. Перед подтверждением проверьте названия профиля в архиве и назначения.
             </div>
             <div style="display:flex; gap:8px;">
               <button id="btn-confirm-restore" type="button" class="btn-submit-modal" style="flex:1; height:42px; font-size:12px; background:var(--neon-amber); color:#000;">
@@ -4008,6 +4018,17 @@
         </div>
         <div class="modal-body" style="padding-bottom:16px;">
 
+          <div class="settings-section data-profile-section">
+            <div class="settings-section-title">Профиль данных</div>
+            <div id="data-profile-status" class="data-profile-status" role="status" aria-live="polite"></div>
+            <p class="data-profile-description">Рабочий профиль, демо-пример и база прежних версий хранятся раздельно на этом устройстве. Переключение ничего не удаляет и не копирует. Синхронизации между устройствами здесь нет.</p>
+            <div class="data-profile-actions">
+              <button id="btn-switch-work-profile" type="button" data-switch-profile="work">Открыть рабочий профиль</button>
+              <button id="btn-switch-demo-profile" type="button" data-switch-profile="demo">Открыть демо-пример</button>
+              <button id="btn-switch-legacy-profile" type="button" data-switch-profile="legacy">Открыть прежнюю базу</button>
+            </div>
+          </div>
+
           <!-- Секция: Интерфейс -->
           <div class="settings-section">
             <div class="settings-section-title">Интерфейс и звуки</div>
@@ -4141,7 +4162,7 @@
           <div class="settings-section">
             <div class="settings-section-title" style="display:flex; justify-content:space-between; align-items:center;">
               <span>LIGA AI Консьерж</span>
-              <span class="ai-model-badge">Gemini 2.5 Flash</span>
+              <span class="ai-model-badge">Gemini 3.8 Flash</span>
             </div>
             <div class="settings-toggle-row">
               <div class="settings-toggle-info">
@@ -4156,16 +4177,20 @@
             <div style="margin-top:12px;">
               <div class="settings-toggle-label" style="margin-bottom:4px;">Google AI API ключ:</div>
               <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">
-                Бесплатный ключ на <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:var(--neon-emerald); text-decoration:underline;">aistudio.google.com</a>. Хранится только на вашем телефоне.
+                Создать и управлять ключом: <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color:var(--neon-emerald); text-decoration:underline;">Google AI Studio</a>. Доступность бесплатной квоты зависит от модели и условий провайдера.
               </div>
               <input class="ai-api-key-field" type="password" id="ai-api-key-input"
-                placeholder="Вставьте ключ вида AIza..." autocomplete="off">
+                placeholder="Вставьте ключ Google AI Studio" autocomplete="off" spellcheck="false">
+              <button type="button" class="ai-key-visibility" data-toggle-secret="ai-api-key-input" aria-pressed="false">Показать</button>
               <button id="btn-save-ai-key" type="button"
                 style="margin-top:8px; width:100%; padding:10px; background:var(--gold-gradient);
                 border:none; border-radius:10px; color:var(--btn-gold-text); font-size:13px;
                 font-weight:800; cursor:pointer; font-family:var(--font-main);">
-                💾 Сохранить API ключ
+                💾 Сохранить ключ Google
               </button>
+              <button id="btn-test-ai-key" type="button" class="ai-provider-test">Проверить связь</button>
+              <div id="ai-provider-status" class="ai-provider-status" role="status" aria-live="polite"></div>
+              <div class="ai-provider-boundary-note">Ключ хранится в этом браузере без шифрования. Вопрос и короткая история передаются выбранному ИИ-провайдеру. Не вводите личные данные клиентов. Проверка отправляет короткий запрос и расходует квоту; возможная оплата зависит от тарифа провайдера.</div>
             </div>
             <div class="settings-toggle-row" style="margin-top:10px;">
               <div class="settings-toggle-info">
@@ -4201,18 +4226,23 @@
             <div style="margin-top:10px;">
               <label class="form-label" style="margin-bottom:4px; font-size:11px;">Резервный провайдер:</label>
               <select id="select-ai-backup-provider" class="form-input" style="padding:8px 10px; font-size:12px; margin-bottom:8px; cursor:pointer;">
-                <option value="openai">OpenAI (GPT-4o-mini — ультра-экономный)</option>
-                <option value="groq">Groq Cloud (Llama 3.3 70B — сверхбыстрый)</option>
+                <option value="openai">OpenAI</option>
+                <option value="groq">Groq</option>
+                <option value="google">Google Gemini</option>
               </select>
-              <div class="settings-toggle-label" style="margin-bottom:4px;">Резервный API ключ (OpenAI / Groq):</div>
+              <div class="settings-toggle-label" style="margin-bottom:4px;">Ключ резервного провайдера:</div>
               <input class="ai-api-key-field" type="password" id="ai-backup-key-input"
-                placeholder="sk-proj-... или gsk_..." autocomplete="off">
+                placeholder="Вставьте ключ выбранного провайдера" autocomplete="off" spellcheck="false">
+              <button type="button" class="ai-key-visibility" data-toggle-secret="ai-backup-key-input" aria-pressed="false">Показать</button>
               <button id="btn-save-ai-backup-key" type="button"
                 style="margin-top:8px; width:100%; padding:9px; background:rgba(255,255,255,0.08);
                 border:1px solid rgba(255,255,255,0.18); border-radius:10px; color:var(--text-main); font-size:12px;
                 font-weight:700; cursor:pointer;">
                 💾 Сохранить резервный ключ
               </button>
+              <button id="btn-test-ai-backup-key" type="button" class="ai-provider-test">Проверить резервный канал</button>
+              <div id="ai-backup-status" class="ai-provider-status" role="status" aria-live="polite"></div>
+              <div class="ai-provider-boundary-note">Получение ключа: OpenAI — platform.openai.com/api-keys; Groq — console.groq.com/keys; Google — aistudio.google.com. Используйте ключ того провайдера, который выбран выше.</div>
             </div>
           </div>
 
@@ -4337,7 +4367,7 @@
         <div class="modal-title" style="margin-bottom:8px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span>🤖 LIGA AI</span>
-            <span class="ai-model-badge">Gemini 2.5 Flash</span>
+              <span class="ai-model-badge">Gemini 3.8 Flash</span>
           </div>
           <button class="btn-close-modal" id="btn-close-ai-concierge" onclick="window.app.closeModal('modal-ai-concierge')">&times;</button>
         </div>
@@ -4408,6 +4438,13 @@
         </div>
       </div>
     </div>
+
+    <aside id="liga-video-mini-player" class="liga-video-mini-player" aria-label="Управление воспроизводимым видеогидом" hidden>
+      <button type="button" id="liga-video-mini-open" title="Открыть видеогид">🎬 <span>Видеогид LIGA OS</span></button>
+      <span id="liga-video-mini-time" aria-live="off">0:00 / 1:22</span>
+      <button type="button" id="liga-video-mini-toggle" aria-label="Пауза видео">⏸</button>
+      <button type="button" id="liga-video-mini-stop" aria-label="Остановить видео">■</button>
+    </aside>
 
     <!-- ====================================================================
          МОДАЛЬНОЕ ОКНО: 🎬 ИНЖЕНЕРНЫЙ ГИД LIGA OS (ВЫБОР ФОРМАТА v2.4.4)
@@ -4674,12 +4711,12 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS v2.5.10 -->
+  <!-- Скрипты LIGA OS v2.5.12 -->
   <script src="./js/image_processor.js?v=2.5.3"></script>
-  <script src="./js/db.js?v=2.5.3"></script>
-  <script src="./js/seal_engine.js?v=2.5.10"></script>
-  <script src="./js/pdf_engine.js?v=2.5.10"></script>
-  <script src="./js/ai_concierge.js?v=2.5.9"></script>
-  <script src="./js/app.js?v=2.5.10"></script>
+  <script src="./js/db.js?v=2.5.12"></script>
+  <script src="./js/seal_engine.js?v=2.5.12"></script>
+  <script src="./js/pdf_engine.js?v=2.5.12"></script>
+  <script src="./js/ai_concierge.js?v=2.5.12"></script>
+  <script src="./js/app.js?v=2.5.12"></script>
 </body>
 </html>

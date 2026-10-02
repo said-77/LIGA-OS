@@ -46,7 +46,7 @@ def test_screen_navigation_back_buttons(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 1. Проверяем переход в чек-лист стяжки
@@ -103,7 +103,7 @@ def test_contacts_registry_and_crud(http_server):
         # Автоматическое подтверждение диалогов window.confirm
         page.on("dialog", lambda dialog: dialog.accept())
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Переходим на экран истории
@@ -154,6 +154,15 @@ def test_contacts_registry_and_crud(http_server):
         assert "Шерзод (Генподрядчик Golden House)" in updated_text, "Новый контакт должен появиться в списке"
         assert "Генподрядчик / Прораб" in updated_text, "Роль нового контакта должна отображаться"
 
+        # Перезагрузка приложения не должна удалять контакты локальной базы.
+        page.reload()
+        page.wait_for_selector(".bottom-nav")
+        page.click("button[data-screen='history']")
+        page.locator("button.history-subtab-btn[data-subtab='contacts']").click()
+        page.wait_for_timeout(350)
+        persisted_text = page.locator("#contacts-list-container").inner_text()
+        assert "Шерзод (Генподрядчик Golden House)" in persisted_text, "Контакт должен сохраниться после обновления страницы"
+
         # Удаление созданного контакта
         # Находим последнюю карточку с Шерзодом и кликаем кнопку корзины
         cards = page.locator("#contacts-list-container .contact-card-item").all()
@@ -180,7 +189,7 @@ def test_sound_toggle_and_ai_traces_clean(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#btn-sound-toggle")
 
         # 1. Проверка кнопки звука
@@ -219,7 +228,7 @@ def test_phase_stepper_milestones_and_timeline(http_server):
         # Автоматическое подтверждение confirm-диалогов
         page.on("dialog", lambda dialog: dialog.accept())
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".phase-stepper")
 
         # 1. Проверяем наличие степпера и бейджа статуса
@@ -286,7 +295,7 @@ def test_quality_gate_action_navigation(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".phase-stepper")
 
         # Кликаем на этап 4 («Чистовая сантехника / стяжка») без опрессовки и чек-листа
@@ -311,5 +320,4 @@ def test_quality_gate_action_navigation(http_server):
         assert screed_screen.is_visible(), "Экран чек-листа технадзора перед стяжкой должен быть открыт"
 
         browser.close()
-
 

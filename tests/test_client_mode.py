@@ -43,7 +43,7 @@ def test_client_view_mode_full_isolation(http_server):
         page = context.new_page()
 
         # 1. Открытие приложения в обычном режиме мастера
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Проверяем, что в режиме мастера видны служебные кнопки и внутренние финансы

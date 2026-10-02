@@ -35,7 +35,7 @@ def test_v244_drilldown_dashboard_to_finances(http_server):
         context = browser.new_context(viewport={"width": 1280, "height": 850})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # 1. Проверяем класс clickable-drilldown на карточке долга
@@ -77,7 +77,7 @@ def test_v244_drilldown_materials_and_pressure(http_server):
         context = browser.new_context(viewport={"width": 1280, "height": 850})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # 1. Клик по базарному карману мастера переводит на экран материалов
@@ -111,7 +111,7 @@ def test_v244_mobile_guide_modal_and_spotlight_viewport(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # 1. Проверяем кнопку гида в шапке на мобильном экране

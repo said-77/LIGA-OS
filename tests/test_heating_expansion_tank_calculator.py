@@ -38,7 +38,7 @@ def test_voice_intent_expansion_tank_calculator(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         res1 = page.evaluate("() => window.app.parseVoiceCommand('расчет расширительного бака отопления')")
@@ -64,7 +64,7 @@ def test_open_expansion_tank_calculator_from_menu_and_estimate(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # 1. Открытие через пульт мастера
@@ -102,7 +102,7 @@ def test_interactive_expansion_tank_calculation(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Открываем калькулятор
@@ -140,7 +140,7 @@ def test_copy_expansion_tank_calculation(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         page.evaluate("() => window.app.openExpansionTankCalculator()")
@@ -159,7 +159,7 @@ def test_add_expansion_tank_to_materials(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Открываем калькулятор

@@ -13,7 +13,7 @@ def get_base_url():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_dir)
     index_path = os.path.join(project_root, "index.html")
-    file_url = "file:///" + index_path.replace("\\", "/")
+    file_url = "file:///" + index_path.replace("\\", "/") + "?profile=demo"
     return file_url
 
 def test_seal_engine_and_live_preview():

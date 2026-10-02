@@ -41,7 +41,7 @@ def test_offline_header_indicator(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 393, "height": 852})
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         status_text = page.locator(".brand-subtitle").inner_text()
@@ -54,7 +54,7 @@ def test_engineering_audit_honesty(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 393, "height": 852})
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Кнопка аудита в шапке
@@ -95,7 +95,7 @@ def test_voice_input_network_disclaimer(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 393, "height": 852})
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Открываем голосовой ввод
@@ -121,7 +121,7 @@ def test_finances_online_offline_badges(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 393, "height": 852})
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Переходим на вкладку Финансы
@@ -144,7 +144,7 @@ def test_digital_receipt_network_notice(http_server):
         page = browser.new_page(viewport={"width": 393, "height": 852})
 
         # Открываем по прямой ссылке верификации расписки
-        page.goto(f"{http_server}/index.html?verify_receipt=TEST-001&emp=Рустам&amount=700000&site=Tashkent%20City")
+        page.goto(f"{http_server}/index.html?profile=demo&verify_receipt=TEST-001&emp=Рустам&amount=700000&site=Tashkent%20City")
         page.wait_for_selector("#modal-verify-receipt.open")
 
         receipt_modal = page.locator("#modal-verify-receipt")

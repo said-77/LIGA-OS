@@ -50,7 +50,7 @@ def test_header_layout_no_overlap(http_server):
         # Тестируем на узком телефоне 360px
         context = browser.new_context(viewport={"width": 360, "height": 780})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # Получаем координаты кнопок в верхней строке
@@ -76,7 +76,7 @@ def test_swiss_master_menu_toggle_and_close(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         btn_more = page.locator("#btn-more-menu-toggle")
@@ -117,7 +117,7 @@ def test_leak_protection_calculator_e2e(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 1. Проверка распознавания голосовой команды мастера

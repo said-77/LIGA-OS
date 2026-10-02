@@ -42,7 +42,7 @@ async def run_full_suite():
         page.on("console", lambda msg: errors.append(f"CONSOLE ERROR: {msg.text}") if msg.type == "error" else None)
         page.on("pageerror", lambda err: errors.append(f"PAGE ERROR: {err}"))
 
-        await page.goto(f"http://localhost:{PORT}/index.html", wait_until="networkidle")
+        await page.goto(f"http://localhost:{PORT}/index.html?profile=demo", wait_until="networkidle")
         await page.wait_for_timeout(500)
 
         # 1. Принудительно ставим тёмную тему для первой серии скриншотов

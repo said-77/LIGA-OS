@@ -43,7 +43,7 @@ async def run_suite():
         page.on("pageerror", lambda err: errors.append(f"PAGE ERROR: {err}"))
 
         print("1. Загрузка LIGA OS...")
-        await page.goto(f"http://localhost:{PORT}/index.html", wait_until="networkidle")
+        await page.goto(f"http://localhost:{PORT}/index.html?profile=demo", wait_until="networkidle")
         await page.wait_for_timeout(500)
 
         # Проверка нижней панели: 5 элементов
@@ -132,7 +132,7 @@ async def run_suite():
 
         # 6. Тестирование цифровой расписки через URL
         print("6. Тестирование подтверждения цифровой расписки через Telegram-ссылку...")
-        await page.goto(f"http://localhost:{PORT}/index.html?verify_receipt=REC-8842&emp=Алишер&amount=500000&site=Mirabad%20Avenue", wait_until="networkidle")
+        await page.goto(f"http://localhost:{PORT}/index.html?profile=demo&verify_receipt=REC-8842&emp=Алишер&amount=500000&site=Mirabad%20Avenue", wait_until="networkidle")
         await page.wait_for_timeout(600)
 
         receipt_visible = await page.is_visible("#modal-verify-receipt")

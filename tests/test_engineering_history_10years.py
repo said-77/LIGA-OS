@@ -42,7 +42,7 @@ def test_engineering_history_and_elite_ui_workflow(http_server):
         page = context.new_page()
 
         # 1. Открытие главной страницы
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 2. Проверка наличия 6 вкладок навигации

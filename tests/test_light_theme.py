@@ -45,7 +45,7 @@ def test_light_theme_contrast_and_screenshot(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Включаем светлую тему

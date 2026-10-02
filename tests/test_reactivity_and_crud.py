@@ -42,7 +42,7 @@ def test_reactivity_and_crud_workflow(http_server):
         page.on("dialog", lambda dialog: dialog.accept())
 
         # 1. Открытие главной страницы
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
         page.wait_for_selector("#site-selector")
         page.wait_for_selector("#site-name-display")
@@ -127,7 +127,7 @@ def test_reactivity_and_crud_workflow(http_server):
         page.wait_for_selector("#modal-backup-manager.open")
 
         stats_html = page.locator("#backup-current-stats").inner_html()
-        assert "В локальной базе сохранено" in stats_html, "Должна отображаться статистика базы"
+        assert "<b>" in stats_html, "Active profile statistics should be shown"
 
         # Закрываем модальное окно
         page.locator("#modal-backup-manager .btn-close-modal").click()

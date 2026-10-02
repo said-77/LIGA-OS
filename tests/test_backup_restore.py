@@ -12,7 +12,7 @@ import os
 import time
 import json
 import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 from playwright.sync_api import sync_playwright
 
@@ -26,12 +26,13 @@ class QuietHandler(SimpleHTTPRequestHandler):
 @pytest.fixture(scope="module")
 def http_server():
     os.chdir(ROOT_DIR)
-    server = HTTPServer(('127.0.0.1', PORT), QuietHandler)
+    server = ThreadingHTTPServer(('127.0.0.1', PORT), QuietHandler)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     time.sleep(0.5)
     yield f"http://127.0.0.1:{PORT}"
     server.shutdown()
+    server.server_close()
 
 def test_backup_and_restore_full_workflow(http_server, tmp_path):
     with sync_playwright() as p:
@@ -40,7 +41,7 @@ def test_backup_and_restore_full_workflow(http_server, tmp_path):
         page = context.new_page()
 
         # 1. Загрузка приложения
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 2. Открытие менеджера резервного копирования
@@ -55,6 +56,7 @@ def test_backup_and_restore_full_workflow(http_server, tmp_path):
         # Проверка статистики текущей базы
         stats_el = page.locator("#backup-current-stats")
         assert "объекта" in stats_el.inner_text().lower(), "Статистика базы должна содержать информацию об объектах"
+        assert "примеры" in stats_el.inner_text().lower(), "Менеджер должен показывать активный профиль"
 
         # 3. Тест экспорта: скачивание файла резервной копии
         with page.expect_download() as download_info:
@@ -63,6 +65,7 @@ def test_backup_and_restore_full_workflow(http_server, tmp_path):
 
         download_name = download.suggested_filename
         assert download_name.startswith("liga_backup_"), f"Имя файла бэкапа должно начинаться с liga_backup_, получено: {download_name}"
+        assert download_name.startswith("liga_backup_demo_"), f"Имя файла должно явно содержать профиль, получено: {download_name}"
         assert download_name.endswith(".json"), f"Файл должен иметь расширение .json, получено: {download_name}"
 
         download_path = tmp_path / download_name
@@ -73,6 +76,8 @@ def test_backup_and_restore_full_workflow(http_server, tmp_path):
             backup_data = json.load(f)
 
         assert backup_data.get("appName") == "LIGA OS", "В бэкапе обязано быть поле appName='LIGA OS'"
+        assert backup_data.get("profileMode") == "demo", "Копия обязана явно указывать активный профиль"
+        assert backup_data.get("profileDatabase") == "LigaOS_DB_Demo", "Копия обязана указывать активную базу"
         assert backup_data.get("schemaVersion") == 1, "Версия схемы обязана быть 1"
         assert isinstance(backup_data.get("sites"), list) and len(backup_data["sites"]) > 0, "Список объектов не должен быть пустым"
         assert isinstance(backup_data.get("materials"), list), "Список материалов обязан быть массивом"
@@ -150,6 +155,9 @@ def test_backup_and_restore_full_workflow(http_server, tmp_path):
         preview_details = page.locator("#backup-preview-details").inner_text().lower()
         assert "liga os" in preview_details
         assert "объектов" in preview_details
+        assert "в архиве: примеры" in preview_details
+        assert "будет восстановлено в: примеры" in preview_details
+        assert "только активного профиля" in page.locator("#backup-preview-card").inner_text().lower()
 
         # Нажимаем кнопку подтверждения восстановления
         page.locator("#btn-confirm-restore").click()

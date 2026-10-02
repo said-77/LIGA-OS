@@ -23,7 +23,7 @@ def run_simulation():
         # Симулируем реальный экран iPhone 14 Pro / 15 Pro мастера
         context = browser.new_context(viewport={'width': 393, 'height': 852})
         page = context.new_page()
-        page.goto('file:///' + index_path)
+        page.goto('file:///' + index_path + '?profile=demo')
         page.wait_for_selector('.bottom-nav')
 
         # ======================================================================

@@ -49,7 +49,7 @@ def test_passport_honesty_full_workflow(http_server, sample_image_path):
         page = context.new_page()
 
         # 1. Открытие главного экрана LIGA OS
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 2. Проверка названия кнопки

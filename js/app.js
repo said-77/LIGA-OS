@@ -848,6 +848,10 @@ class LigaApp {
       this.currentSiteId = this.currentSite.id;
       // Загружаем сохраненные фото объекта
       this.currentPhotos = this.currentSite.photos || { manifold: null, pressure: null, wall: null, floor: null };
+    } else {
+      this.currentSite = null;
+      this.currentSiteId = null;
+      this.currentPhotos = { manifold: null, pressure: null, wall: null, floor: null };
     }
   }
 
@@ -1554,6 +1558,10 @@ class LigaApp {
   }
 
   switchScreen(screenName) {
+    if (!this.currentSite && screenName !== 'dashboard') {
+      this.showToast('Сначала создайте первый объект в рабочем профиле.');
+      return;
+    }
     this.stopAllVoices();
     this.currentScreen = screenName;
 
@@ -1627,7 +1635,20 @@ class LigaApp {
 
   // Обновление состояния и рендер
   render() {
-    if (!this.currentSite) return;
+    const emptyWorkspace = document.getElementById('empty-workspace-state');
+    const emptyOnlyElements = [
+      document.querySelector('.master-situations-bar'),
+      document.getElementById('situation-view-on-site'),
+      document.getElementById('dashboard-site-selector-wrap'),
+      document.querySelector('.dashboard-desktop-layout')
+    ];
+    if (!this.currentSite) {
+      if (emptyWorkspace) emptyWorkspace.hidden = false;
+      emptyOnlyElements.forEach((element) => { if (element) element.hidden = true; });
+      return;
+    }
+    if (emptyWorkspace) emptyWorkspace.hidden = true;
+    emptyOnlyElements.forEach((element) => { if (element) element.hidden = false; });
 
     const select = document.getElementById('site-selector');
     if (select) {
@@ -1747,24 +1768,31 @@ class LigaApp {
     const hasManifoldPhoto = Boolean(this.currentPhotos && this.currentPhotos.manifold);
     const hasPipePhoto = Boolean(this.currentPhotos && (this.currentPhotos.wall || this.currentPhotos.floor));
 
-    // 2. Взвешенный расчет готовности (0..100%)
+    // 2. Прозрачный индекс заполнения (не является инженерным допуском к сдаче)
     let progressScore = 0;
+    const breakdown = [];
+    const credit = (label, points, included) => {
+      if (included) { progressScore += points; breakdown.push(`${label}: +${points}%`); }
+      else breakdown.push(`${label}: 0%`);
+    };
     // Аудит и базовая информация (до 15%)
-    if (s.name) progressScore += 5;
-    if (s.contractSum > 0) progressScore += 10;
+    credit('Название объекта', 5, Boolean(s.name));
+    credit('Сумма договора', 10, Number(s.contractSum) > 0);
     // Черновой монтаж и снабжение (до 25%)
-    if (s.status >= 2) progressScore += 15;
-    if (materials.length > 0) progressScore += 10;
+    credit('Этап работ отмечен', 15, Number(s.status) >= 2);
+    credit('Добавлены материалы', 10, materials.length > 0);
     // Гидравлические испытания по параметрам объекта (до 30%)
-    if (hasPressureTest) progressScore += 15;
-    if (hasPressurePhoto) progressScore += 15;
+    credit('Испытание зафиксировано', 15, hasPressureTest);
+    credit('Фото манометра', 15, hasPressurePhoto);
     // Скрытые трассы и чек-лист стяжки (до 20%)
     if (totalChecklist > 0) {
-      progressScore += Math.round((doneChecklist / totalChecklist) * 10);
+      const checklistPoints = Math.round((doneChecklist / totalChecklist) * 10);
+      progressScore += checklistPoints;
+      breakdown.push(`Чек-лист: ${checklistPoints}% (${doneChecklist}/${totalChecklist})`);
     }
-    if (hasPipePhoto || hasManifoldPhoto) progressScore += 10;
+    credit('Фото трассы или коллектора', 10, hasPipePhoto || hasManifoldPhoto);
     // Финальная сдача (до 10%)
-    if (s.status >= 5) progressScore += 10;
+    credit('Этап отмечен как сданный', 10, Number(s.status) >= 5);
 
     const progress = Math.min(100, Math.max(0, progressScore));
 
@@ -1777,18 +1805,10 @@ class LigaApp {
       daysPassed = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
     }
     const daysRemaining = durationDays === null ? null : Math.max(0, durationDays - daysPassed);
-    const expectedProgress = durationDays === null ? null : Math.min(100, Math.round((daysPassed / durationDays) * 100));
-    const delta = expectedProgress === null ? null : progress - expectedProgress;
-
-    let paceStatus = durationDays === null ? 'unscheduled' : 'on-track';
-    let paceLabel = durationDays === null ? '📅 СРОК СДАЧИ НЕ ЗАДАН' : `⏱️ В ГРАФИКЕ (темп ${progress}%)`;
-    if (delta !== null && delta >= 12) {
-      paceStatus = 'ahead';
-      paceLabel = `⚡ ОПЕРЕЖЕНИЕ ГРАФИКА (+${delta}%)`;
-    } else if (delta !== null && delta < -15 && daysPassed > 3) {
-      paceStatus = 'delayed';
-      paceLabel = `⚠️ ВНИМАНИЕ: ОТСТАВАНИЕ (${Math.abs(delta)}%)`;
-    }
+    const paceStatus = durationDays === null ? 'unscheduled' : 'scheduled';
+    const paceLabel = durationDays === null
+      ? '📅 СРОК СДАЧИ НЕ ЗАДАН'
+      : `📅 СОГЛАСОВАННЫЙ СРОК: ${durationDays} ДН.`;
 
     // Обновление SVG круга (длина окружности r=48 -> C = 2 * PI * 48 ≈ 301.6)
     const circleBar = document.getElementById('radar-circle-bar');
@@ -1808,6 +1828,10 @@ class LigaApp {
     if (valEl) {
       valEl.innerText = `${progress}%`;
     }
+    const breakdownEl = document.getElementById('readiness-breakdown');
+    if (breakdownEl) {
+      breakdownEl.textContent = `Индекс заполнения данных: ${progress}%. ${breakdown.join(' • ')}. Это подсказка о заполненности карточки, не оценка качества работ и не допуск к сдаче.`;
+    }
 
     const paceBadge = document.getElementById('chrono-pace-badge');
     if (paceBadge) {
@@ -1819,7 +1843,7 @@ class LigaApp {
     if (daysInfo) {
       daysInfo.innerHTML = durationDays === null
         ? `Дней в работе: <strong>${daysPassed}</strong> • Согласованный срок не указан`
-        : `Дней в работе: <strong>${daysPassed}</strong> • До сдачи: <strong>${daysRemaining > 0 ? daysRemaining + ' дн.' : 'Срок настал'}</strong>`;
+        : `Дней в работе: <strong>${daysPassed}</strong> • Плановый остаток: <strong>${daysRemaining > 0 ? daysRemaining + ' дн.' : 'Срок наступил'}</strong>`;
     }
 
     const phaseDesc = document.getElementById('chrono-phase-desc');
@@ -3095,6 +3119,8 @@ ${itemsText}
     try {
       const stats = await window.ligaDB.getStats();
       const statsEl = document.getElementById('backup-current-stats');
+      const profileLabels = { work: 'Рабочая база', demo: 'Примеры', legacy: 'Прежняя база' };
+      const activeProfileLabel = profileLabels[window.ligaDB.profileMode] || 'Неизвестный профиль';
       let storageInfo = '';
       if (navigator.storage && navigator.storage.estimate) {
         try {
@@ -3107,7 +3133,7 @@ ${itemsText}
         }
       }
       if (statsEl) {
-        statsEl.innerHTML = `В локальной базе сохранено: <b>${stats.sitesCount}</b> объекта(ов), <b>${stats.materialsCount}</b> позиций материалов и чеков, <b>${stats.checklistsCount}</b> пунктов технадзора.${storageInfo}`;
+        statsEl.innerHTML = `Активная база: <b>${activeProfileLabel}</b>. В ней сохранено: <b>${stats.sitesCount}</b> объекта(ов), <b>${stats.materialsCount}</b> позиций материалов и чеков, <b>${stats.checklistsCount}</b> пунктов технадзора.${storageInfo}`;
       }
     } catch (e) {
       console.warn('Не удалось получить статистику базы:', e);
@@ -3168,12 +3194,17 @@ ${itemsText}
         }
 
         if (detailsEl) {
+          const profileLabels = { work: 'Рабочая база', demo: 'Примеры', legacy: 'Прежняя база' };
+          const archiveProfileLabel = profileLabels[meta.profileMode] || 'Прежний формат (профиль не указан)';
+          const activeProfileLabel = profileLabels[window.ligaDB.profileMode] || 'Неизвестный профиль';
           const dateFormatted = meta.exportDate 
             ? new Date(meta.exportDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : 'Дата не указана';
 
           detailsEl.innerHTML = `
             <div><b>Приложение:</b> ${meta.appName} (схема v${meta.schemaVersion})</div>
+            <div><b>В архиве:</b> ${archiveProfileLabel}</div>
+            <div><b>Будет восстановлено в:</b> ${activeProfileLabel}</div>
             <div><b>Дата архива:</b> ${dateFormatted}</div>
             <div><b>Объектов:</b> ${meta.sitesCount} | <b>Материалов и чеков:</b> ${meta.materialsCount}</div>
             <div><b>Пунктов технадзора:</b> ${meta.checklistsCount}</div>
@@ -8374,7 +8405,7 @@ ${loopsText}
     const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
     const stageCode = `STG-${site.id || '01'}-${hasPressureReading ? `${barVal.replace('.', '')}B` : 'NO-PRESSURE'}`;
 
-    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.10');
+    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.11');
     shareUrl.searchParams.set('verify_stage', stageCode);
     shareUrl.searchParams.set('site', site.name || 'Объект');
     shareUrl.searchParams.set('client', site.client || 'Заказчик');
@@ -8457,7 +8488,7 @@ ${shareUrl.toString()}
 
   async sendStageAcceptanceTelegram() {
     const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
-    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.10';
+    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.11';
     try {
       const shared = await this.openShareSheet(text, url, 'LIGA OS — приёмка этапа');
       if (shared) {
@@ -9294,7 +9325,8 @@ ${shareUrl.toString()}
     }
     if (modalId === 'modal-video-tour' && this.videoTourState) {
       this.videoTourState.isOpen = false;
-      this.videoTourState.isPlaying = false;
+      const videoPlayer = document.getElementById('liga-real-mp4-player');
+      this.videoTourState.isPlaying = Boolean(videoPlayer && !videoPlayer.paused);
       if (this.videoTourState.timer) {
         clearInterval(this.videoTourState.timer);
         this.videoTourState.timer = null;
@@ -9302,6 +9334,7 @@ ${shareUrl.toString()}
     }
     const m = document.getElementById(modalId);
     if (m) m.classList.remove('open');
+    if (modalId === 'modal-video-tour') this.updateVideoMiniPlayer();
     if (modalId === 'modal-more-menu') {
       document.body.classList.remove('more-menu-open');
       const btn = document.getElementById('btn-more-menu-toggle');
@@ -9504,6 +9537,44 @@ ${shareUrl.toString()}
     if (btnRestore) {
       btnRestore.addEventListener('click', () => this.restoreOnboardingHint());
     }
+
+    this.refreshDataProfileSettings();
+    document.querySelectorAll('[data-switch-profile]').forEach((button) => {
+      button.addEventListener('click', () => this.switchDataProfile(button.dataset.switchProfile));
+    });
+  }
+
+  refreshDataProfileSettings() {
+    const mode = window.ligaDB ? window.ligaDB.profileMode : (localStorage.getItem('liga_os_profile_mode') || 'work');
+    const status = document.getElementById('data-profile-status');
+    const workButton = document.getElementById('btn-switch-work-profile');
+    const demoButton = document.getElementById('btn-switch-demo-profile');
+    const legacyButton = document.getElementById('btn-switch-legacy-profile');
+    const labels = {
+      work: 'Сейчас открыт чистый рабочий профиль.',
+      demo: 'Сейчас открыт демо-пример. Рабочие данные хранятся отдельно.',
+      legacy: 'Открыта прежняя база. Проверьте записи перед использованием на реальном объекте.'
+    };
+    if (status) status.innerText = labels[mode] || labels.work;
+    if (workButton) workButton.disabled = mode === 'work';
+    if (demoButton) demoButton.disabled = mode === 'demo';
+    if (legacyButton) legacyButton.disabled = mode === 'legacy';
+  }
+
+  switchDataProfile(mode) {
+    if (!['work', 'demo', 'legacy'].includes(mode)) return;
+    const current = window.ligaDB ? window.ligaDB.profileMode : (localStorage.getItem('liga_os_profile_mode') || 'work');
+    if (current === mode) return;
+    const destinationNames = { work: 'чистый рабочий профиль', demo: 'демо-пример', legacy: 'прежнюю базу' };
+    const destination = destinationNames[mode];
+    const details = mode === 'legacy'
+      ? 'Будет открыта база, которой приложение пользовалось до разделения профилей. Она останется неизменной.'
+      : 'Остальные профили останутся на этом устройстве отдельно и без изменений.';
+    if (!confirm(`Переключить LIGA OS на ${destination}?\n\n${details}\n\nДанные не удаляются и между профилями не копируются.`)) return;
+    localStorage.setItem('liga_os_profile_mode', mode);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('profile');
+    window.location.replace(`${url.pathname}${url.search}${url.hash}`);
   }
 
   restoreOnboardingHint() {
@@ -10033,7 +10104,7 @@ ${shareUrl.toString()}
 Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
 Официальный портал: https://liga-master-uz.vercel.app/`;
 
-    const url = 'https://liga-master-uz.vercel.app/?share=v2.5.10';
+    const url = 'https://liga-master-uz.vercel.app/?share=v2.5.11';
     const shared = await this.openShareSheet(report, url, `LIGA OS — отчёт: ${site.name || 'объект'}`);
     if (!shared) return;
     this.copyToClipboard(report).then(() => {
@@ -10058,6 +10129,39 @@ ${shareUrl.toString()}
       chapterDuration: 16,
       currentSeconds: 0
     };
+
+    const player = document.getElementById('liga-real-mp4-player');
+    const mini = document.getElementById('liga-video-mini-player');
+    if (player && mini && !player.dataset.ligaMiniBound) {
+      player.dataset.ligaMiniBound = 'true';
+      ['play', 'pause', 'timeupdate', 'ended'].forEach(eventName => player.addEventListener(eventName, () => this.updateVideoMiniPlayer()));
+      document.getElementById('liga-video-mini-open')?.addEventListener('click', () => {
+        this.openModal('modal-video-tour');
+        player.play().catch(() => {});
+      });
+      document.getElementById('liga-video-mini-toggle')?.addEventListener('click', () => {
+        if (player.paused) player.play().catch(() => {});
+        else player.pause();
+      });
+      document.getElementById('liga-video-mini-stop')?.addEventListener('click', () => this.stopVideoTour());
+      document.getElementById('btn-readiness-breakdown')?.addEventListener('click', () => {
+        const panel = document.getElementById('readiness-breakdown');
+        const button = document.getElementById('btn-readiness-breakdown');
+        if (!panel || !button) return;
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', String(!expanded));
+        panel.hidden = expanded;
+        button.textContent = expanded ? 'Как рассчитан индекс?' : 'Скрыть расшифровку';
+      });
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({ title: 'Видеогид LIGA OS', artist: 'Инструкция', album: 'LIGA OS' });
+          navigator.mediaSession.setActionHandler('play', () => player.play().catch(() => {}));
+          navigator.mediaSession.setActionHandler('pause', () => player.pause());
+          navigator.mediaSession.setActionHandler('stop', () => this.stopVideoTour());
+        } catch (_) { /* Системные медиакнопки могут не поддерживаться браузером. */ }
+      }
+    }
 
     this.videoChaptersMaster = [
       {
@@ -10371,17 +10475,43 @@ ${shareUrl.toString()}
     this.openModal('modal-video-tour');
     const player = document.getElementById('liga-real-mp4-player');
     if (player) {
-      player.currentTime = 0;
+      if (player.ended) player.currentTime = 0;
       player.play().catch(() => {});
     }
   }
 
   closeVideoTour() {
-    const player = document.getElementById('liga-real-mp4-player');
-    if (player) {
-      player.pause();
-    }
     this.closeModal('modal-video-tour');
+    this.updateVideoMiniPlayer();
+  }
+
+  updateVideoMiniPlayer() {
+    const player = document.getElementById('liga-real-mp4-player');
+    const mini = document.getElementById('liga-video-mini-player');
+    if (!player || !mini) return;
+    const modal = document.getElementById('modal-video-tour');
+    const modalOpen = Boolean(modal && modal.classList.contains('open'));
+    mini.hidden = modalOpen || player.ended || player.currentTime <= 0;
+    const time = document.getElementById('liga-video-mini-time');
+    if (time) time.textContent = `${this._formatMediaTime(player.currentTime)} / ${this._formatMediaTime(player.duration)}`;
+    const toggle = document.getElementById('liga-video-mini-toggle');
+    if (toggle) {
+      toggle.textContent = player.paused ? '▶' : '⏸';
+      toggle.setAttribute('aria-label', player.paused ? 'Продолжить видео' : 'Поставить видео на паузу');
+    }
+  }
+
+  _formatMediaTime(seconds) {
+    const value = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+    return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+  }
+
+  stopVideoTour() {
+    const player = document.getElementById('liga-real-mp4-player');
+    if (!player) return;
+    player.pause();
+    player.currentTime = 0;
+    this.updateVideoMiniPlayer();
   }
 
   switchVideoTourMode(mode) {
@@ -10784,7 +10914,7 @@ ${shareUrl.toString()}
             this.switchScreen('dashboard');
             this.pulseElement('btn-open-payment');
             // Реальное открытие модального окна кассы прямо на глазах мастера!
-            setTimeout(() => {
+            this.scheduleSpotlightStepAction(() => {
               this.openModal('modal-payment');
               const amtInput = document.getElementById('input-payment-amount');
               if (amtInput) {
@@ -10803,7 +10933,7 @@ ${shareUrl.toString()}
             this.closeModal('modal-payment');
             // Реальный переход в раздел Склад и снабжение!
             this.switchScreen('materials');
-            setTimeout(() => {
+            this.scheduleSpotlightStepAction(() => {
               const el = document.getElementById('materials-search-input') || document.querySelector('.table-container');
               if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -10820,7 +10950,7 @@ ${shareUrl.toString()}
           action: () => {
             this.switchScreen('dashboard');
             // Открываем протокол фактических гидравлических испытаний.
-            setTimeout(() => {
+            this.scheduleSpotlightStepAction(() => {
               this.openModal('modal-pressure-test');
             }, 300);
           }
@@ -10850,7 +10980,7 @@ ${shareUrl.toString()}
           action: () => {
             // Реальное открытие Настроек с плавной прокруткой к секции печати!
             this.openModal('modal-settings');
-            setTimeout(() => {
+            this.scheduleSpotlightStepAction(() => {
               const sealSec = document.getElementById('settings-section-seal');
               if (sealSec) {
                 sealSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -10870,6 +11000,7 @@ ${shareUrl.toString()}
   }
 
   stopSpotlightTour() {
+    this.clearSpotlightStepAction();
     if (this.spotlightState) {
       this.spotlightState.isActive = false;
     }
@@ -10887,8 +11018,24 @@ ${shareUrl.toString()}
     this.showToast('Инженерный тур завершен. Все функции готовы к работе!');
   }
 
+  clearSpotlightStepAction() {
+    if (this.spotlightStepActionTimer) {
+      clearTimeout(this.spotlightStepActionTimer);
+      this.spotlightStepActionTimer = null;
+    }
+  }
+
+  scheduleSpotlightStepAction(callback, delay) {
+    this.clearSpotlightStepAction();
+    this.spotlightStepActionTimer = setTimeout(() => {
+      this.spotlightStepActionTimer = null;
+      callback();
+    }, delay);
+  }
+
   renderSpotlightStep(stepIdx) {
     if (!this.spotlightState || !this.spotlightState.isActive) return;
+    this.clearSpotlightStepAction();
     const step = this.spotlightState.steps[stepIdx];
     if (!step) return;
 

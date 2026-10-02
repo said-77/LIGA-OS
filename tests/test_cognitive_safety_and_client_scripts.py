@@ -45,7 +45,7 @@ def test_header_safety_beacon_toggle(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#header-safety-beacon")
 
         beacon = page.locator("#header-safety-beacon")
@@ -77,7 +77,7 @@ def test_calculators_presets_and_client_scripts(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 1. Калькулятор труб и узла ввода

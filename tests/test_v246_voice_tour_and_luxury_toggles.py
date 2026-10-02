@@ -14,7 +14,7 @@ def get_base_url():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_dir)
     index_path = os.path.join(project_root, "index.html")
-    return "file:///" + index_path.replace("\\", "/")
+    return "file:///" + index_path.replace("\\", "/") + "?profile=demo"
 
 def test_v246_luxury_tumbler_toggles():
     """Проверка швейцарских 3D-тумблеров в настройках (отсутствие желтых пятен, надписи ОТКЛ/ВКЛ)"""
@@ -69,6 +69,7 @@ def test_v246_luxury_payment_button():
         context = browser.new_context(viewport={"width": 1280, "height": 800})
         page = context.new_page()
         page.goto(url)
+        page.wait_for_selector("#btn-open-payment", state="visible")
         
         pay_btn = page.locator("#btn-open-payment")
         assert pay_btn.is_visible()

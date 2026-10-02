@@ -39,7 +39,7 @@ def test_pwa_offline_resilience(http_server):
         page = context.new_page()
 
         # 1. Загрузка приложения онлайн для прогрева кэша Service Worker
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # Ожидаем готовности Service Worker и взятия страницы под контроль (controller)

@@ -42,7 +42,7 @@ def test_estimate_math_with_bathrooms(http_server):
         page = context.new_page()
 
         # 1. Открытие приложения
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         # 2. Переход на таб сметы

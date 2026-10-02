@@ -19,7 +19,7 @@ def test_hands_free_voice_and_telegram_flow(local_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_timeout(800)
 
         # 1. Проверяем наличие плавающего микрофона (#btn-floating-voice)

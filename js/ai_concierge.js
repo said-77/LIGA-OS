@@ -1,6 +1,6 @@
 /**
  * LIGA AI — Инженерный Консьерж (v2.2.0)
- * Gemini 2.5 Flash + Web Speech API (естественный голос)
+ * Gemini 3.8 Flash + Web Speech API (естественный голос)
  * 
  * Архитектура:
  *  - Всё хранится локально (API ключ в localStorage, история в памяти)
@@ -15,8 +15,10 @@ class LigaAIConcierge {
   constructor() {
     // ── Состояние ────────────────────────────────────────────────────────────
     this.apiKey = localStorage.getItem('liga_ai_key') || '';
+    this.connectionStatus = localStorage.getItem('liga_ai_connection_status') || 'unknown';
     this.backupProvider = localStorage.getItem('liga_ai_backup_provider') || 'openai';
     this.backupApiKey = localStorage.getItem('liga_ai_backup_key') || '';
+    this.backupConnectionStatus = localStorage.getItem('liga_ai_backup_connection_status') || 'unknown';
     this.autoFailover = localStorage.getItem('liga_ai_autofailover') !== 'false';
     this.isOnline = navigator.onLine;
     this.isEnabled = localStorage.getItem('liga_ai_enabled') !== 'false';
@@ -177,6 +179,20 @@ class LigaAIConcierge {
     // Сохранение API ключа
     const btnSaveKey = document.getElementById('btn-save-ai-key');
     if (btnSaveKey) btnSaveKey.addEventListener('click', () => this._saveApiKey());
+    const btnTestKey = document.getElementById('btn-test-ai-key');
+    if (btnTestKey) btnTestKey.addEventListener('click', () => this._testProvider('google'));
+    const btnTestBackupKey = document.getElementById('btn-test-ai-backup-key');
+    if (btnTestBackupKey) btnTestBackupKey.addEventListener('click', () => this._testProvider('backup'));
+    document.querySelectorAll('[data-toggle-secret]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.toggleSecret);
+        if (!input) return;
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(reveal));
+        button.textContent = reveal ? 'Скрыть' : 'Показать';
+      });
+    });
 
     // Сохранение резервного API ключа (Failover)
     const btnSaveBackupKey = document.getElementById('btn-save-ai-backup-key');
@@ -186,6 +202,10 @@ class LigaAIConcierge {
     if (selectBackupProvider) selectBackupProvider.addEventListener('change', (e) => {
       this.backupProvider = e.target.value;
       localStorage.setItem('liga_ai_backup_provider', this.backupProvider);
+      this.backupConnectionStatus = 'unknown';
+      localStorage.setItem('liga_ai_backup_connection_status', 'unknown');
+      this._setProviderStatus('ai-backup-status', 'Провайдер изменён. Проверьте ключ и подключение.', 'pending');
+      this._updateNetworkIndicator();
     });
 
     const toggleFailover = document.getElementById('toggle-ai-autofailover');
@@ -232,12 +252,27 @@ class LigaAIConcierge {
     const dot = indicator.querySelector('.ai-dot');
     const label = indicator.querySelector('.ai-label');
 
-    if (this.isOnline && this.isEnabled && this.apiKey) {
+    const mainIsConnected = Boolean(this.apiKey && this.connectionStatus === 'connected');
+    const backupIsConnected = Boolean(this.backupApiKey && this.backupConnectionStatus === 'connected');
+    const activeProvider = mainIsConnected ? 'Google Gemini' : backupIsConnected
+      ? ({ openai: 'OpenAI', groq: 'Groq', google: 'Google Gemini' }[this.backupProvider] || 'резервный ИИ')
+      : '';
+
+    if (this.isOnline && this.isEnabled && activeProvider) {
       indicator.classList.remove('offline');
       if (dot) dot.style.display = '';
       if (label) label.textContent = 'AI';
-      indicator.title = 'LIGA AI • НА СВЯЗИ (Gemini 2.5 Flash)';
-    } else if (this.isOnline && this.isEnabled && !this.apiKey) {
+      indicator.title = `LIGA AI • последняя проверка ${activeProvider}: успешно`;
+    } else if (this.isOnline && this.isEnabled && (this.apiKey || this.backupApiKey)) {
+      indicator.classList.add('offline');
+      if (dot) dot.style.display = '';
+      if (label) label.textContent = 'AI';
+      const allConfiguredProvidersFailed = (!this.apiKey || this.connectionStatus === 'error')
+        && (!this.backupApiKey || this.backupConnectionStatus === 'error');
+      indicator.title = allConfiguredProvidersFailed
+        ? 'LIGA AI • последняя проверка не прошла; откройте настройки для причины'
+        : 'LIGA AI • ключ сохранён, подключение не подтверждено; проверьте связь в настройках';
+    } else if (this.isOnline && this.isEnabled) {
       indicator.classList.add('offline');
       if (label) label.textContent = 'AI';
       indicator.title = 'LIGA AI — укажите API ключ в настройках';
@@ -250,7 +285,7 @@ class LigaAIConcierge {
     // Скрыть/показать предупреждение в чате
     const offlineWarn = document.getElementById('ai-offline-warning');
     if (offlineWarn) {
-      offlineWarn.style.display = (!this.isOnline || !this.apiKey) ? 'block' : 'none';
+      offlineWarn.style.display = (!this.isOnline || (!this.apiKey && !this.backupApiKey) || (!mainIsConnected && !backupIsConnected)) ? 'block' : 'none';
     }
   }
 
@@ -325,14 +360,14 @@ class LigaAIConcierge {
     if (toggleVoice) toggleVoice.checked = this.voiceEnabled;
 
     const keyInput = document.getElementById('ai-api-key-input');
-    if (keyInput && this.apiKey) keyInput.value = this.apiKey;
+    if (keyInput && !keyInput.value) keyInput.value = this.apiKey;
 
     // Синхронизация резервного оператора (Failover)
     const selectBackupProvider = document.getElementById('select-ai-backup-provider');
     if (selectBackupProvider) selectBackupProvider.value = this.backupProvider;
 
     const backupKeyInput = document.getElementById('ai-backup-key-input');
-    if (backupKeyInput && this.backupApiKey) backupKeyInput.value = this.backupApiKey;
+    if (backupKeyInput && !backupKeyInput.value) backupKeyInput.value = this.backupApiKey;
 
     const toggleFailover = document.getElementById('toggle-ai-autofailover');
     if (toggleFailover) toggleFailover.checked = this.autoFailover;
@@ -349,6 +384,7 @@ class LigaAIConcierge {
       const soundEnabled = localStorage.getItem('liga_sound') !== 'false';
       toggleSound.checked = soundEnabled;
     }
+    this._renderProviderStatus();
   }
 
   _saveApiKey() {
@@ -356,18 +392,23 @@ class LigaAIConcierge {
     if (!keyInput) return;
 
     const key = keyInput.value.trim();
-    if (!key.startsWith('AIza') && key.length > 0) {
-      this._showToast('⚠️ Ключ должен начинаться с AIza...');
+    if (key.length > 0 && key.length < 12) {
+      this._setProviderStatus('ai-provider-status', 'Ключ слишком короткий. Скопируйте его целиком из кабинета провайдера.', 'error');
       return;
     }
 
     this.apiKey = key;
     localStorage.setItem('liga_ai_key', key);
-    this._updateNetworkIndicator();
+    this.connectionStatus = 'unknown';
+    localStorage.setItem('liga_ai_connection_status', 'unknown');
 
     if (key) {
-      this._showToast('✅ API ключ сохранён! LIGA AI активирован.');
+      this._setProviderStatus('ai-provider-status', 'Ключ сохранён на этом устройстве. Связь ещё не проверена.', 'pending');
+      this._updateNetworkIndicator();
+      this._showToast('Ключ сохранён. Нажмите «Проверить связь».');
     } else {
+      this._setProviderStatus('ai-provider-status', 'Ключ удалён. LIGA AI не подключён.', 'pending');
+      this._updateNetworkIndicator();
       this._showToast('🗑️ API ключ удалён.');
     }
   }
@@ -379,6 +420,8 @@ class LigaAIConcierge {
     const key = keyInput.value.trim();
     this.backupApiKey = key;
     localStorage.setItem('liga_ai_backup_key', key);
+    this.backupConnectionStatus = 'unknown';
+    localStorage.setItem('liga_ai_backup_connection_status', 'unknown');
 
     const sel = document.getElementById('select-ai-backup-provider');
     if (sel) {
@@ -387,9 +430,81 @@ class LigaAIConcierge {
     }
 
     if (key) {
-      this._showToast('✅ Резервный ключ сохранён! Режим бесперебойности (Failover) готов.');
+      this._setProviderStatus('ai-backup-status', 'Ключ сохранён на этом устройстве. Связь ещё не проверена.', 'pending');
+      this._updateNetworkIndicator();
+      this._showToast('Резервный ключ сохранён. Нажмите «Проверить связь».');
     } else {
+      this._setProviderStatus('ai-backup-status', 'Ключ удалён. Резервный оператор не подключён.', 'pending');
+      this._updateNetworkIndicator();
       this._showToast('🗑️ Резервный ключ удалён.');
+    }
+  }
+
+  _setProviderStatus(id, message, state = 'pending') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.dataset.state = state;
+  }
+
+  _renderProviderStatus() {
+    const main = document.getElementById('ai-provider-status');
+    if (main && !main.textContent.trim()) this._setProviderStatus('ai-provider-status', this.apiKey ? 'Ключ сохранён; связь не проверена.' : 'Ключ не сохранён.');
+    const backup = document.getElementById('ai-backup-status');
+    if (backup && !backup.textContent.trim()) this._setProviderStatus('ai-backup-status', this.backupApiKey ? 'Ключ сохранён; связь не проверена.' : 'Ключ не сохранён.');
+  }
+
+  async _testProvider(provider = 'google') {
+    const isGoogle = provider === 'google';
+    const input = document.getElementById(isGoogle ? 'ai-api-key-input' : 'ai-backup-key-input');
+    const key = (input?.value || '').trim();
+    const statusId = isGoogle ? 'ai-provider-status' : 'ai-backup-status';
+    if (!key) {
+      this._setProviderStatus(statusId, 'Сначала вставьте и сохраните ключ этого провайдера.', 'error');
+      return false;
+    }
+    if (!navigator.onLine) {
+      this._setProviderStatus(statusId, 'Нет интернета. Проверьте подключение и повторите попытку.', 'error');
+      return false;
+    }
+    this._setProviderStatus(statusId, 'Проверяем связь…');
+    try {
+      const response = isGoogle
+        ? await this._callGeminiAPI('Ответь одним словом: связь работает.', { key, history: false })
+        : await this._callBackupProvider(this.backupProvider, 'Ответь одним словом: связь работает.', key, false);
+      if (!response) throw new Error('Провайдер вернул пустой ответ');
+      this._setProviderStatus(statusId, 'Связь работает. Провайдер принял ключ и ответил.', 'success');
+      if (isGoogle && key === this.apiKey) {
+        this.connectionStatus = 'connected';
+        localStorage.setItem('liga_ai_connection_status', 'connected');
+        this._updateNetworkIndicator();
+      }
+      if (!isGoogle && key === this.backupApiKey) {
+        this.backupConnectionStatus = 'connected';
+        localStorage.setItem('liga_ai_backup_connection_status', 'connected');
+        this._updateNetworkIndicator();
+      }
+      return true;
+    } catch (error) {
+      const message = String(error?.message || 'неизвестная ошибка');
+      let reason = message.slice(0, 180);
+      if (/401|403|API key|ключ|unauthorized|permission/i.test(message)) reason = 'ключ неверный, отозван или не имеет доступа к API.';
+      else if (/404|not found|model/i.test(message)) reason = 'модель или адрес API недоступны.';
+      else if (/429|лимит|quota|rate/i.test(message)) reason = 'провайдер ограничил запросы или исчерпан лимит.';
+      else if (/timeout|abort/i.test(message)) reason = 'провайдер не ответил за 30 секунд.';
+      else if (/Failed to fetch|network|fetch/i.test(message)) reason = 'сеть или соединение с провайдером недоступны.';
+      this._setProviderStatus(statusId, `Связь не установлена: ${reason}`, 'error');
+      if (isGoogle && key === this.apiKey) {
+        this.connectionStatus = 'error';
+        localStorage.setItem('liga_ai_connection_status', 'error');
+        this._updateNetworkIndicator();
+      }
+      if (!isGoogle && key === this.backupApiKey) {
+        this.backupConnectionStatus = 'error';
+        localStorage.setItem('liga_ai_backup_connection_status', 'error');
+        this._updateNetworkIndicator();
+      }
+      return false;
     }
   }
 
@@ -407,7 +522,7 @@ class LigaAIConcierge {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // Отправка сообщения → Gemini 2.5 Flash API
+  // Отправка сообщения → Gemini 3.8 Flash API
   // ════════════════════════════════════════════════════════════════════════════
   async _sendMessage() {
     if (!this.chatInput) return;
@@ -478,10 +593,12 @@ class LigaAIConcierge {
       }
     }
 
-    // 2. Резервный оператор (OpenAI GPT-4o-mini или Groq Cloud)
+    // 2. Резервный оператор (OpenAI, Groq или Google Gemini)
     if (this.backupApiKey) {
       try {
-        if (this.backupProvider === 'groq') {
+        if (this.backupProvider === 'google') {
+          return await this._callGeminiAPI(userText, { key: this.backupApiKey });
+        } else if (this.backupProvider === 'groq') {
           return await this._callGroqAPI(userText);
         } else {
           return await this._callOpenAIAPI(userText);
@@ -495,24 +612,14 @@ class LigaAIConcierge {
     throw lastErr || new Error('API ключ не указан в настройках.');
   }
 
-  async _callOpenAIAPI(userText) {
+  async _callOpenAIAPI(userText, options = {}) {
     const URL = 'https://api.openai.com/v1/chat/completions';
-    let activePrompt = this.SYSTEM_PROMPT;
-    if (window.app && window.app.currentSite) {
-      const s = window.app.currentSite;
-      const pressureTest = s.pressureTest || {};
-      const pressureStatus = Number(pressureTest.pressureBar) > 0
-        ? `${Number(pressureTest.pressureBar).toFixed(1)} бар (${pressureTest.passed === true ? 'отмечено мастером' : 'ожидает подтверждения'})`
-        : 'не зафиксировано';
-      activePrompt += `\n\nТЕКУЩИЙ АКТИВНЫЙ ОБЪЕКТ МАСТЕРА:
-- ЖК: ${s.title || s.address || 'Не указано'}
-- Заказчик: ${s.clientName || 'Не указан'}
-- Испытание давлением: ${pressureStatus}`;
-    }
+    const activePrompt = this._buildHelpPrompt();
+
 
     const messages = [
       { role: 'system', content: activePrompt },
-      ...this.chatHistory.slice(-6).map(m => ({
+      ...(options.history === false ? [] : this.chatHistory.slice(0, -1).slice(-4)).map(m => ({
         role: m.role === 'model' ? 'assistant' : 'user',
         content: m.parts?.[0]?.text || m.content || ''
       })),
@@ -546,17 +653,14 @@ class LigaAIConcierge {
     return reply.trim();
   }
 
-  async _callGroqAPI(userText) {
+  async _callGroqAPI(userText, options = {}) {
     const URL = 'https://api.groq.com/openai/v1/chat/completions';
-    let activePrompt = this.SYSTEM_PROMPT;
-    if (window.app && window.app.currentSite) {
-      const s = window.app.currentSite;
-      activePrompt += `\n\nТЕКУЩИЙ ОБЪЕКТ: ${s.title || s.address || 'Объект LIGA OS'}`;
-    }
+    const activePrompt = this._buildHelpPrompt();
+
 
     const messages = [
       { role: 'system', content: activePrompt },
-      ...this.chatHistory.slice(-6).map(m => ({
+      ...(options.history === false ? [] : this.chatHistory.slice(0, -1).slice(-4)).map(m => ({
         role: m.role === 'model' ? 'assistant' : 'user',
         content: m.parts?.[0]?.text || m.content || ''
       })),
@@ -570,7 +674,7 @@ class LigaAIConcierge {
         'Authorization': `Bearer ${this.backupApiKey}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-20b',
         messages: messages,
         temperature: 0.7,
         max_tokens: 600
@@ -589,26 +693,43 @@ class LigaAIConcierge {
     return reply.trim();
   }
 
-  async _callGeminiAPI(userText) {
-    const MODEL = 'gemini-2.5-flash-preview-05-20';
-    const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${this.apiKey}`;
+  _buildHelpPrompt() {
+    const screen = document.querySelector('.app-screen.active');
+    const modal = document.querySelector('.modal-overlay.open .modal-sheet');
+    const headings = [screen, modal].filter(Boolean).flatMap(root =>
+      [...root.querySelectorAll('h1,h2,h3,.screen-hero-title,.section-title,.modal-title,button[title],label,.form-label')]
+        .filter(el => el.getClientRects().length)
+        .map(el => (el.innerText || el.getAttribute('title') || '').trim()).filter(Boolean)
+    );
+    const context = [...new Set(headings)].slice(0, 48).join(' • ') || 'экран не определён';
+    return `${this.SYSTEM_PROMPT}\n\nПОМОЩЬ ПО ИНТЕРФЕЙСУ:\n- Отвечай по-русски короткими понятными шагами: что нажать, что ввести и что произойдёт.\n- Объясняй текущий раздел по названиям и подписям ниже. Если сведений недостаточно, скажи об этом и уточни инструмент.\n- Не выдумывай исходные значения расчётов; результат зависит от проекта и введённых параметров.\n- Не добавляй в контекст данные объекта, контакты, суммы, адреса, фото и значения полей. Внешнему провайдеру отправляются вопрос и короткая история беседы после нажатия «Отправить».\nНАЗВАНИЯ И ПОДПИСИ ТЕКУЩЕГО ЭКРАНА (без введённых значений): ${context}`;
+  }
+
+  async _callBackupProvider(provider, userText, key, history = true) {
+    const previousKey = this.backupApiKey;
+    const previousProvider = this.backupProvider;
+    this.backupApiKey = key;
+    this.backupProvider = provider;
+    try {
+      return provider === 'google'
+        ? await this._callGeminiAPI(userText, { key, history })
+        : provider === 'groq'
+          ? await this._callGroqAPI(userText, { history })
+          : await this._callOpenAIAPI(userText, { history });
+    } finally {
+      this.backupApiKey = previousKey;
+      this.backupProvider = previousProvider;
+    }
+  }
+
+  async _callGeminiAPI(userText, options = {}) {
+    const MODEL = 'gemini-3.8-flash';
+    const key = options.key || this.apiKey;
+    const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
     // Формируем системный промпт с учетом контекста активного объекта мастера (v2.4.1)
-    let activePrompt = this.SYSTEM_PROMPT;
-    if (window.app && window.app.currentSite) {
-      const s = window.app.currentSite;
-      const pressureTest = s.pressureTest || {};
-      const pressureStatus = Number(pressureTest.pressureBar) > 0
-        ? `${Number(pressureTest.pressureBar).toFixed(1)} бар (${pressureTest.passed === true ? 'отмечено мастером' : 'ожидает подтверждения'})`
-        : 'не зафиксировано';
-      activePrompt += `\n\nТЕКУЩИЙ АКТИВНЫЙ ОБЪЕКТ МАСТЕРА:
-- Название/ЖК: ${s.title || s.address || 'Не указано'}
-- Заказчик: ${s.clientName || 'Не указан'} (${s.clientPhone || 'без телефона'})
-- Адрес: ${s.address || 'Ташкент'}
-- Этап работ: ${s.status || 1} из 5
-- Испытание давлением: ${pressureStatus}
-- Договорная стоимость: ${s.contractSum ? s.contractSum.toLocaleString('ru-RU') + ' сум' : 'Не утверждена'}`;
-    }
+    const activePrompt = this._buildHelpPrompt();
+
 
     // Формируем контекст: системный промпт + история + новый вопрос
     const contents = [];
@@ -624,7 +745,7 @@ class LigaAIConcierge {
     });
 
     // История диалога (последние 6 обменов, чтобы не раздувать контекст)
-    const recentHistory = this.chatHistory.slice(-12);
+    const recentHistory = options.history === false ? [] : this.chatHistory.slice(0, -1).slice(-4);
     contents.push(...recentHistory);
 
     const body = {
@@ -634,15 +755,11 @@ class LigaAIConcierge {
         maxOutputTokens: 1024,
         topP: 0.9,
       },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-      ]
     };
 
     const res = await fetch(URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(30000) // 30 сек таймаут
     });

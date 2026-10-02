@@ -23,7 +23,7 @@ def test_estimate_presets_and_bazaar_pack(local_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 393, "height": 852})
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
         page.wait_for_timeout(600)
 

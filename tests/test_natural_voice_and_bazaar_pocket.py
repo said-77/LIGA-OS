@@ -19,7 +19,7 @@ def test_onboarding_hint_and_bazaar_pocket_flow(local_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_timeout(800)
 
         # 1. Проверка подсказки онбординга новичка

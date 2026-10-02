@@ -39,7 +39,7 @@ def test_dashboard_timeline_and_infinity_demo(http_server):
         page = context.new_page()
 
         # 1. Открытие приложения
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".phase-stepper")
         page.wait_for_timeout(1000)
 

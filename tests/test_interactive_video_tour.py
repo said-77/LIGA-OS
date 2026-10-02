@@ -6,7 +6,7 @@
 import os
 import time
 import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 from playwright.sync_api import sync_playwright
 
@@ -20,12 +20,13 @@ class QuietHandler(SimpleHTTPRequestHandler):
 @pytest.fixture(scope="module")
 def http_server():
     os.chdir(ROOT_DIR)
-    server = HTTPServer(('127.0.0.1', PORT), QuietHandler)
+    server = ThreadingHTTPServer(('127.0.0.1', PORT), QuietHandler)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     time.sleep(0.5)
     yield f"http://127.0.0.1:{PORT}"
     server.shutdown()
+    server.server_close()
 
 def test_video_tour_header_button_and_modal_open(http_server):
     """Проверка открытия видеогида из шапки и навигации по главам"""
@@ -37,7 +38,7 @@ def test_video_tour_header_button_and_modal_open(http_server):
         console_errors = []
         page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#btn-video-tour-open")
 
         btn_header = page.locator("#btn-video-tour-open")
@@ -79,7 +80,7 @@ def test_video_tour_vip_client_mode_switch(http_server):
         context = browser.new_context(viewport={"width": 1280, "height": 800})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#btn-video-tour-open")
 
         page.locator("#btn-video-tour-open").click()
@@ -105,7 +106,7 @@ def test_spotlight_live_tour_flow(http_server):
         context = browser.new_context(viewport={"width": 1280, "height": 800})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#header-safety-beacon")
 
         # Запуск тура через метод app
@@ -127,7 +128,7 @@ def test_spotlight_live_tour_flow(http_server):
         btn_next = page.locator("#btn-spotlight-next")
         assert btn_next.is_visible()
         btn_next.click(force=True)
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(100)
 
         # Шаг 2: Смета
         assert "2" in badge_step.inner_text()
@@ -136,8 +137,9 @@ def test_spotlight_live_tour_flow(http_server):
         btn_prev = page.locator("#btn-spotlight-prev")
         assert btn_prev.is_visible()
         btn_prev.click(force=True)
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(400)
         assert "1" in badge_step.inner_text()
+        assert not page.locator("#modal-payment.open").is_visible(), "Отложенное окно оплаты не должно открыться после перехода назад"
 
         # Закрываем тур крестиком
         btn_close = page.locator("#btn-spotlight-finish")
@@ -154,7 +156,7 @@ def test_more_menu_video_tour_banner(http_server):
         context = browser.new_context(viewport={"width": 1280, "height": 800})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#btn-more-menu-toggle")
 
         # Открываем Меню мастера

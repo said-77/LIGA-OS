@@ -19,7 +19,7 @@ def test_all_header_and_nav_buttons_responsive(local_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_timeout(600)
 
         # 1. Проверяем переключение темы

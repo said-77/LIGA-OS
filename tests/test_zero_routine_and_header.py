@@ -19,7 +19,7 @@ def test_zero_routine_header_and_quick_fact(local_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{local_server}/index.html")
+        page.goto(f"{local_server}/index.html?profile=demo")
         page.wait_for_timeout(800)
 
         # 1. Проверяем кнопку «⋯ Ещё» в шапке

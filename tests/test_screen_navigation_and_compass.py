@@ -41,7 +41,7 @@ def test_screen_navigation_and_header_ribbon(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".bottom-nav")
 
         ribbon_icon = page.locator("#ribbon-screen-icon")
@@ -127,7 +127,7 @@ def test_site_change_syncs_ribbon(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-selector")
 
         ribbon_site = page.locator("#ribbon-site-name")

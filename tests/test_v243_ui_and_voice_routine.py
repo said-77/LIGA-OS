@@ -35,7 +35,7 @@ def test_v243_settings_toggles(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # Открываем модальное окно настроек
@@ -77,7 +77,7 @@ def test_v243_live_payment_button(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#btn-open-payment")
 
         btn_payment = page.locator("#btn-open-payment")
@@ -103,7 +103,7 @@ def test_v243_history_screen_scroll(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # Переходим на экран истории
@@ -146,7 +146,7 @@ def test_v243_voice_fast_confirmation_bazaar(http_server):
         context = browser.new_context(viewport={"width": 393, "height": 852})
         page = context.new_page()
 
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector("#site-name-display")
 
         # Имитируем диктовку покупки на базаре Джами

@@ -45,7 +45,7 @@ def test_master_real_lifecycle_simulation_full(http_server):
         page.on("dialog", lambda dialog: dialog.accept())
 
         # 1. Открытие приложения
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".phase-stepper")
 
         # 2. Проверка наличия 3D-хронометра и карточки следующего шага

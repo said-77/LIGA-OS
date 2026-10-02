@@ -37,7 +37,7 @@ def test_voice_intent_pump_calculator(http_server):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         res1 = page.evaluate("() => window.app.parseVoiceCommand('подбор циркуляционного насоса')")
@@ -63,7 +63,7 @@ def test_open_pump_calculator_from_menu_and_estimate(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         # 1. Открытие через пульт мастера
@@ -102,7 +102,7 @@ def test_interactive_pump_and_pipe_calculation(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         page.evaluate("() => window.app.openPumpCalculator()")
@@ -146,7 +146,7 @@ def test_copy_pump_calculation_and_materials(http_server):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 393, "height": 851})
         page = context.new_page()
-        page.goto(f"{http_server}/index.html")
+        page.goto(f"{http_server}/index.html?profile=demo")
         page.wait_for_selector(".top-header")
 
         page.evaluate("() => window.app.openPumpCalculator()")

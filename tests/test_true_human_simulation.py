@@ -22,7 +22,7 @@ def test_true_human_master_workflow():
         # Реальный экран мобильного устройства инженера (Retina 393 x 852 - iPhone 14/15 Pro)
         context = browser.new_context(viewport={'width': 393, 'height': 852})
         page = context.new_page()
-        page.goto('file:///' + index_path)
+        page.goto('file:///' + index_path + '?profile=demo')
         page.wait_for_selector('.bottom-nav')
 
         print("\n[ШАГ 1] Проверка швейцарской шапки мастера (v2.4.1)")
