@@ -707,6 +707,14 @@ class LigaAIConcierge {
     const openModalIds = [...document.querySelectorAll('.modal-overlay.open[id]')]
       .map(modal => modal.id).filter(id => !['modal-ai-concierge', 'modal-settings'].includes(id));
     const modalMap = {
+      'modal-add-site': 'site-create',
+      'modal-payment': 'payment-form',
+      'modal-receipt': 'receipt-form',
+      'modal-pressure-test': 'pressure-form',
+      'modal-passport-photos': 'photos',
+      'modal-quick-fact': 'quick-fact',
+      'modal-backup-manager': 'backup',
+      'modal-add-event': 'event-form',
       'modal-pipe-calculator': 'pipe-calc',
       'modal-floor-calculator': 'floor-calc',
       'modal-radiator-calculator': 'radiator-calc',

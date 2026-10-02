@@ -21,7 +21,7 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
 
       // 3. Автоматический сброс устаревшего кэша браузера при обновлении версии (Zero-Friction)
-      const CURRENT_BUILD = 'v2.5.14-ai-question-fix';
+      const CURRENT_BUILD = 'v2.5.15-contextual-workflows';
       if (localStorage.getItem('liga_build_ver') !== CURRENT_BUILD) {
         localStorage.setItem('liga_build_ver', CURRENT_BUILD);
         if ('caches' in window) {
@@ -4715,13 +4715,13 @@
       </div>
     </div>
 
-  <!-- Скрипты LIGA OS v2.5.14 -->
+  <!-- Скрипты LIGA OS v2.5.15 -->
   <script src="./js/image_processor.js?v=2.5.3"></script>
   <script src="./js/db.js?v=2.5.14"></script>
   <script src="./js/seal_engine.js?v=2.5.14"></script>
   <script src="./js/pdf_engine.js?v=2.5.14"></script>
-  <script src="./js/help_catalog.js?v=2.5.14"></script>
-  <script src="./js/ai_concierge.js?v=2.5.14"></script>
+  <script src="./js/help_catalog.js?v=2.5.15"></script>
+  <script src="./js/ai_concierge.js?v=2.5.15"></script>
   <script src="./js/app.js?v=2.5.14"></script>
 </body>
 </html>

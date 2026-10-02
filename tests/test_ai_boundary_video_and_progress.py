@@ -120,6 +120,30 @@ def test_gemini_request_contains_user_question_and_catalog_not_object_data(app_u
         browser.close()
 
 
+def test_help_context_follows_core_workflow_modals(app_url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 393, "height": 852})
+        page.goto(f"{app_url}/index.html?profile=demo")
+        page.wait_for_function("window.ligaAI && Array.isArray(window.LIGA_HELP_CATALOG)")
+        modal_entries = {
+            "modal-add-site": "site-create",
+            "modal-payment": "payment-form",
+            "modal-receipt": "receipt-form",
+            "modal-pressure-test": "pressure-form",
+            "modal-passport-photos": "photos",
+            "modal-quick-fact": "quick-fact",
+            "modal-backup-manager": "backup",
+            "modal-add-event": "event-form",
+        }
+        for modal_id, entry_id in modal_entries.items():
+            page.evaluate("id => window.app.openModal(id)", modal_id)
+            actual = page.evaluate("window.ligaAI._getActiveHelpEntry().id")
+            assert actual == entry_id, f"Для {modal_id} выбрана статья {actual}"
+            page.evaluate("id => window.app.closeModal(id)", modal_id)
+        browser.close()
+
+
 def test_public_help_page_is_standalone_and_privacy_clear(app_url):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -129,6 +153,8 @@ def test_public_help_page_is_standalone_and_privacy_clear(app_url):
         assert page.title() == "Руководство пользователя — LIGA OS"
         text = page.locator("body").inner_text()
         for phrase in ["ChatGPT, Gemini", "не даёт нейросети доступ", "16 бар — усиленный стандарт", "калькуляторы"]:
+            assert phrase.lower() in text.lower()
+        for phrase in ["Создать объект", "Платёж или выплата", "Гидравлическое испытание", "Резервная копия и перенос", "содержимым архива"]:
             assert phrase.lower() in text.lower()
         browser.close()
 
