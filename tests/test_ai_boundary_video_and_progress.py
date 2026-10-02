@@ -89,6 +89,37 @@ def test_contextual_help_uses_catalog_without_live_page_values(app_url):
         browser.close()
 
 
+def test_gemini_request_contains_user_question_and_catalog_not_object_data(app_url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 393, "height": 852})
+        page.goto(f"{app_url}/index.html?profile=demo")
+        page.wait_for_function("window.ligaAI && Array.isArray(window.LIGA_HELP_CATALOG)")
+        result = page.evaluate("""async () => {
+          window.app.currentSite = {title:'PRIVATE_SITE', address:'PRIVATE_ADDRESS', clientName:'PRIVATE_CLIENT', contractSum:1234567};
+          window.app.currentScreen = 'estimate';
+          window.ligaAI.apiKey = 'test-only-key';
+          window.ligaAI.chatHistory = [];
+          let captured = null;
+          window.fetch = async (url, options) => {
+            captured = {url, headers: options.headers, body: JSON.parse(options.body)};
+            return new Response(JSON.stringify({candidates:[{content:{parts:[{text:'Расчёт — предварительная оценка.'}]}}]}), {status:200, headers:{'Content-Type':'application/json'}});
+          };
+          const answer = await window.ligaAI._callGeminiAPI('QUESTION_SENTINEL: объясни назначение сметы');
+          return {answer, captured};
+        }""")
+        assert result["answer"] == "Расчёт — предварительная оценка."
+        request = result["captured"]
+        assert request["headers"]["x-goog-api-key"] == "test-only-key"
+        assert "test-only-key" not in request["url"]
+        assert request["body"]["contents"][-1]["parts"][0]["text"] == "QUESTION_SENTINEL: объясни назначение сметы"
+        prompt = request["body"]["contents"][0]["parts"][0]["text"]
+        assert "Смета и расчёт стоимости" in prompt
+        for private_value in ["PRIVATE_SITE", "PRIVATE_ADDRESS", "PRIVATE_CLIENT", "1234567"]:
+            assert private_value not in str(request)
+        browser.close()
+
+
 def test_public_help_page_is_standalone_and_privacy_clear(app_url):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

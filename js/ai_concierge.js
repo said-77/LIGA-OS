@@ -765,6 +765,8 @@ class LigaAIConcierge {
     // История диалога (последние 6 обменов, чтобы не раздувать контекст)
     const recentHistory = options.history === false ? [] : this.chatHistory.slice(0, -1).slice(-4);
     contents.push(...recentHistory);
+    // Вопрос пользователя обязателен отдельным сообщением после системного контекста и истории.
+    contents.push({ role: 'user', parts: [{ text: userText }] });
 
     const body = {
       contents,
@@ -786,6 +788,7 @@ class LigaAIConcierge {
       const errText = await res.text();
       if (res.status === 400) throw new Error('Неверный API ключ или формат запроса');
       if (res.status === 429) throw new Error('Превышен лимит запросов, подождите 1 минуту');
+      if (res.status === 503) throw new Error('Сервис Gemini временно недоступен (HTTP 503). Повторите позже или проверьте резервного ИИ.');
       throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100)}`);
     }
 
