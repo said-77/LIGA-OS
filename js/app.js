@@ -1431,9 +1431,30 @@ class LigaApp {
     const client = document.getElementById('new-site-client').value.trim();
     const phone = document.getElementById('new-site-phone').value.trim();
     const designer = document.getElementById('new-site-designer').value.trim();
-    const contractSum = parseInt(document.getElementById('new-site-contract').value) || 0;
-    const advanceSum = parseInt(document.getElementById('new-site-advance').value) || 0;
-    const durationDays = parseInt(document.getElementById('new-site-duration')?.value) || 21;
+    const contractInput = document.getElementById('new-site-contract');
+    const advanceInput = document.getElementById('new-site-advance');
+    const durationInput = document.getElementById('new-site-duration');
+    const contractSum = contractInput.value.trim() === '' ? 0 : Number(contractInput.value);
+    const advanceSum = advanceInput.value.trim() === '' ? 0 : Number(advanceInput.value);
+    const durationValue = durationInput?.value.trim() === '' ? null : Number(durationInput.value);
+    const durationDays = Number.isInteger(durationValue) && durationValue > 0 ? durationValue : null;
+
+    if (!name || !client) {
+      this.showToast('Укажите название объекта и имя заказчика.');
+      return;
+    }
+    if (contractInput.value && (!Number.isSafeInteger(contractSum) || contractSum <= 0)) {
+      this.showToast('Сумма договора должна быть целым положительным числом.');
+      return;
+    }
+    if (!Number.isSafeInteger(advanceSum) || advanceSum < 0 || (advanceSum > 0 && contractSum <= 0) || (contractSum > 0 && advanceSum > contractSum)) {
+      this.showToast('Аванс должен быть от 0 до суммы договора. Проверьте введённые данные.');
+      return;
+    }
+    if (durationInput && durationInput.value && (!Number.isInteger(durationValue) || durationValue < 1 || durationValue > 180)) {
+      this.showToast('Срок укажите целым числом от 1 до 180 дней.');
+      return;
+    }
 
     const newSite = {
       name,
@@ -1748,23 +1769,23 @@ class LigaApp {
     const progress = Math.min(100, Math.max(0, progressScore));
 
     // 3. Расчет темпа и сроков
-    const durationDays = s.durationDays || 21;
+    const durationDays = Number.isInteger(s.durationDays) && s.durationDays > 0 ? s.durationDays : null;
     let daysPassed = 1;
     if (s.createdAt || s.dateCreated) {
       const createdDate = new Date(s.createdAt || s.dateCreated);
       const diffMs = Date.now() - createdDate.getTime();
       daysPassed = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
     }
-    const daysRemaining = Math.max(0, durationDays - daysPassed);
-    const expectedProgress = Math.min(100, Math.round((daysPassed / durationDays) * 100));
-    const delta = progress - expectedProgress;
+    const daysRemaining = durationDays === null ? null : Math.max(0, durationDays - daysPassed);
+    const expectedProgress = durationDays === null ? null : Math.min(100, Math.round((daysPassed / durationDays) * 100));
+    const delta = expectedProgress === null ? null : progress - expectedProgress;
 
-    let paceStatus = 'on-track';
-    let paceLabel = `⏱️ В ГРАФИКЕ (темп ${progress}%)`;
-    if (delta >= 12) {
+    let paceStatus = durationDays === null ? 'unscheduled' : 'on-track';
+    let paceLabel = durationDays === null ? '📅 СРОК СДАЧИ НЕ ЗАДАН' : `⏱️ В ГРАФИКЕ (темп ${progress}%)`;
+    if (delta !== null && delta >= 12) {
       paceStatus = 'ahead';
       paceLabel = `⚡ ОПЕРЕЖЕНИЕ ГРАФИКА (+${delta}%)`;
-    } else if (delta < -15 && daysPassed > 3) {
+    } else if (delta !== null && delta < -15 && daysPassed > 3) {
       paceStatus = 'delayed';
       paceLabel = `⚠️ ВНИМАНИЕ: ОТСТАВАНИЕ (${Math.abs(delta)}%)`;
     }
@@ -1796,7 +1817,9 @@ class LigaApp {
 
     const daysInfo = document.getElementById('chrono-days-info');
     if (daysInfo) {
-      daysInfo.innerHTML = `Дней в работе: <strong>${daysPassed}</strong> • До сдачи: <strong>${daysRemaining > 0 ? daysRemaining + ' дн.' : 'Срок настал'}</strong>`;
+      daysInfo.innerHTML = durationDays === null
+        ? `Дней в работе: <strong>${daysPassed}</strong> • Согласованный срок не указан`
+        : `Дней в работе: <strong>${daysPassed}</strong> • До сдачи: <strong>${daysRemaining > 0 ? daysRemaining + ' дн.' : 'Срок настал'}</strong>`;
     }
 
     const phaseDesc = document.getElementById('chrono-phase-desc');
@@ -8252,9 +8275,13 @@ ${loopsText}
     const params = new URLSearchParams(window.location.search);
     const receiptCode = params.get('verify_receipt');
     if (receiptCode) {
-      const recipient = params.get('emp') || 'Сотрудник бригады';
-      const amount = parseInt(params.get('amount')) || 500000;
-      const siteName = params.get('site') || 'ЖК Mirabad Avenue';
+      const recipient = (params.get('emp') || '').trim();
+      const amount = Number(params.get('amount'));
+      const siteName = (params.get('site') || '').trim();
+      if (!recipient || !Number.isSafeInteger(amount) || amount <= 0 || !siteName) {
+        this.showToast('Ссылка расписки неполная. Не подтверждайте сумму, пока мастер не пришлёт корректную ссылку.');
+        return;
+      }
 
       this.currentReceiptToVerify = { receiptCode, recipient, amount, siteName };
 
@@ -8347,7 +8374,7 @@ ${loopsText}
     const barVal = hasPressureReading ? pressureBar.toFixed(1) : '';
     const stageCode = `STG-${site.id || '01'}-${hasPressureReading ? `${barVal.replace('.', '')}B` : 'NO-PRESSURE'}`;
 
-    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.9');
+    const shareUrl = new URL('https://liga-master-uz.vercel.app/?share=v2.5.10');
     shareUrl.searchParams.set('verify_stage', stageCode);
     shareUrl.searchParams.set('site', site.name || 'Объект');
     shareUrl.searchParams.set('client', site.client || 'Заказчик');
@@ -8390,30 +8417,51 @@ ${shareUrl.toString()}
     }
   }
 
+  buildTelegramShareLinks(text, url) {
+    const encodedUrl = encodeURIComponent(url || window.location.href);
+    const encodedText = encodeURIComponent(text || '');
+    return {
+      app: `tg://msg_url?url=${encodedUrl}&text=${encodedText}`,
+      download: 'https://telegram.org/apps'
+    };
+  }
+
   async openShareSheet(text, url, title = 'LIGA OS') {
-    const shareData = { title, text, url };
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share(shareData);
-        return true;
-      } catch (error) {
-        if (error && error.name === 'AbortError') return false;
-        console.info('Системная панель отправки недоступна; открываю Telegram Web.', error);
+    const links = this.buildTelegramShareLinks(text, url);
+    const fallbackDelay = 1800;
+    if (this._telegramFallbackTimer) window.clearTimeout(this._telegramFallbackTimer);
+
+    const cancelFallback = () => {
+      if (document.visibilityState === 'hidden' && this._telegramFallbackTimer) {
+        window.clearTimeout(this._telegramFallbackTimer);
+        this._telegramFallbackTimer = null;
       }
+    };
+    document.addEventListener('visibilitychange', cancelFallback, { once: true });
+
+    try {
+      // The OS opens the installed Telegram client. Keep the official download page as fallback.
+      window.location.href = links.app;
+    } catch (error) {
+      console.info('Не удалось открыть Telegram напрямую; перехожу к официальной странице приложений.', error);
+      window.location.href = links.download;
+      return true;
     }
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-    const opened = window.open(telegramUrl, '_blank', 'noopener,noreferrer');
-    if (!opened) this.showToast('Telegram Web заблокирован браузером. Разрешите всплывающее окно или скопируйте сообщение.');
-    return Boolean(opened);
+
+    this._telegramFallbackTimer = window.setTimeout(() => {
+      this._telegramFallbackTimer = null;
+      if (document.visibilityState !== 'hidden') window.location.href = links.download;
+    }, fallbackDelay);
+    return true;
   }
 
   async sendStageAcceptanceTelegram() {
     const text = this.currentGeneratedStageText || (document.getElementById('stage-link-message-preview') ? document.getElementById('stage-link-message-preview').value : '');
-    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.9';
+    const url = this.currentGeneratedStageUrl || 'https://liga-master-uz.vercel.app/?share=v2.5.10';
     try {
       const shared = await this.openShareSheet(text, url, 'LIGA OS — приёмка этапа');
       if (shared) {
-      this.showToast('Панель отправки открыта. Выберите Telegram и проверьте сообщение перед отправкой.');
+      this.showToast('Откройте Telegram, проверьте подготовленный текст и отправьте его вручную.');
       }
     } catch (e) {
       console.warn('Telegram open error:', e);
@@ -8437,36 +8485,19 @@ ${shareUrl.toString()}
     const box = document.getElementById('verify-stage-success-box');
     const signedEl = document.getElementById('verify-stage-signed-date');
     if (signedEl) {
-      signedEl.innerText = `Электронная отметка внесена: ${dateStr}`;
+      signedEl.innerText = `Отметка сохранена в этом браузере: ${dateStr}. Передайте её мастеру через Telegram.`;
     }
     if (box) {
       box.style.display = 'block';
     }
 
-    this.showToast(`✓ Этап успешно принят Заказчиком (${dateStr})!`);
-
-    // Если есть текущий объект, обновляем его статус и пишем в хронику
+    st.confirmedAt = dateStr;
     try {
-      if (this.currentSite && window.ligaDB) {
-        this.currentSite.stageAccepted = true;
-        this.currentSite.stageAcceptedDate = dateStr;
-        await window.ligaDB.put('sites', this.currentSite);
-      }
-      if (window.ligaDB) {
-        await window.ligaDB.add('finances', {
-          siteId: this.currentSiteId || 1,
-          type: 'stage_accepted_client',
-          stage: st.stageTitle,
-          client: st.clientName,
-          site: st.siteName,
-          date: new Date().toISOString().slice(0, 10),
-          verifiedAt: dateStr
-        });
-      }
-    } catch (dbErr) {
-      console.warn('Could not save stage acceptance into DB:', dbErr);
+      localStorage.setItem(`liga_stage_ack:${st.stageCode}`, dateStr);
+    } catch (storageError) {
+      console.warn('Could not save this-device stage acknowledgment:', storageError);
     }
-    this.render();
+    this.showToast(`Отметка записана в этом браузере (${dateStr}). Передайте её мастеру через Telegram.`);
   }
 
   // Уведомление мастера в Telegram об успешной приёмке
@@ -8476,27 +8507,22 @@ ${shareUrl.toString()}
       this.showToast('Не удалось подготовить уведомление: откройте полную ссылку от мастера.');
       return;
     }
-    const text = `Улугбек, здравствуйте! Заказчик отметил приёмку этапа «${st.stageTitle}» по объекту ${st.siteName}. Параметры гидравлических испытаний и допуск к следующим работам прошу сверить с протоколом мастера.`;
+    const text = `Улугбек, заказчик нажал кнопку отметки по этапу «${st.stageTitle}» на объекте ${st.siteName}. Время по устройству получателя: ${st.confirmedAt || 'не зафиксировано'}. Это сообщение нужно проверить и сохранить в карточке объекта вручную.`;
     this.openShareSheet(text, window.location.href, 'LIGA OS — подтверждение этапа')
       .catch(e => console.warn('Telegram notify error:', e));
   }
 
   async signReceiptConfirmation() {
     const r = this.currentReceiptToVerify;
+    if (!r || !r.receiptCode || !Number.isSafeInteger(r.amount) || r.amount <= 0 || !r.recipient || !r.siteName) {
+      this.showToast('Проверьте реквизиты расписки. Подтверждение не выполнено.');
+      return;
+    }
     const dateStr = new Date().toLocaleString('ru-RU');
     this.closeModal('modal-verify-receipt');
-    this.showToast(`✓ Расписка подтверждена получателем (${dateStr})!`);
-    
-    // Сохраняем подтверждение в локальной базе
-    await window.ligaDB.add('finances', {
-      siteId: this.currentSiteId,
-      type: 'brigade_confirmed',
-      amount: r ? r.amount : 0,
-      method: 'Цифровая подпись Telegram',
-      date: new Date().toISOString().slice(0, 10),
-      verifiedAt: dateStr
-    });
-    this.render();
+    const confirmation = `Получатель ${r.recipient} отметил получение ${this.formatSum(r.amount)} сум по объекту «${r.siteName}». Отметка сделана в браузере получателя ${dateStr}; мастер должен проверить и сохранить её у себя.`;
+    this.showToast('Отметка подготовлена. Откройте Telegram и отправьте её мастеру.');
+    await this.openShareSheet(confirmation, window.location.href, 'LIGA OS — отметка о получении');
   }
 
   // ==========================================================================
@@ -9897,14 +9923,7 @@ ${shareUrl.toString()}
         }
       }
     }
-    if (!clientName) {
-      const words = text.split(/\s+/);
-      if (words.length > 0 && /^[А-ЯЁA-Z][а-яёa-z]+/.test(words[0])) {
-        clientName = words[0];
-      } else {
-        clientName = 'Заказчик';
-      }
-    } else {
+    if (clientName) {
       clientName = clientName.charAt(0).toUpperCase() + clientName.slice(1);
     }
 
@@ -9922,21 +9941,15 @@ ${shareUrl.toString()}
         }
       }
     }
-    if (!siteName) {
-      siteName = 'Объект ' + clientName;
-    }
-
     // Квартира / секция
     let unitName = '';
     const unitMatch = lower.match(/(\d+[\s\-]*комнатн[а-я]+|\d+[\s\-]*комн[а-я]*|кв[\.,\s]*\d+|коттедж|пентхаус|дом)/i);
     if (unitMatch) {
       unitName = unitMatch[1].trim();
-    } else {
-      unitName = '3-комнатная квартира';
     }
 
     // Телефон
-    let phone = '+998901234567';
+    let phone = '';
     const phoneMatch = text.match(/(\+?998[\s\-]?\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}|\b\d{9}\b)/);
     if (phoneMatch) {
       phone = phoneMatch[0].replace(/[\s\-]/g, '');
@@ -9944,10 +9957,10 @@ ${shareUrl.toString()}
     }
 
     // Срок монтажа
-    let duration = 21;
+    let duration = '';
     const durationMatch = lower.match(/(срок|дней|за)\s*(\d+)\s*(дней|дня|день)?/);
     if (durationMatch) {
-      duration = parseInt(durationMatch[2]) || 21;
+      duration = parseInt(durationMatch[2], 10) || '';
     }
 
     // Заполняем поля формы
@@ -9959,16 +9972,22 @@ ${shareUrl.toString()}
     const inputAdvance = document.getElementById('new-site-advance');
     const inputDuration = document.getElementById('new-site-duration');
 
-    if (inputName) inputName.value = siteName;
-    if (inputUnit) inputUnit.value = unitName;
-    if (inputClient) inputClient.value = clientName;
-    if (inputPhone) inputPhone.value = phone;
-    if (inputContract) inputContract.value = contractSum || 20000000;
-    if (inputAdvance) inputAdvance.value = advanceSum || Math.round((contractSum || 20000000) * 0.4);
-    if (inputDuration) inputDuration.value = duration;
+    if (inputName && siteName) inputName.value = siteName;
+    if (inputUnit && unitName) inputUnit.value = unitName;
+    if (inputClient && clientName) inputClient.value = clientName;
+    if (inputPhone && phone) inputPhone.value = phone;
+    if (inputContract && contractSum > 0) inputContract.value = contractSum;
+    if (inputAdvance && advanceMatch && advanceSum >= 0) inputAdvance.value = advanceSum;
+    if (inputDuration && duration) inputDuration.value = duration;
 
     this.playSwissChime();
-    this.showToast(`✓ Голосом заполнено: ${siteName}, ${clientName}, ${this.formatSum(contractSum || 20000000)}!`);
+    const missingFields = [];
+    if (!inputName?.value.trim()) missingFields.push('название объекта');
+    if (!inputClient?.value.trim()) missingFields.push('заказчика');
+    if (!inputContract?.value || Number(inputContract.value) <= 0) missingFields.push('сумму договора, если она уже согласована');
+    this.showToast(missingFields.length
+      ? `Распознано. Проверьте поля и укажите: ${missingFields.join(', ')}.`
+      : 'Данные распознаны. Проверьте каждое поле перед созданием объекта.');
   }
 
   // Быстрая отправка инженерного отчета заказчику в Telegram (в 1 клик)
@@ -10014,13 +10033,13 @@ ${shareUrl.toString()}
 Официальный Исполнительный Паспорт объекта с фотофиксацией скрытых трасс доступен в LIGA OS.
 Официальный портал: https://liga-master-uz.vercel.app/`;
 
-    const url = 'https://liga-master-uz.vercel.app/?share=v2.5.9';
+    const url = 'https://liga-master-uz.vercel.app/?share=v2.5.10';
     const shared = await this.openShareSheet(report, url, `LIGA OS — отчёт: ${site.name || 'объект'}`);
     if (!shared) return;
     this.copyToClipboard(report).then(() => {
-      this.showToast('✓ Отчёт передан в панель отправки и скопирован. Проверьте текст перед отправкой.');
+      this.showToast('✓ Отчёт подготовлен и скопирован. Проверьте текст в Telegram перед отправкой.');
     }).catch(() => {
-      this.showToast('✓ Панель отправки открыта. Проверьте текст перед отправкой.');
+      this.showToast('Telegram откроется. Проверьте подготовленный текст перед отправкой.');
     });
   }
 

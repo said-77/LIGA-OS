@@ -487,17 +487,20 @@ class LigaPdfEngine {
       position: relative;
     }
     .official-seal-svg {
-      width: 95px !important;
-      height: 95px !important;
+      width: 112px !important;
+      height: 112px !important;
+      filter: none !important;
+      opacity: 1 !important;
     }
     .official-signature-svg {
       width: 88px !important;
       height: 30px !important;
     }
     .seal-container-inner {
-      margin-left: -24px !important;
-      margin-bottom: -4px !important;
-      transform: rotate(-3.5deg);
+      margin-left: 0 !important;
+      margin-bottom: 0 !important;
+      transform: none !important;
+      opacity: 1 !important;
     }
 
     /* Нижний колонтитул */
@@ -1447,17 +1450,20 @@ class LigaPdfEngine {
       position: relative;
     }
     .official-seal-svg {
-      width: 88px !important;
-      height: 88px !important;
+      width: 112px !important;
+      height: 112px !important;
+      filter: none !important;
+      opacity: 1 !important;
     }
     .official-signature-svg {
       width: 85px !important;
       height: 30px !important;
     }
     .seal-container-inner {
-      margin-left: -22px !important;
-      margin-bottom: -4px !important;
-      transform: rotate(-3.5deg);
+      margin-left: 0 !important;
+      margin-bottom: 0 !important;
+      transform: none !important;
+      opacity: 1 !important;
     }
 
     /* Векторный QR бейдж */

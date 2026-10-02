@@ -35,7 +35,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
 
     /* Верхняя панель презентации */
@@ -118,7 +118,15 @@
     }
 
     .btn-gold:hover {
+      background: var(--gold-gradient);
+      color: #0b0f19;
       box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    }
+
+    .btn-action:focus-visible,
+    .control-btn:focus-visible {
+      outline: 3px solid #ffe29a;
+      outline-offset: 3px;
     }
 
     /* Основная рабочая область */
@@ -126,6 +134,7 @@
       flex: 1;
       display: grid;
       grid-template-columns: 460px 1fr;
+      align-items: start;
       gap: 32px;
       padding: 24px;
       max-width: 1400px;
@@ -138,6 +147,9 @@
         grid-template-columns: 1fr;
         padding: 16px;
       }
+      .phone-container {
+        position: static;
+      }
     }
 
     /* Смартфон-фрейм */
@@ -147,6 +159,7 @@
       align-items: center;
       position: sticky;
       top: 90px;
+      align-self: start;
     }
 
     .phone-mockup {
@@ -533,10 +546,10 @@
         </div>
         <div class="step-title">👑 Швейцарская гербовая печать королевского класса</div>
         <div class="step-desc">
-          Выберите цветовой стиль и проверьте читаемость имени и названия мастерской. Оттиск обозначает оформление документа LIGA OS: он не заменяет лицензию, сертификат или подтверждение испытания.
+          Выберите один из шести чётких цветовых вариантов и проверьте читаемость имени и данных. Стиль меняет только оформление: печать не заменяет лицензию, сертификат или подтверждение испытания.
         </div>
         <div class="step-features">
-          <span class="feature-chip">Золотой стиль оформления</span>
+          <span class="feature-chip">6 чётких цветовых вариантов</span>
           <span class="feature-chip">Фирменный знак LIGA</span>
           <span class="feature-chip">Не подтверждает испытание</span>
         </div>

@@ -125,7 +125,7 @@
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: scroll;
   scroll-behavior: smooth;
   width: 100%;
@@ -175,7 +175,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow-x: hidden;
+  overflow-x: clip;
   touch-action: pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 110px; /* Увеличенный отступ, чтобы контент не перекрывался баром */
@@ -199,7 +199,8 @@ body {
   flex-direction: column;
   padding: 0 16px 110px 16px;
   margin: 0 auto;
-  overflow-x: hidden;
+  /* Hidden creates a scroll container and prevents the sticky header from sticking. */
+  overflow-x: clip;
   overflow-y: visible;
   transition: max-width 0.3s ease;
 }
@@ -1422,6 +1423,14 @@ body.more-menu-open .top-header {
 
 .btn-submit-modal:active {
   transform: scale(0.98);
+}
+
+.btn-submit-modal:hover,
+.btn-submit-modal:focus-visible {
+  background: var(--gold-gradient);
+  color: var(--btn-gold-text);
+  border-color: var(--gold-primary);
+  filter: brightness(1.04);
 }
 
 /* Пульсация при записи голоса */
@@ -5759,8 +5768,10 @@ body.client-mode .btn-floating-voice {
    ========================================================================== */
 
 .official-seal-svg {
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+  filter: none;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
@@ -5769,15 +5780,15 @@ body.client-mode .btn-floating-voice {
 }
 
 .official-seal-svg.gold_seal {
-  filter: drop-shadow(0 4px 16px rgba(212, 175, 55, 0.35));
+  filter: none;
 }
 
 .official-seal-svg.blue_seal {
-  filter: drop-shadow(0 4px 16px rgba(29, 78, 216, 0.3));
+  filter: none;
 }
 
 .official-seal-svg.titanium_seal {
-  filter: drop-shadow(0 4px 14px rgba(15, 23, 42, 0.4));
+  filter: none;
 }
 
 .master-signature-wrap {

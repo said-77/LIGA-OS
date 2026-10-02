@@ -128,6 +128,7 @@ def test_digital_stage_acceptance_telegram_workflow(http_server):
         assert btn_confirm.is_visible(), "Кнопка 'Подтверждаю приёмку этапа' должна быть видна заказчику"
 
         # 4. Заказчик нажимает «✓ Подтверждаю приёмку этапа»
+        before_finances = client_page.evaluate("window.ligaDB.getAll('finances').then(rows => rows.length)")
         btn_confirm.click()
         client_page.wait_for_timeout(300)
 
@@ -135,7 +136,12 @@ def test_digital_stage_acceptance_telegram_workflow(http_server):
         assert not btn_confirm.is_visible(), "Кнопка подтверждения должна скрыться после подписания"
         success_box = client_page.locator("#verify-stage-success-box")
         assert success_box.is_visible(), "Блок успешного подтверждения обязан отобразиться"
-        assert "ЭТАП УСПЕШНО ПРИНЯТ" in success_box.inner_text().upper()
+        assert "ОТМЕТКА СОХРАНЕНА В ЭТОМ БРАУЗЕРЕ" in success_box.inner_text().upper()
+        assert "не является электронной подписью" in verify_modal.inner_text().lower()
+        after_finances = client_page.evaluate("window.ligaDB.getAll('finances').then(rows => rows.length)")
+        assert after_finances == before_finances, "Отметка получателя не должна менять финансовую базу на его устройстве"
+        client_site_flag = client_page.evaluate("Boolean(window.app.currentSite && window.app.currentSite.stageAccepted)")
+        assert client_site_flag is False, "Чужой клиентский браузер не должен менять локальную карточку объекта"
 
         # Проверяем наличие кнопки уведомления мастера в Telegram
         btn_notify = client_page.locator("#btn-notify-master-telegram")

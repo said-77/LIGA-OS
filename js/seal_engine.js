@@ -12,7 +12,7 @@ class LigaSealEngine {
       companyName: 'Лига Опытных Мастеров',
       title: 'Ведущий инженер сантехники и систем отопления',
       licenseNumber: '',
-      stampStyle: 'swiss_imperial_gold', // 'swiss_imperial_gold' | 'diplomatic_vermilion' | 'black_titanium_platinum' | 'royal_geneva_azure' | 'blue_seal' | 'gold_seal' | 'titanium_seal'
+      stampStyle: 'swiss_imperial_gold', // One of six visual finishes; none represents a legal or quality tier.
       signatureText: 'Хакимов У.А.',
       handwrittenSignature: null // DataURL от холста подписи пальцем/стилусом
     };
@@ -123,6 +123,12 @@ class LigaSealEngine {
       darkAccent = '#111827';
       badgeBg = 'rgba(15, 23, 42, 0.08)';
       ribbonText = '#fff8e1';
+    } else if (style === 'emerald_platinum') {
+      primaryColor = '#047857';
+      secondaryColor = '#475569';
+      darkAccent = '#064e3b';
+      badgeBg = 'rgba(4, 120, 87, 0.08)';
+      ribbonText = '#f0fdf4';
     } else {
       // swiss_imperial_gold (золотая цветовая тема)
       primaryColor = '#b45309';
@@ -144,16 +150,6 @@ class LigaSealEngine {
         <!-- Траектория нижнего кругового текста -->
         <path id="${uid}_bottom_path" d="M 195,110 A 85,85 0 0,1 25,110" fill="none" />
         
-        <!-- Траектория внешнего микротекста безопасности -->
-        <path id="${uid}_micro_top" d="M 16,110 A 94,94 0 1,1 204,110" fill="none" />
-        <path id="${uid}_micro_bottom" d="M 204,110 A 94,94 0 0,1 16,110" fill="none" />
-
-        <!-- Фильтр реалистичной шероховатости мастики -->
-        <filter id="${uid}_ink_texture" x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.4" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-
         <!-- Золотой градиент для стиля swiss_imperial_gold -->
         <linearGradient id="${uid}_gold_grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#b45309" />
@@ -163,39 +159,27 @@ class LigaSealEngine {
         </linearGradient>
       </defs>
 
-      <g filter="url(#${uid}_ink_texture)" stroke="${primaryColor}" fill="${primaryColor}">
-        <!-- Самый внешний микрокант с микроперфорацией -->
-        <circle cx="110" cy="110" r="106" fill="none" stroke="${primaryColor}" stroke-width="0.8" stroke-dasharray="2, 1" />
+      <g stroke="${primaryColor}" fill="${primaryColor}">
+        <!-- Контрастные чистые контуры без растровой фактуры и нечитаемого микротекста -->
+        <circle cx="110" cy="110" r="106" fill="none" stroke="${primaryColor}" stroke-width="1.1" />
         
         <!-- Внешний зубчатый/гильошированный кант (Швейцарская розетка) -->
         <circle cx="110" cy="110" r="103" fill="none" stroke="${primaryColor}" stroke-width="2.6" stroke-dasharray="4, 1.8" />
         <circle cx="110" cy="110" r="99" fill="none" stroke="${primaryColor}" stroke-width="1.2" />
-
-        <!-- Латинский защитный микротекст безопасности -->
-        <text font-family="'Segoe UI', Roboto, sans-serif" font-size="4.6" font-weight="900" letter-spacing="1.2" fill="${secondaryColor}" opacity="0.85">
-          <textPath href="#${uid}_micro_top" startOffset="50%" text-anchor="middle">
-            ★ LIGA OS • ENGINEERING RECORD • SITE-SPECIFIC TESTS ★
-          </textPath>
-        </text>
-        <text font-family="'Segoe UI', Roboto, sans-serif" font-size="4.6" font-weight="900" letter-spacing="1.1" fill="${secondaryColor}" opacity="0.85">
-          <textPath href="#${uid}_micro_bottom" startOffset="50%" text-anchor="middle">
-            ★ LIGA OS • ENGINEERING • TASHKENT ★
-          </textPath>
-        </text>
 
         <!-- Внутренний двойной ограничительный круг -->
         <circle cx="110" cy="110" r="74" fill="none" stroke="${primaryColor}" stroke-width="1.8" />
         <circle cx="110" cy="110" r="70" fill="${badgeBg}" stroke="${primaryColor}" stroke-width="0.9" />
 
         <!-- Верхний круговой представительский текст -->
-        <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.2" font-weight="900" letter-spacing="1.3" fill="${primaryColor}">
+        <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.8" font-weight="900" letter-spacing="0.8" fill="${primaryColor}">
           <textPath href="#${uid}_top_path" startOffset="50%" text-anchor="middle">
             ★ ${companyDisplay} • LIGA OS ★
           </textPath>
         </text>
 
         <!-- Нижний круговой текст стандарта Лиги -->
-        <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.0" font-weight="800" letter-spacing="1.1" fill="${primaryColor}">
+        <text font-family="'Segoe UI', Roboto, Arial, sans-serif" font-size="8.6" font-weight="800" letter-spacing="0.7" fill="${primaryColor}">
           <textPath href="#${uid}_bottom_path" startOffset="50%" text-anchor="middle">
             ★ ИНЖЕНЕРНЫЙ ПРОТОКОЛ ОБЪЕКТА ★
           </textPath>

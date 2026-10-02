@@ -65,10 +65,14 @@ def main() -> None:
 
             page.locator("#btn-settings-top").click()
             page.wait_for_selector("#modal-settings.open")
-            page.locator("#modal-settings .modal-sheet").evaluate("el => el.scrollTop = 760")
-            page.wait_for_timeout(500)
+            sheet = page.locator("#modal-settings .modal-sheet")
+            sheet.evaluate("el => el.scrollTop = 0")
+            page.wait_for_timeout(250)
             page.screenshot(path=str(ASSETS / "07_settings.png"), full_page=False)
-            page.locator("#settings-section-seal").scroll_into_view_if_needed()
+            page.locator("#settings-section-seal").evaluate("""section => {
+                const sheet = section.closest('.modal-sheet');
+                sheet.scrollTop += section.getBoundingClientRect().top - sheet.getBoundingClientRect().top - 12;
+            }""")
             page.wait_for_timeout(350)
             page.screenshot(path=str(ASSETS / "08_seal_preview.png"), full_page=False)
             page.locator("#btn-sig-preset-elegant").click()

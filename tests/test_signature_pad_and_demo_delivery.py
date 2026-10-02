@@ -30,7 +30,13 @@ def test_demo_without_trailing_slash_loads_real_screens_and_video():
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(f"{base}/demo", wait_until="networkidle")
             page.locator(".step-card[data-step='1']").click()
-            page.wait_for_timeout(350)
+            page.wait_for_function(
+                """() => {
+                    const image = document.querySelector('#active-screenshot');
+                    return image && image.complete && image.naturalWidth > 0 && image.currentSrc.endsWith('/02_finances.png');
+                }""",
+                timeout=10000,
+            )
             image = page.locator("#active-screenshot")
             assert image.evaluate("img => img.complete && img.naturalWidth > 0")
             assert image.evaluate("img => new URL(img.currentSrc).pathname").startswith("/demo/assets/")
