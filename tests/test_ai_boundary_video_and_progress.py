@@ -168,3 +168,24 @@ def test_work_and_demo_profiles_keep_separate_local_databases(app_url):
         assert page.evaluate("window.ligaDB.getAll('sites').then(sites => sites.length)") == 1
         assert page.evaluate("indexedDB.databases().then(items => items.map(item => item.name).sort())") == ["LigaOS_DB", "LigaOS_DB_Demo", "LigaOS_DB_Work"]
         browser.close()
+
+
+def test_empty_work_profile_card_keeps_clear_contrast_in_light_theme(app_url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 393, "height": 852})
+        page.goto(f"{app_url}/index.html?profile=work")
+        page.wait_for_selector("#empty-workspace-state:visible")
+
+        page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+        heading_color = page.locator("#empty-workspace-state h1").evaluate("el => getComputedStyle(el).color")
+        description_color = page.locator("#empty-workspace-state p").evaluate("el => getComputedStyle(el).color")
+        create_button = page.locator("#empty-workspace-state .btn-action")
+        button_color = create_button.evaluate("el => getComputedStyle(el).color")
+        button_background = create_button.evaluate("el => getComputedStyle(el).backgroundColor")
+
+        assert heading_color == "rgb(248, 250, 252)"
+        assert description_color == "rgb(203, 213, 225)"
+        assert button_color == "rgb(23, 18, 10)"
+        assert button_background != "rgb(255, 255, 255)"
+        browser.close()

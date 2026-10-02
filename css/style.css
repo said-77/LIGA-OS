@@ -6924,10 +6924,41 @@ body.client-mode .btn-floating-voice {
   text-align: center;
 }
 .empty-workspace-kicker { color: var(--gold-primary); font-size: 11px; font-weight: 900; letter-spacing: .16em; }
-.empty-workspace-card h1 { margin: 10px 0 8px; color: var(--text-main); font-size: clamp(21px, 4vw, 30px); }
-.empty-workspace-card p { max-width: 560px; margin: 0 auto 18px; color: var(--text-muted); font-size: 14px; line-height: 1.65; }
-.empty-workspace-card > .btn-action { min-height: 46px; margin: 0 auto; padding: 0 22px; font-size: 14px; }
-.empty-workspace-demo { display: block; margin: 14px auto 0; padding: 8px 12px; border: 0; background: transparent; color: var(--neon-cyan); font: 700 12px var(--font-main); text-decoration: underline; cursor: pointer; }
+.empty-workspace-card h1 { margin: 10px 0 8px; color: #f8fafc; font-size: clamp(21px, 4vw, 30px); }
+.empty-workspace-card p { max-width: 560px; margin: 0 auto 18px; color: #cbd5e1; font-size: 14px; line-height: 1.65; }
+.empty-workspace-card > .btn-action.btn-gold {
+  display: inline-flex;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 0 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 235, 190, .72);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffe8b0, #d7a642);
+  color: #17120a;
+  font-size: 14px;
+  font-weight: 850;
+  box-shadow: 0 8px 20px rgba(212, 175, 55, .2);
+  cursor: pointer;
+}
+.empty-workspace-card > .btn-action.btn-gold:hover { background: linear-gradient(135deg, #fff0c9, #e5b955); color: #17120a; }
+.empty-workspace-card > .btn-action.btn-gold:focus-visible,
+.empty-workspace-demo:focus-visible { outline: 3px solid #67e8f9; outline-offset: 3px; }
+.empty-workspace-demo {
+  display: inline-flex;
+  min-height: 38px;
+  margin: 14px auto 0;
+  padding: 8px 12px;
+  align-items: center;
+  border: 1px solid rgba(103, 232, 249, .35);
+  border-radius: 10px;
+  background: rgba(14, 165, 233, .09);
+  color: #a5f3fc;
+  font: 700 12px var(--font-main);
+  cursor: pointer;
+}
+.empty-workspace-demo:hover { border-color: rgba(103, 232, 249, .75); background: rgba(14, 165, 233, .17); color: #cffafe; }
 .data-profile-status { color: var(--gold-primary); font-size: 12px; font-weight: 800; line-height: 1.45; }
 .data-profile-description { margin: 7px 0 10px; color: var(--text-dim); font-size: 10px; line-height: 1.5; }
 .data-profile-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
